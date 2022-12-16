@@ -41,6 +41,7 @@
 - [Security](#security)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
+- [Contributors ✨](#contributors-)
 
 </details>
 
@@ -64,6 +65,7 @@ To request a new feature, please open an issue following
 
 - [Rust](https://www.rust-lang.org/)
 - [llvm-sys](https://crates.io/crates/llvm-sys)
+- [cairo](https://github.com/starkware-libs/cairo)
 
 ## Architecture
 
@@ -171,7 +173,8 @@ See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements
 
-
+- Shout out to StarkWare for the amazing Cairo compiler and the Cairo language
+  itself, specifically to the compiler team for their help and support and for the primitives on which shenlong is built.
 ## Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
