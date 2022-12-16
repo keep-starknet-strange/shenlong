@@ -1,0 +1,30 @@
+[package]
+name = "shenlong"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["core", "cli"]
+
+[workspace.package]
+edition = "2021"
+authors = ["Abdelhamid Bakhta <@abdelhamidbakhta>", "Lucas Levy <@lucaslvy>"]
+description = "Shenlong is a blazingly fast ⚡ tool to generate LLVM IR from Cairo, written in Rust 🦀"
+homepage = "https://github.com/keep-starknet-strange/shenlong"
+repository = "https://github.com/keep-starknet-strange/shenlong"
+readme = "./README.md"
+license = "MIT"
+
+
+[dependencies]
+shenlong_core = { path = "./core" }
+
+[dev-dependencies.cargo-husky]
+version = "1.5.0"
+default-features = false
+features = [
+    "precommit-hook",
+    "run-for-all",
+    "run-cargo-clippy",
+    "run-cargo-fmt",
+]
