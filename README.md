@@ -30,6 +30,8 @@
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
+    - [Rust](#rust)
+    - [LLVM](#llvm)
   - [Installation](#installation)
     - [shenlongup](#shenlongup)
     - [Environment variables](#environment-variables)
@@ -75,14 +77,20 @@ To request a new feature, please open an issue following
 
 ### Prerequisites
 
-- [Rust](https://www.rust-lang.org/tools/install)
+#### [Rust](https://www.rust-lang.org/tools/install)
 
-- The project requires nightly rustup:
+The project requires nightly rustup:
 
 ```bash
 rustup toolchain install nightly
 rustup default nightly
 ```
+
+#### LLVM
+
+In order to build the project, you need to have LLVM installed on your system.
+
+Consider using [llvmenv](https://crates.io/crates/llvmenv) to manage multiple LLVM builds.
 
 ### Installation
 
