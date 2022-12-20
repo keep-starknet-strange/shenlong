@@ -6,8 +6,13 @@ description.workspace = true
 homepage.workspace = true
 
 [dependencies]
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm13-0"] }
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
+    "llvm10-0",
+] }
 sierra = { git = "https://github.com/starkware-libs/cairo" }
+sierra_to_casm = { git = "https://github.com/starkware-libs/cairo" }
+sierra_ap_change = { git = "https://github.com/starkware-libs/cairo" }
+sierra_gas = { git = "https://github.com/starkware-libs/cairo" }
 eyre = "0.6.8"
 log = "0.4.17"
 env_logger = "0.10.0"
