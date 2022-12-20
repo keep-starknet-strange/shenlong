@@ -1,9 +1,7 @@
 use eyre::Result;
 use inkwell::values::{BasicMetadataValueEnum, FunctionValue, PointerValue};
-use sierra::program::{GenericArg, StatementIdx};
-use sierra::ProgramParser;
+use sierra::program::{GenericArg, Program, StatementIdx};
 use std::collections::HashMap;
-use std::fs;
 
 // Compiler is the main entry point for the LLVM backend.
 // It is responsible for compiling a Sierra program to LLVM IR.
@@ -27,11 +25,7 @@ impl Compiler {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    pub fn compile(&self, program_path: &str, output_path: &str) -> Result<()> {
-        // Read the program from the file.
-        let sierra_code = fs::read_to_string(program_path)?;
-        // Parse the program.
-        let program = ProgramParser::new().parse(&sierra_code).unwrap();
+    pub fn compile(&self, program: Program, output_path: &str) -> Result<()> {
         let mut variables: HashMap<String, Option<PointerValue>> = HashMap::new();
 
         // Create an LLVM context and module
