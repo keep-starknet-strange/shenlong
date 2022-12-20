@@ -22,3 +22,6 @@ target/
 
 # Environment files
 .env
+
+# llvm-cov reports
+**/*report.json
