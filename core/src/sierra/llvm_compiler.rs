@@ -1,15 +1,7 @@
 use eyre::Result;
 use inkwell::values::{BasicMetadataValueEnum, FunctionValue, PointerValue};
-use sierra::extensions::core::{CoreLibFunc, CoreType};
 use sierra::program::{GenericArg, StatementIdx};
-use sierra::program_registry::ProgramRegistry;
 use sierra::ProgramParser;
-use sierra_ap_change::calc_ap_changes;
-use sierra_gas::calc_gas_info;
-use sierra_to_casm::annotations::ProgramAnnotations;
-use sierra_to_casm::compiler::CompilationError;
-use sierra_to_casm::metadata::Metadata;
-use sierra_to_casm::type_sizes::get_type_size_map;
 use std::collections::HashMap;
 use std::fs;
 
@@ -41,42 +33,11 @@ impl Compiler {
         // Parse the program.
         let program = ProgramParser::new().parse(&sierra_code).unwrap();
         let mut variables: HashMap<String, Option<PointerValue>> = HashMap::new();
-        // Calculate gas variables for the Sierra program
-        let gas_info = calc_gas_info(&program).expect("Failed calculating gas variables.");
-
-        // Create a Metadata struct with the calculated ap changes and gas variables
-        let metadata = &Metadata {
-            ap_change_info: calc_ap_changes(&program).expect("Failed calculating ap changes."),
-            gas_info,
-        };
-
-        // Create a ProgramRegistry using the Sierra program and the calculated ap changes
-        let registry = ProgramRegistry::<CoreType, CoreLibFunc>::with_ap_change(
-            &program,
-            metadata.ap_change_info.function_ap_change.clone(),
-        )
-        .map_err(CompilationError::ProgramRegistryError)
-        .unwrap();
-
-        // Calculate type sizes for the Sierra program
-        let type_sizes = get_type_size_map(&program, &registry)
-            .ok_or(CompilationError::FailedBuildingTypeInformation)
-            .unwrap();
-
-        // Create ProgramAnnotations using the Sierra program, metadata, and type sizes
-        let _program_annotations = ProgramAnnotations::create(
-            program.statements.len(),
-            &program.funcs,
-            metadata,
-            false,
-            &type_sizes,
-        )
-        .unwrap();
 
         // Create an LLVM context and module
         let context = inkwell::context::Context::create();
         let builder = context.create_builder();
-        let module = context.create_module("dumb");
+        let module = context.create_module("test");
 
         // Create an i128 type and function type in the LLVM context
         let i32_type = context.i32_type();
