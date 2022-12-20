@@ -17,6 +17,7 @@ impl Compiler {
         Compiler {}
     }
 
+    // TODO: Remove all the unwraps and handle errors properly.
     /// Compiles a Sierra program to LLVM IR.
     /// # Arguments
     /// * `program_path` - The Sierra program to compile.
