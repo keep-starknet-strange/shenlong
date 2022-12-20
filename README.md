@@ -102,6 +102,22 @@ llvmenv global 13.0.0
 Note on macOS: `llvmenv` will install LLVM in `$HOME/Library/Application\ Support` by default and it seems to be an issue when used with `llvm-sys`.
 To fix this you can use a custom version of `llvmenv` that will let you choose the installation directory through environment variables. See [this PR](https://github.com/llvmenv/llvmenv/pull/127) for more details.
 
+Example of `.zshenv` file:
+
+```bash
+## LLVM
+export LLVMENV_RUST_BINDING="1"
+
+# This line will automatically export a `LLVM_SYS_XXX_PREFIX` environment variable.
+# This will allow `llvm-sys` to find the LLVM installation.
+source <(llvmenv zsh)
+
+### LLVM ENV
+export LLVMENV_CONFIG_DIR="$HOME/llvmenv/config"
+export LLVMENV_CACHE_DIR="$HOME/llvmenv/cache"
+export LLVMENV_DATA_DIR="$HOME/llvmenv/data"
+```
+
 ### Installation
 
 #### shenlongup
