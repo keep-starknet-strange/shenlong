@@ -66,7 +66,7 @@ To request a new feature, please open an issue following
 ### Built With
 
 - [Rust](https://www.rust-lang.org/)
-- [llvm-sys](https://crates.io/crates/llvm-sys)
+- [inkwell](https://thedan64.github.io/inkwell/)
 - [cairo](https://github.com/starkware-libs/cairo)
 
 ## Architecture
@@ -91,6 +91,16 @@ rustup default nightly
 In order to build the project, you need to have LLVM installed on your system.
 
 Consider using [llvmenv](https://crates.io/crates/llvmenv) to manage multiple LLVM builds.
+
+For example, to install LLVM 13.0.0 and use it globally:
+
+```bash
+llvmenv build-entry 13.0.0
+llvmenv global 13.0.0
+```
+
+Note on macOS: `llvmenv` will install LLVM in `$HOME/Library/Application\ Support` by default and it seems to be an issue when used with `llvm-sys`.
+To fix this you can use a custom version of `llvmenv` that will let you choose the installation directory through environment variables. See [this PR](https://github.com/llvmenv/llvmenv/pull/127) for more details.
 
 ### Installation
 

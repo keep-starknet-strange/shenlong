@@ -1,3 +1,3 @@
 fn main() {
-    println!("Shenlong started!");
+    println!("Shenlong, make me a LLVM compiler!");
 }
