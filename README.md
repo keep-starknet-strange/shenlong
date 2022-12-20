@@ -35,6 +35,9 @@
   - [Installation](#installation)
     - [shenlongup](#shenlongup)
     - [Environment variables](#environment-variables)
+- [Usage](#usage)
+  - [Command line interface](#command-line-interface)
+    - [Compile Sierra to LLVM IR](#compile-sierra-to-llvm-ir)
 - [Roadmap](#roadmap)
 - [Support](#support)
 - [Project assistance](#project-assistance)
@@ -143,7 +146,37 @@ cargo build --all --release
 ```
 
 The binaries will be located in `target/release/`.
-Specifically, the binary for the CLI is `target/release/shenlong`.
+Specifically, the binary for the CLI is `target/release/shenlong_cli`.
+
+## Usage
+
+### Command line interface
+
+```bash
+Shenlong, make me a LLVM compiler!
+Shenlong is a blazingly fast ⚡ tool to generate LLVM IR from Cairo, written in Rust 🦀
+
+Usage: shenlong_cli [CONFIG] <COMMAND>
+
+Commands:
+  sierra  Sierra related subcommands
+  help    Print this message or the help of the given subcommand(s)
+
+Arguments:
+  [CONFIG]
+
+Options:
+  -h, --help     Print help information
+  -V, --version  Print version information
+```
+
+#### Compile Sierra to LLVM IR
+
+```bash
+shenlong_cli sierra compile-to-llvm \
+--program-path examples/sierra/add.sierra \
+--output-path target/llvm/add.ir
+```
 
 ## Roadmap
 
