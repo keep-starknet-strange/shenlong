@@ -74,7 +74,26 @@ To request a new feature, please open an issue following
 
 ## Architecture
 
-> **[TODO]**
+```text
+               +--------------+
+               |   Cairo code |
+               +-------+------+
+                       | Compile with Cairo compiler
+                       |
+               +-------v------+
+               |   Sierra     |
+               +-------+------+
+                       | Compile with Shenlong
+                       |
+               +-------v------+
+               |   LLVM IR    |
+      +--------+-------+------+---------+
+      | lli            |clang           | clang
+      |                |                |
++-----v-------+  +-----v-----+  +-------v----+
+|    JIT      |  |  Binary   |  |    WASM    |
++-------------+  +-----------+  +------------+
+```
 
 ## Getting Started
 
