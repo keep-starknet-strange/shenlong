@@ -209,8 +209,6 @@
 <span id="209">209</span>
 <span id="210">210</span>
 <span id="211">211</span>
-<span id="212">212</span>
-<span id="213">213</span>
 </pre><pre class="rust"><code><span class="kw">use </span>eyre::Result;
 <span class="kw">use </span>inkwell::values::{BasicMetadataValueEnum, PointerValue};
 <span class="kw">use </span>sierra::{
@@ -219,11 +217,9 @@
 };
 <span class="kw">use </span>std::{collections::HashMap, fs, path::Path};
 
-<span class="comment">// Compiler is the main entry point for the LLVM backend.
-// It is responsible for compiling a Sierra program to LLVM IR.
-</span><span class="kw">pub struct </span>Compiler {
-    <span class="comment">// ...
-</span>}
+<span class="doccomment">/// Compiler is the main entry point for the LLVM backend.
+/// It is responsible for compiling a Sierra program to LLVM IR.
+</span><span class="kw">pub struct </span>Compiler {}
 
 <span class="kw">impl </span>Compiler {
     <span class="doccomment">/// Creates a new compiler.

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Compiler",""]]};
+window.SIDEBAR_ITEMS = {"struct":[["Compiler","Compiler is the main entry point for the LLVM backend. It is responsible for compiling a Sierra program to LLVM IR."]]};
