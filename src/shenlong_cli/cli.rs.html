@@ -74,10 +74,17 @@
 <span id="74">74</span>
 <span id="75">75</span>
 <span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
 </pre><pre class="rust"><code><span class="kw">use </span>clap::{Parser, Subcommand};
 <span class="kw">use </span>eyre::Result;
 <span class="kw">use </span>shenlong_core::sierra::llvm_compiler;
 <span class="kw">use </span>std::path::PathBuf;
+
+<span class="kw">use </span><span class="kw">crate</span>::emoji;
 
 <span class="doccomment">/// Shenlong command line interface.
 </span><span class="attribute">#[derive(Parser)]
@@ -111,7 +118,10 @@
                         <span class="kw-2">&amp;</span>program_path,
                         <span class="kw-2">&amp;</span>output_path.unwrap(),
                     )<span class="question-mark">?</span>;
-                    <span class="macro">println!</span>(<span class="string">&quot;program compiled successfully&quot;</span>);
+                    <span class="macro">println!</span>(
+                        <span class="string">&quot;{} Program compiled successfully.&quot;</span>,
+                        emoji::CHECK_MARK_BUTTON
+                    );
                     <span class="prelude-val">Ok</span>(())
                 }
             },
