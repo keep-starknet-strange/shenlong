@@ -36,5 +36,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: ./target/doc
+          publish_dir: ./target/doc/shenlong
           keep_files: true
