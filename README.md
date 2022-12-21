@@ -38,6 +38,8 @@
 - [Usage](#usage)
   - [Command line interface](#command-line-interface)
     - [Compile Sierra to LLVM IR](#compile-sierra-to-llvm-ir)
+- [Performance](#performance)
+  - [Benchmarks](#benchmarks)
 - [Roadmap](#roadmap)
 - [Support](#support)
 - [Project assistance](#project-assistance)
@@ -195,6 +197,38 @@ Options:
 shenlong_cli sierra compile-to-llvm \
 --program-path examples/sierra/add.sierra \
 --output-path target/llvm/add.ir
+```
+
+## Performance
+
+### Benchmarks
+
+Run the benchmarks with:
+
+```bash
+cargo bench
+```
+
+Result on a MacBook Pro Apple M1 Max 2021 with 64GB of RAM:
+
+```text
+     Running benches/sierra_2_llvm_benchmark.rs (target/release/deps/sierra_2_llvm_benchmark-b2798c19234aee25)
+Benchmarking sierra-2-llvm-simple-test: Collecting 100 samples in estimated 5.6913 s (10k iterasierra-2-llvm-simple-test
+                        time:   [556.84 µs 559.02 µs 562.34 µs]
+                        change: [-3.0928% -1.3163% +0.1790%] (p = 0.13 > 0.05)
+                        No change in performance detected.
+```
+
+This benchmark is the compilation of the `resources/bench/sierra/simple_test.sierra` file.
+This file is a simple program that do some additions, here is the Cairo code:
+
+```cairo
+func main(a: felt) -> felt  {
+    let d = 70;
+    let b = a + 1;
+    let c = b + d;
+    c
+}
 ```
 
 ## Roadmap

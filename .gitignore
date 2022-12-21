@@ -27,3 +27,6 @@ target/
 
 # llvm-cov reports
 **/*report.json
+
+# Flamegraph files
+**/flamegraph*.svg
