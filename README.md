@@ -195,7 +195,7 @@ Reach out to the maintainer at one of the following places:
 
 - [GitHub Discussions](https://github.com/keep-starknet-strange/shenlong/discussions)
 - Contact options listed on
-  [this GitHub profile](https://github.com/starknet-exploration)
+  [this GitHub profile](https://github.com/keep-starknet-strange)
 
 ## Project assistance
 
