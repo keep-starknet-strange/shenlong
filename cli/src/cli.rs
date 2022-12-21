@@ -29,11 +29,12 @@ impl Command {
                     program_path,
                     output_path,
                 } => {
-                    // Create a new compiler.
-                    let compiler = llvm_compiler::Compiler::new();
                     // Compile the program.
                     // TODO: Handle the output path properly.
-                    compiler.compile_from_file(&program_path, &output_path.unwrap())?;
+                    llvm_compiler::Compiler::compile_from_file(
+                        &program_path,
+                        &output_path.unwrap(),
+                    )?;
                     println!("program compiled successfully");
                     Ok(())
                 }
