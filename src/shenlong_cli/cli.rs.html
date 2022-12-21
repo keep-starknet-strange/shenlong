@@ -73,6 +73,7 @@
 <span id="73">73</span>
 <span id="74">74</span>
 <span id="75">75</span>
+<span id="76">76</span>
 </pre><pre class="rust"><code><span class="kw">use </span>clap::{Parser, Subcommand};
 <span class="kw">use </span>eyre::Result;
 <span class="kw">use </span>shenlong_core::sierra::llvm_compiler;
@@ -104,11 +105,12 @@
                     program_path,
                     output_path,
                 } =&gt; {
-                    <span class="comment">// Create a new compiler.
-                    </span><span class="kw">let </span>compiler = llvm_compiler::Compiler::new();
                     <span class="comment">// Compile the program.
                     // TODO: Handle the output path properly.
-                    </span>compiler.compile_from_file(<span class="kw-2">&amp;</span>program_path, <span class="kw-2">&amp;</span>output_path.unwrap())<span class="question-mark">?</span>;
+                    </span>llvm_compiler::Compiler::compile_from_file(
+                        <span class="kw-2">&amp;</span>program_path,
+                        <span class="kw-2">&amp;</span>output_path.unwrap(),
+                    )<span class="question-mark">?</span>;
                     <span class="macro">println!</span>(<span class="string">&quot;program compiled successfully&quot;</span>);
                     <span class="prelude-val">Ok</span>(())
                 }
