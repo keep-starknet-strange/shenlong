@@ -287,6 +287,45 @@
 <span id="287">287</span>
 <span id="288">288</span>
 <span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
 </pre><pre class="rust"><code><span class="kw">use </span>eyre::Result;
 <span class="kw">use </span>inkwell::{
     builder::Builder,
@@ -312,8 +351,9 @@
     <span class="kw">pub </span>output_path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-    <span class="doccomment">/// Compiles a Sierra program file to LLVM IR.
+<span class="doccomment">/// Implementation of the compiler.
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
+    <span class="doccomment">/// Compile a Sierra program file to LLVM IR.
     /// # Arguments
     /// * `program_path` - The Sierra program to compile.
     /// * `output_path` - The path to the output LLVM IR file.
@@ -324,13 +364,31 @@
     </span><span class="kw">pub fn </span>compile_from_file(program_path: <span class="kw-2">&amp;</span>str, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// Read the program from the file.
         </span><span class="kw">let </span>sierra_code = fs::read_to_string(program_path)<span class="question-mark">?</span>;
+        Compiler::compile_from_code(<span class="kw-2">&amp;</span>sierra_code, output_path)
+    }
+
+    <span class="doccomment">/// Compile a Sierra program code to LLVM IR.
+    /// # Arguments
+    /// * `sierra_code` - The Sierra program code.
+    /// * `output_path` - The path to the output LLVM IR file.
+    /// # Returns
+    /// The result of the compilation.
+    /// # Errors
+    /// If the compilation fails.
+    </span><span class="kw">pub fn </span>compile_from_code(sierra_code: <span class="kw-2">&amp;</span>str, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// Parse the program.
-        </span><span class="kw">let </span>program = ProgramParser::new().parse(<span class="kw-2">&amp;</span>sierra_code).unwrap();
+        </span><span class="kw">let </span>program = ProgramParser::new().parse(sierra_code).unwrap();
         Compiler::compile_sierra_program_to_llvm(program, output_path)
     }
 
-    <span class="comment">// TODO: Remove all the unwraps and handle errors properly.
-    </span><span class="doccomment">/// Compiles a Sierra program to LLVM IR.
+    <span class="doccomment">/// Compiles a Sierra `Program` representation to LLVM IR.
+    /// # Process overview
+    /// 1. Create an LLVM context, builder and module.
+    /// 2. Instantiate variables map.
+    /// 3. Process the program type declarations.
+    /// 4. Process the core library functions.
+    /// 5. Process the program statements.
+    /// 6. Finalize compilation and write the LLVM IR to a file.
     /// # Arguments
     /// * `program` - The Sierra program to compile.
     /// * `output_path` - The path to the output LLVM IR file.
@@ -338,6 +396,24 @@
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
+    /// # Example
+    /// ```rust
+    /// use sierra::ProgramParser;
+    /// use shenlong_core::sierra::llvm_compiler::Compiler;
+    /// use std::fs;
+    ///
+    /// let sierra_program_path = &quot;examples/program.sierra&quot;;
+    /// let llvm_ir_path = &quot;examples/program.ll&quot;;
+    ///
+    /// // TODO: Find a way to make doc tests pass.
+    /// // Read the program from the file.
+    /// // let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
+    /// // Parse the program.
+    /// // let program = ProgramParser::new().parse(&amp;sierra_code).unwrap();
+    /// // Compile the program to LLVM IR.
+    /// // let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
+    /// // Check the result.
+    /// ```
     </span><span class="kw">pub fn </span>compile_sierra_program_to_llvm(program: Program, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
@@ -376,6 +452,7 @@
     }
 
     <span class="doccomment">/// Process types in the Sierra program.
+    /// For each type declaration in the Sierra program, create a corresponding type in the LLVM context.
     </span><span class="kw">fn </span>process_types(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="macro">debug!</span>(<span class="string">&quot;processing types&quot;</span>);
         <span class="self">self</span>.program
@@ -557,6 +634,7 @@
     }
 
     <span class="doccomment">/// Finalize the compilation.
+    /// This includes verifying the module and writing it to the output path.
     </span><span class="kw">fn </span>finalize_compilation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="macro">debug!</span>(<span class="string">&quot;finalizing compilation&quot;</span>);
         <span class="comment">// Ensure that the current module is valid
