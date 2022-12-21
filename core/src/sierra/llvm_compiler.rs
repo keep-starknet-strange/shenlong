@@ -6,11 +6,9 @@ use sierra::{
 };
 use std::{collections::HashMap, fs, path::Path};
 
-// Compiler is the main entry point for the LLVM backend.
-// It is responsible for compiling a Sierra program to LLVM IR.
-pub struct Compiler {
-    // ...
-}
+/// Compiler is the main entry point for the LLVM backend.
+/// It is responsible for compiling a Sierra program to LLVM IR.
+pub struct Compiler {}
 
 impl Compiler {
     /// Creates a new compiler.
