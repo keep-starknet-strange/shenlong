@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"shenlong_core":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.66.0/core/default/trait.Default.html\" title=\"trait core::default::Default\">Default</a> for <a class=\"struct\" href=\"shenlong_core/sierra/llvm_compiler/struct.Compiler.html\" title=\"struct shenlong_core::sierra::llvm_compiler::Compiler\">Compiler</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

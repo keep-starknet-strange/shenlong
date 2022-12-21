@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["shenlong","shenlong_cli","shenlong_core"];
