@@ -1,7 +1,10 @@
 use eyre::Result;
-use inkwell::values::{BasicMetadataValueEnum, FunctionValue, PointerValue};
-use sierra::program::{GenericArg, Program, StatementIdx};
-use std::collections::HashMap;
+use inkwell::values::{BasicMetadataValueEnum, PointerValue};
+use sierra::{
+    program::{GenericArg, Program, StatementIdx},
+    ProgramParser,
+};
+use std::{collections::HashMap, fs, path::Path};
 
 // Compiler is the main entry point for the LLVM backend.
 // It is responsible for compiling a Sierra program to LLVM IR.
@@ -17,8 +20,7 @@ impl Compiler {
         Compiler {}
     }
 
-    // TODO: Remove all the unwraps and handle errors properly.
-    /// Compiles a Sierra program to LLVM IR.
+    /// Compiles a Sierra program file to LLVM IR.
     /// # Arguments
     /// * `program_path` - The Sierra program to compile.
     /// * `output_path` - The path to the output LLVM IR file.
@@ -26,7 +28,24 @@ impl Compiler {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    pub fn compile(&self, program: Program, output_path: &str) -> Result<()> {
+    pub fn compile_from_file(&self, program_path: &str, output_path: &str) -> Result<()> {
+        // Read the program from the file.
+        let sierra_code = fs::read_to_string(program_path)?;
+        // Parse the program.
+        let program = ProgramParser::new().parse(&sierra_code).unwrap();
+        self.compile_program(program, output_path)
+    }
+
+    // TODO: Remove all the unwraps and handle errors properly.
+    /// Compiles a Sierra program to LLVM IR.
+    /// # Arguments
+    /// * `program` - The Sierra program to compile.
+    /// * `output_path` - The path to the output LLVM IR file.
+    /// # Returns
+    /// The result of the compilation.
+    /// # Errors
+    /// If the compilation fails.
+    pub fn compile_program(&self, program: Program, output_path: &str) -> Result<()> {
         let mut variables: HashMap<String, Option<PointerValue>> = HashMap::new();
 
         // Create an LLVM context and module
@@ -100,7 +119,7 @@ impl Compiler {
                 None => println!("no name"),
             }
         });
-        // init param var
+        // Init param var
         let main_type = i32_type.fn_type(&[context.i32_type().into()], false);
         let main_func = module.add_function("main", main_type, None);
         let main_bb = context.append_basic_block(main_func, "entry");
@@ -119,7 +138,7 @@ impl Compiler {
                     if invocation.libfunc_id.id.to_string().as_str() != "3" {
                         let function = module
                             .get_function(format!("a_{}", invocation.libfunc_id.id).as_str())
-                            .unwrap();
+                            .ok_or_else(|| eyre::eyre!("function not found"))?;
                         let mut args: Vec<BasicMetadataValueEnum> = vec![];
                         invocation.args.clone().into_iter().for_each(|var_id| {
                             args.push(
@@ -166,14 +185,20 @@ impl Compiler {
                     ));
                 }
             }
-            println!(
-                "{:#?}",
-                module.get_functions().collect::<Vec<FunctionValue>>()
-            );
         }
-        module.verify().unwrap();
-        module.print_to_file(output_path).unwrap();
-        Ok(())
+        // Ensure that the current module is valid
+        module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
+        // Ensure output path is valid and exists.
+        let output_path = Path::new(output_path);
+        let parent = output_path
+            .parent()
+            .ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
+        // Recursively create the output path parent directories if they don't exist.
+        fs::create_dir_all(parent)?;
+        // Write the module to the output path.
+        module
+            .print_to_file(output_path)
+            .map_err(|e| eyre::eyre!(e.to_string()))
     }
 }
 

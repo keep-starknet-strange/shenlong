@@ -993,7 +993,6 @@ dependencies = [
  "serde",
  "serde_json",
  "shenlong_core",
- "sierra",
  "tokio",
 ]
 
