@@ -4,3 +4,4 @@
 //! The command line interface is a wrapper around the core library.
 //! It enables you to invoke the compiler from the command line.
 pub mod cli;
+pub mod emoji;

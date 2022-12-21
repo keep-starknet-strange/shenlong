@@ -3,6 +3,8 @@ use eyre::Result;
 use shenlong_core::sierra::llvm_compiler;
 use std::path::PathBuf;
 
+use crate::emoji;
+
 /// Shenlong command line interface.
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -35,7 +37,10 @@ impl Command {
                         &program_path,
                         &output_path.unwrap(),
                     )?;
-                    println!("program compiled successfully");
+                    println!(
+                        "{} Program compiled successfully.",
+                        emoji::CHECK_MARK_BUTTON
+                    );
                     Ok(())
                 }
             },
