@@ -1,6 +1,6 @@
 type [0] = felt;
 
-libfunc [1] = felt_const<62>;
+libfunc [1] = felt_const<70>;
 libfunc [2] = felt_const<1>;
 libfunc [0] = felt_add;
 libfunc [3] = store_temp<[0]>;
