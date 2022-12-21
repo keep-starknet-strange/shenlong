@@ -23,8 +23,9 @@ pub struct Compiler<'a, 'ctx> {
     pub output_path: &'a str,
 }
 
+/// Implementation of the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    /// Compiles a Sierra program file to LLVM IR.
+    /// Compile a Sierra program file to LLVM IR.
     /// # Arguments
     /// * `program_path` - The Sierra program to compile.
     /// * `output_path` - The path to the output LLVM IR file.
@@ -35,13 +36,31 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn compile_from_file(program_path: &str, output_path: &str) -> Result<()> {
         // Read the program from the file.
         let sierra_code = fs::read_to_string(program_path)?;
+        Compiler::compile_from_code(&sierra_code, output_path)
+    }
+
+    /// Compile a Sierra program code to LLVM IR.
+    /// # Arguments
+    /// * `sierra_code` - The Sierra program code.
+    /// * `output_path` - The path to the output LLVM IR file.
+    /// # Returns
+    /// The result of the compilation.
+    /// # Errors
+    /// If the compilation fails.
+    pub fn compile_from_code(sierra_code: &str, output_path: &str) -> Result<()> {
         // Parse the program.
-        let program = ProgramParser::new().parse(&sierra_code).unwrap();
+        let program = ProgramParser::new().parse(sierra_code).unwrap();
         Compiler::compile_sierra_program_to_llvm(program, output_path)
     }
 
-    // TODO: Remove all the unwraps and handle errors properly.
-    /// Compiles a Sierra program to LLVM IR.
+    /// Compiles a Sierra `Program` representation to LLVM IR.
+    /// # Process overview
+    /// 1. Create an LLVM context, builder and module.
+    /// 2. Instantiate variables map.
+    /// 3. Process the program type declarations.
+    /// 4. Process the core library functions.
+    /// 5. Process the program statements.
+    /// 6. Finalize compilation and write the LLVM IR to a file.
     /// # Arguments
     /// * `program` - The Sierra program to compile.
     /// * `output_path` - The path to the output LLVM IR file.
@@ -49,6 +68,24 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
+    /// # Example
+    /// ```rust
+    /// use sierra::ProgramParser;
+    /// use shenlong_core::sierra::llvm_compiler::Compiler;
+    /// use std::fs;
+    ///
+    /// let sierra_program_path = "examples/program.sierra";
+    /// let llvm_ir_path = "examples/program.ll";
+    ///
+    /// // TODO: Find a way to make doc tests pass.
+    /// // Read the program from the file.
+    /// // let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
+    /// // Parse the program.
+    /// // let program = ProgramParser::new().parse(&sierra_code).unwrap();
+    /// // Compile the program to LLVM IR.
+    /// // let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
+    /// // Check the result.
+    /// ```
     pub fn compile_sierra_program_to_llvm(program: Program, output_path: &str) -> Result<()> {
         // Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
@@ -87,6 +124,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Process types in the Sierra program.
+    /// For each type declaration in the Sierra program, create a corresponding type in the LLVM context.
     fn process_types(&mut self) -> Result<()> {
         debug!("processing types");
         self.program
@@ -268,6 +306,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Finalize the compilation.
+    /// This includes verifying the module and writing it to the output path.
     fn finalize_compilation(&mut self) -> Result<()> {
         debug!("finalizing compilation");
         // Ensure that the current module is valid
