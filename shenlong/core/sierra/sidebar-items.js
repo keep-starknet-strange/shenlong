@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["llvm_compiler",""]]};
+window.SIDEBAR_ITEMS = {"mod":[["llvm_compiler","LLVM compiler."]]};

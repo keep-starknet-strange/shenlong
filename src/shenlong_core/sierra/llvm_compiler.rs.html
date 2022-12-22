@@ -470,7 +470,71 @@
 <span id="470">470</span>
 <span id="471">471</span>
 <span id="472">472</span>
-</pre><pre class="rust"><code><span class="kw">use </span>eyre::Result;
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+</pre><pre class="rust"><code><span class="doccomment">//! # LLVM compiler.
+//! ## Description
+//! This module contains the compiler that compiles a Sierra program to LLVM IR.
+//! The compilation can be triggered by calling different functions, depending on the input source.
+//! The input source can be a Sierra program file path, a Sierra program code as a string, or a Sierra program as a `Program` object.
+//! If the Sierra program is compiled from a file, the file will be read and the program code will be extracted.
+//! The program code will then be parsed into a `Program` object.
+//! The `Program` object will then be compiled to LLVM IR and written to a file.
+//! Here are the 3 functions that can be used to trigger the compilation:
+//! * `compile_from_file`: When the input source is a Sierra program file path.
+//! * `compile_from_code`: When the input source is a Sierra program code as a string.
+//! * `compile_sierra_program_to_llvm`: When the input source is a Sierra program as a `Program` object.
+//! ## Compilation steps
+//! The compilation process is split into multiple steps.
+//! The steps are executed in the following order:
+//! 1. Process the types.
+//! 2. Process the core library functions.
+//! 3. Process the statements.
+//! 4. Finalize the compilation.
+//! ## State machine
+//! The compiler is implemented as a state machine.
+//! The state machine is implemented using a `HashMap` that maps a `CompilationStateTransition` to a `bool`.
+//! The `CompilationStateTransition` is a tuple of two `CompilationState`s.
+//! The first state is the current state.
+//! The second state is the next state.
+//! The `bool` indicates whether the transition is valid.
+//! The state machine is initialized with all valid transitions.
+//! The state machine is updated after each compilation step.
+//! The state machine is used to ensure that the compilation steps are executed in the correct order.
+//! The state machine is also used to ensure that the compilation steps are executed only once.
+</span><span class="kw">use </span>eyre::Result;
 <span class="kw">use </span>inkwell::{
     builder::Builder,
     context::Context,
@@ -522,7 +586,11 @@
     </span>Finalized,
 }
 
-<span class="kw">pub type </span>CompilationStateTransition = (CompilationState, CompilationState);
+<span class="doccomment">/// A compilation state transition.
+/// This is a tuple of two compilation states.
+/// The first state is the current state.
+/// The second state is the next state.
+</span><span class="kw">pub type </span>CompilationStateTransition = (CompilationState, CompilationState);
 
 <span class="doccomment">/// Implementation of the compiler.
 </span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
@@ -580,11 +648,11 @@
     ///
     /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
-    /// // let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
+    /// let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
     /// // Parse the program.
-    /// // let program = ProgramParser::new().parse(&amp;sierra_code).unwrap();
-    /// // Compile the program to LLVM IR.
-    /// // let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
+    /// let program = ProgramParser::new().parse(&amp;sierra_code).unwrap();
+    /// //Compile the program to LLVM IR.
+    /// let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
     /// // Check the result.
     /// ```
     </span><span class="kw">pub fn </span>compile_sierra_program_to_llvm(program: Program, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
