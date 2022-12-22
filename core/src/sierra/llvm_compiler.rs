@@ -1,3 +1,33 @@
+//! # LLVM compiler.
+//! ## Description
+//! This module contains the compiler that compiles a Sierra program to LLVM IR.
+//! The compilation can be triggered by calling different functions, depending on the input source.
+//! The input source can be a Sierra program file path, a Sierra program code as a string, or a Sierra program as a `Program` object.
+//! If the Sierra program is compiled from a file, the file will be read and the program code will be extracted.
+//! The program code will then be parsed into a `Program` object.
+//! The `Program` object will then be compiled to LLVM IR and written to a file.
+//! Here are the 3 functions that can be used to trigger the compilation:
+//! * `compile_from_file`: When the input source is a Sierra program file path.
+//! * `compile_from_code`: When the input source is a Sierra program code as a string.
+//! * `compile_sierra_program_to_llvm`: When the input source is a Sierra program as a `Program` object.
+//! ## Compilation steps
+//! The compilation process is split into multiple steps.
+//! The steps are executed in the following order:
+//! 1. Process the types.
+//! 2. Process the core library functions.
+//! 3. Process the statements.
+//! 4. Finalize the compilation.
+//! ## State machine
+//! The compiler is implemented as a state machine.
+//! The state machine is implemented using a `HashMap` that maps a `CompilationStateTransition` to a `bool`.
+//! The `CompilationStateTransition` is a tuple of two `CompilationState`s.
+//! The first state is the current state.
+//! The second state is the next state.
+//! The `bool` indicates whether the transition is valid.
+//! The state machine is initialized with all valid transitions.
+//! The state machine is updated after each compilation step.
+//! The state machine is used to ensure that the compilation steps are executed in the correct order.
+//! The state machine is also used to ensure that the compilation steps are executed only once.
 use eyre::Result;
 use inkwell::{
     builder::Builder,
@@ -50,6 +80,10 @@ pub enum CompilationState {
     Finalized,
 }
 
+/// A compilation state transition.
+/// This is a tuple of two compilation states.
+/// The first state is the current state.
+/// The second state is the next state.
 pub type CompilationStateTransition = (CompilationState, CompilationState);
 
 /// Implementation of the compiler.
@@ -108,11 +142,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
-    /// // let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
+    /// let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
     /// // Parse the program.
-    /// // let program = ProgramParser::new().parse(&sierra_code).unwrap();
-    /// // Compile the program to LLVM IR.
-    /// // let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
+    /// let program = ProgramParser::new().parse(&sierra_code).unwrap();
+    /// //Compile the program to LLVM IR.
+    /// let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
     /// // Check the result.
     /// ```
     pub fn compile_sierra_program_to_llvm(program: Program, output_path: &str) -> Result<()> {
