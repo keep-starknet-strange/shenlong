@@ -21,7 +21,36 @@ pub struct Compiler<'a, 'ctx> {
     pub module: &'a Module<'ctx>,
     pub variables: HashMap<String, Option<PointerValue<'ctx>>>,
     pub output_path: &'a str,
+    pub state: CompilationState,
+    pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
 }
+
+/// Compilation state.
+/// This is used to keep track of the current compilation state.
+/// The reason is that the compilation process is split into multiple steps.
+/// The state will be used to implement a state machine that will keep track of the current compilation step.
+/// Goal is to ensure consistency in the order of the compilation steps.
+/// This is important because the compilation steps are not independent.
+/// For example, the type declarations must be processed before the statements.
+/// The state machine will ensure that the compilation steps are executed in the correct order.
+/// The state machine will also ensure that the compilation steps are executed only once.
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+pub enum CompilationState {
+    /// The compilation has not started yet.
+    NotStarted,
+    /// The types have been processed.
+    TypesProcessed,
+    /// The core library functions have been processed.
+    CoreLibFunctionsProcessed,
+    /// The statements have been processed.
+    StatementsProcessed,
+    /// The compilation has been finalized.
+    /// This is the final state.
+    /// The compilation process will not continue after this state.
+    Finalized,
+}
+
+pub type CompilationStateTransition = (CompilationState, CompilationState);
 
 /// Implementation of the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -100,6 +129,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Instantiate variables map.
         let variables: HashMap<String, Option<PointerValue>> = HashMap::new();
 
+        // Create a map of valid state transitions.
+        let valid_state_transitions = Compiler::init_state_transitions();
+
         // Create a new compiler.
         let mut compiler = Compiler {
             program: &program,
@@ -108,6 +140,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             module: &module,
             variables,
             output_path,
+            state: CompilationState::NotStarted,
+            valid_state_transitions,
         };
 
         // Process the types in the Sierra program.
@@ -127,6 +161,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// For each type declaration in the Sierra program, create a corresponding type in the LLVM context.
     fn process_types(&mut self) -> Result<()> {
         debug!("processing types");
+        // Check that the current state is valid.
+        self.check_state(&CompilationState::NotStarted)?;
         self.program
             .type_declarations
             .iter()
@@ -137,13 +173,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let _i32_fn_type = i32_type.fn_type(&[], false);
                 // TODO store in context
             });
-        Ok(())
+        // Move to the next state.
+        self.move_to(CompilationState::TypesProcessed)
     }
 
     /// Process core library functions in the Sierra program.
     fn process_core_lib_functions(&mut self) -> Result<()> {
         debug!("processing core lib functions");
-        // Iterate over the libfunc declarations in the Sierra program
+        // Check that the current state is valid.
+        self.check_state(&CompilationState::TypesProcessed)?;
+        // Iterate over the libfunc declarations in the Sierra program.
         self.program
             .libfunc_declarations
             .iter()
@@ -151,9 +190,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // TODO: Implement this.
                 // For now this is a stub implementation that works for one specific test program.
 
-                // Create an i128 type and function type in the LLVM context
+                // Create an i128 type and function type in the LLVM context.
                 // The types must be created and stored in the global context before they can be used.
-                // TODO: implement in `process_types`
+                // TODO: implement in `process_types`.
                 let i32_type = self.context.i32_type();
                 let fn_type = i32_type.fn_type(&[], false);
 
@@ -222,12 +261,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     None => println!("no name"),
                 }
             });
-        Ok(())
+        // Move to the next state.
+        self.move_to(CompilationState::CoreLibFunctionsProcessed)
     }
 
     /// Process statements in the Sierra program.
     fn process_statements(&mut self) -> Result<()> {
         debug!("processing statements");
+        // Check that the current state is valid.
+        self.check_state(&CompilationState::CoreLibFunctionsProcessed)?;
         // This section is very specific to the test program.
         // TODO: Think about how to implement this in a more general way.
         // Init param var
@@ -302,13 +344,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
             }
         }
-        Ok(())
+        // Move to the next state.
+        self.move_to(CompilationState::StatementsProcessed)
     }
 
     /// Finalize the compilation.
     /// This includes verifying the module and writing it to the output path.
     fn finalize_compilation(&mut self) -> Result<()> {
         debug!("finalizing compilation");
+        // Check that the current state is valid.
+        self.check_state(&CompilationState::StatementsProcessed)?;
         // Ensure that the current module is valid
         self.module
             .verify()
@@ -323,6 +368,105 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Write the module to the output path.
         self.module
             .print_to_file(output_path)
-            .map_err(|e| eyre::eyre!(e.to_string()))
+            .map_err(|e| eyre::eyre!(e.to_string()))?;
+        // Move to the next state.
+        self.move_to(CompilationState::Finalized)
+    }
+
+    /// Check if the compilation is in a valid state.
+    /// If the compilation is not in a valid state, return an error.
+    fn check_state(&self, expected_state: &CompilationState) -> Result<()> {
+        if self.state() != expected_state {
+            Err(eyre::eyre!("compilation is not in a valid state"))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Move the compilation state to the next state.
+    /// # Arguments
+    /// * `state` - The new compilation state.
+    /// # Errors
+    /// If the transition is not valid, return an error.
+    fn move_to(&mut self, state: CompilationState) -> Result<()> {
+        Compiler::is_valid_transition(
+            (self.state().clone(), state.clone()),
+            &self.valid_state_transitions,
+        )?;
+        self.state = state;
+        Ok(())
+    }
+
+    /// Return if the state transition is valid.
+    /// # Arguments
+    /// * `transition` - The state transition.
+    /// * `valid_transitions` - The valid state transitions.
+    /// # Errors
+    /// If the transition is not valid, return an error.
+    fn is_valid_transition(
+        transition: CompilationStateTransition,
+        valid_transitions: &HashMap<(CompilationState, CompilationState), bool>,
+    ) -> Result<()> {
+        match valid_transitions.get(&transition) {
+            Some(valid) => match valid {
+                true => Ok(()),
+                false => Err(Compiler::err_invalid_state_transition(transition)),
+            },
+            None => Err(Compiler::err_invalid_state_transition(transition)),
+        }
+    }
+
+    /// Get the current compilation state.
+    pub fn state(&self) -> &CompilationState {
+        &self.state
+    }
+
+    /// Initialize valid state transitions.
+    fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
+        HashMap::from([
+            (
+                (
+                    CompilationState::NotStarted,
+                    CompilationState::TypesProcessed,
+                ),
+                true,
+            ),
+            (
+                (
+                    CompilationState::TypesProcessed,
+                    CompilationState::CoreLibFunctionsProcessed,
+                ),
+                true,
+            ),
+            (
+                (
+                    CompilationState::CoreLibFunctionsProcessed,
+                    CompilationState::StatementsProcessed,
+                ),
+                true,
+            ),
+            (
+                (
+                    CompilationState::StatementsProcessed,
+                    CompilationState::Finalized,
+                ),
+                true,
+            ),
+        ])
+    }
+
+    /// Return an error for an invalid state transition.
+    /// # Arguments
+    /// * `invalid_transition` - The invalid state transition.
+    /// # Errors
+    /// Always returns an error.
+    fn err_invalid_state_transition(
+        invalid_transition: CompilationStateTransition,
+    ) -> eyre::Report {
+        eyre::eyre!(
+            "invalid state transition: {:?} -> {:?}",
+            invalid_transition.0,
+            invalid_transition.1
+        )
     }
 }
