@@ -22,7 +22,7 @@ type fib_struct::fib_struct::FibResult = Struct<ut@fib_struct::fib_struct::FibRe
 
 Unit is considered as an empty  struct: `type Unit = Struct<ut@Tuple>;`
 Ut stands for user type which means that it has been declared by the user and is
-not part of the core lib
+not part of the sierra core lib
 
 #### Boxes
 
@@ -100,6 +100,8 @@ Panics are declared with the types and seem to be added by the compiler while
 encountering any `panic` function call. The data displayed by panic seems to be
 a felt array (most likely to display a long string).
 The panic data type is a regular enum
+no actual panic happens at the sierra level.
+the sierra code manually propagates the Cairo1 level errors.
 
 Sierra syntax
 
@@ -130,14 +132,14 @@ type GasBuiltin = GasBuiltin;
 
 #### Booleans
 
-I assume they are still felts 0/1 but not sure why it's stored in this
-`type core::bool = Enum<ut@core::bool, Unit, Unit>;` enum
+bools are exactly an enum with two options, with no data contained in the variants.
+this does translate to felt:0 or felt:1
+`type core::bool = Enum<ut@core::bool, Unit, Unit>;`
 
 ### lib functions
 
-The lib functions are all the functions that will be called during the execution.
-It contains all the functions that will be called during the execution even the
-functions defined by the user.
+libfuncs are functions that we "somehow" know how to translate to casm code.
+one of the libfuncs is "function call" which knows how to call a user function.
 
 Felt and u128 literals are functions for sure. For now
 it seems like they're the only type that can be literals.
