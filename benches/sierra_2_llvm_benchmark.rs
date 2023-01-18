@@ -1,5 +1,4 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-
 use shenlong_core::sierra::llvm_compiler::Compiler;
 use tempdir::TempDir;
 

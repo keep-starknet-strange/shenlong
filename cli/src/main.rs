@@ -3,7 +3,8 @@ use std::time::Instant;
 use clap::Parser;
 use eyre::Result;
 use owo_colors::{DynColors, OwoColorize};
-use shenlong_cli::{cli::Command, emoji};
+use shenlong_cli::cli::Command;
+use shenlong_cli::emoji;
 
 const SHENLONG: &str = r#"
 ███████╗██╗  ██╗███████╗███╗   ██╗██╗      ██████╗ ███╗   ██╗ ██████╗ 
@@ -28,7 +29,7 @@ const CAIRO_2_LLVM: &str = r#"
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("\n\n\n\n\n{}", SHENLONG.fg_rgb::<0x00, 0xE6, 0x76>().bold());
-    //println!("\n\n{}", CAIRO_2_LLVM.fg_rgb::<0x00, 0xE6, 0x76>().bold());
+    // println!("\n\n{}", CAIRO_2_LLVM.fg_rgb::<0x00, 0xE6, 0x76>().bold());
 
     let colors: [DynColors; 10] = [
         "#B80A41", "#4E4BA8", "#6EB122", "#DAAC06", "#00938A", "#E23838", "#B80A41", "#4E4BA8",
@@ -52,10 +53,6 @@ async fn main() -> Result<()> {
 
     // Run the command.
     cli.run().await?;
-    println!(
-        "{} Done in {} milliseconds.",
-        emoji::SPARKLE,
-        started.elapsed().as_millis()
-    );
+    println!("{} Done in {} milliseconds.", emoji::SPARKLE, started.elapsed().as_millis());
     Ok(())
 }

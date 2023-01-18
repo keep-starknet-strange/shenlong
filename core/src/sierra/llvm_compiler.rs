@@ -2,14 +2,15 @@
 //! ## Description
 //! This module contains the compiler that compiles a Sierra program to LLVM IR.
 //! The compilation can be triggered by calling different functions, depending on the input source.
-//! The input source can be a Sierra program file path, a Sierra program code as a string, or a Sierra program as a `Program` object.
-//! If the Sierra program is compiled from a file, the file will be read and the program code will be extracted.
-//! The program code will then be parsed into a `Program` object.
-//! The `Program` object will then be compiled to LLVM IR and written to a file.
+//! The input source can be a Sierra program file path, a Sierra program code as a string, or a
+//! Sierra program as a `Program` object. If the Sierra program is compiled from a file, the file
+//! will be read and the program code will be extracted. The program code will then be parsed into a
+//! `Program` object. The `Program` object will then be compiled to LLVM IR and written to a file.
 //! Here are the 3 functions that can be used to trigger the compilation:
 //! * `compile_from_file`: When the input source is a Sierra program file path.
 //! * `compile_from_code`: When the input source is a Sierra program code as a string.
-//! * `compile_sierra_program_to_llvm`: When the input source is a Sierra program as a `Program` object.
+//! * `compile_sierra_program_to_llvm`: When the input source is a Sierra program as a `Program`
+//!   object.
 //! ## Compilation steps
 //! The compilation process is split into multiple steps.
 //! The steps are executed in the following order:
@@ -19,28 +20,28 @@
 //! 4. Finalize the compilation.
 //! ## State machine
 //! The compiler is implemented as a state machine.
-//! The state machine is implemented using a `HashMap` that maps a `CompilationStateTransition` to a `bool`.
-//! The `CompilationStateTransition` is a tuple of two `CompilationState`s.
+//! The state machine is implemented using a `HashMap` that maps a `CompilationStateTransition` to a
+//! `bool`. The `CompilationStateTransition` is a tuple of two `CompilationState`s.
 //! The first state is the current state.
 //! The second state is the next state.
 //! The `bool` indicates whether the transition is valid.
 //! The state machine is initialized with all valid transitions.
 //! The state machine is updated after each compilation step.
-//! The state machine is used to ensure that the compilation steps are executed in the correct order.
-//! The state machine is also used to ensure that the compilation steps are executed only once.
+//! The state machine is used to ensure that the compilation steps are executed in the correct
+//! order. The state machine is also used to ensure that the compilation steps are executed only
+//! once.
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
+
 use eyre::Result;
-use inkwell::{
-    builder::Builder,
-    context::Context,
-    module::Module,
-    values::{BasicMetadataValueEnum, PointerValue},
-};
+use inkwell::builder::Builder;
+use inkwell::context::Context;
+use inkwell::module::Module;
+use inkwell::values::{BasicMetadataValueEnum, PointerValue};
 use log::debug;
-use sierra::{
-    program::{GenericArg, Program, StatementIdx},
-    ProgramParser,
-};
-use std::{collections::HashMap, fs, path::Path};
+use sierra::program::{GenericArg, Program, StatementIdx};
+use sierra::ProgramParser;
 
 /// Compiler is the main entry point for the LLVM backend.
 /// It is responsible for compiling a Sierra program to LLVM IR.
@@ -58,8 +59,8 @@ pub struct Compiler<'a, 'ctx> {
 /// Compilation state.
 /// This is used to keep track of the current compilation state.
 /// The reason is that the compilation process is split into multiple steps.
-/// The state will be used to implement a state machine that will keep track of the current compilation step.
-/// Goal is to ensure consistency in the order of the compilation steps.
+/// The state will be used to implement a state machine that will keep track of the current
+/// compilation step. Goal is to ensure consistency in the order of the compilation steps.
 /// This is important because the compilation steps are not independent.
 /// For example, the type declarations must be processed before the statements.
 /// The state machine will ensure that the compilation steps are executed in the correct order.
@@ -133,9 +134,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// If the compilation fails.
     /// # Example
     /// ```rust
-    /// use sierra::ProgramParser;
-    /// use shenlong_core::sierra::llvm_compiler::Compiler;
     /// use std::fs;
+    ///
+    /// use shenlong_core::sierra::llvm_compiler::Compiler;
+    /// use sierra::ProgramParser;
     ///
     /// let sierra_program_path = "examples/program.sierra";
     /// let llvm_ir_path = "examples/program.ll";
@@ -145,14 +147,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
     /// // Parse the program.
     /// let program = ProgramParser::new().parse(&sierra_code).unwrap();
-    /// //Compile the program to LLVM IR.
+    /// // Compile the program to LLVM IR.
     /// let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
     /// // Check the result.
     /// ```
     pub fn compile_sierra_program_to_llvm(program: Program, output_path: &str) -> Result<()> {
         // Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
-        // Context is an opaque object that owns a lot of core LLVM data structures, such as the type and constant value tables
+        // Context is an opaque object that owns a lot of core LLVM data structures, such as the
+        // type and constant value tables
         let context = inkwell::context::Context::create();
         // Builder is a helper object that makes it easy to create LLVM instructions.
         let builder = context.create_builder();
@@ -192,21 +195,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Process types in the Sierra program.
-    /// For each type declaration in the Sierra program, create a corresponding type in the LLVM context.
+    /// For each type declaration in the Sierra program, create a corresponding type in the LLVM
+    /// context.
     fn process_types(&mut self) -> Result<()> {
         debug!("processing types");
         // Check that the current state is valid.
         self.check_state(&CompilationState::NotStarted)?;
-        self.program
-            .type_declarations
-            .iter()
-            .for_each(|_type_decl| {
-                // TODO: Implement this.
-                // For now this is a stub implementation that works for one specific test program.
-                let i32_type = self.context.i32_type();
-                let _i32_fn_type = i32_type.fn_type(&[], false);
-                // TODO store in context
-            });
+        self.program.type_declarations.iter().for_each(|_type_decl| {
+            // TODO: Implement this.
+            // For now this is a stub implementation that works for one specific test program.
+            let i32_type = self.context.i32_type();
+            let _i32_fn_type = i32_type.fn_type(&[], false);
+            // TODO store in context
+        });
         // Move to the next state.
         self.move_to(CompilationState::TypesProcessed)
     }
@@ -217,49 +218,24 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::TypesProcessed)?;
         // Iterate over the libfunc declarations in the Sierra program.
-        self.program
-            .libfunc_declarations
-            .iter()
-            .for_each(|libfunc| {
-                // TODO: Implement this.
-                // For now this is a stub implementation that works for one specific test program.
+        self.program.libfunc_declarations.iter().for_each(|libfunc| {
+            // TODO: Implement this.
+            // For now this is a stub implementation that works for one specific test program.
 
-                // Create an i128 type and function type in the LLVM context.
-                // The types must be created and stored in the global context before they can be used.
-                // TODO: implement in `process_types`.
-                let i32_type = self.context.i32_type();
-                let fn_type = i32_type.fn_type(&[], false);
+            // Create an i128 type and function type in the LLVM context.
+            // The types must be created and stored in the global context before they can be used.
+            // TODO: implement in `process_types`.
+            let i32_type = self.context.i32_type();
+            let fn_type = i32_type.fn_type(&[], false);
 
-                match &libfunc.long_id.generic_id.debug_name {
-                    Some(name) => {
-                        // If the libfunc declaration has a debug name that contains "const" and has at
-                        // least one generic argument, create a new function in the LLVM
-                        // module with the libfunc's ID as the name and set the function's return value
-                        // to the value of the first generic argument.
-                        if name.contains("const") && !libfunc.long_id.generic_args.is_empty() {
-                            if let GenericArg::Value(value) =
-                                libfunc.long_id.generic_args[0].clone()
-                            {
-                                let function = self.module.add_function(
-                                    format!("a_{}", libfunc.id.id).as_str(),
-                                    fn_type,
-                                    None,
-                                );
-                                let fn_temp = self.context.append_basic_block(function, "entry");
-                                self.builder.position_at_end(fn_temp);
-                                self.builder.build_return(Some(
-                                    &self
-                                        .context
-                                        .i32_type()
-                                        .const_int(value.to_u64_digits().1[0], false),
-                                ));
-                            }
-                        }
-                        // If the libfunc declaration has a debug name of "felt_add" create a llvm ir
-                        // add function.
-                        else if name == "felt_add" {
-                            let fn_type =
-                                i32_type.fn_type(&[i32_type.into(), i32_type.into()], false);
+            match &libfunc.long_id.generic_id.debug_name {
+                Some(name) => {
+                    // If the libfunc declaration has a debug name that contains "const" and has at
+                    // least one generic argument, create a new function in the LLVM
+                    // module with the libfunc's ID as the name and set the function's return value
+                    // to the value of the first generic argument.
+                    if name.contains("const") && !libfunc.long_id.generic_args.is_empty() {
+                        if let GenericArg::Value(value) = libfunc.long_id.generic_args[0].clone() {
                             let function = self.module.add_function(
                                 format!("a_{}", libfunc.id.id).as_str(),
                                 fn_type,
@@ -267,34 +243,52 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             );
                             let fn_temp = self.context.append_basic_block(function, "entry");
                             self.builder.position_at_end(fn_temp);
-
-                            // Add the two arguments and store the result in a temporary value
-                            let sum = self.builder.build_int_add(
-                                function.get_first_param().unwrap().into_int_value(),
-                                function.get_last_param().unwrap().into_int_value(),
-                                "sum",
-                            );
-
-                            // Return the result
-                            self.builder.build_return(Some(&sum));
-                        } else if name == "rename" {
-                            let void = self.context.i32_type().fn_type(&[i32_type.into()], false);
-
-                            let function = self.module.add_function(
-                                format!("a_{}", libfunc.id.id).as_str(),
-                                void,
-                                None,
-                            );
-                            let fn_temp = self.context.append_basic_block(function, "entry");
-                            self.builder.position_at_end(fn_temp);
-                            self.builder
-                                .build_return(Some(&function.get_first_param().unwrap()));
+                            self.builder.build_return(Some(
+                                &self
+                                    .context
+                                    .i32_type()
+                                    .const_int(value.to_u64_digits().1[0], false),
+                            ));
                         }
                     }
-                    // If the libfunc declaration has no debug name, print "no name".
-                    None => println!("no name"),
+                    // If the libfunc declaration has a debug name of "felt_add" create a llvm ir
+                    // add function.
+                    else if name == "felt_add" {
+                        let fn_type = i32_type.fn_type(&[i32_type.into(), i32_type.into()], false);
+                        let function = self.module.add_function(
+                            format!("a_{}", libfunc.id.id).as_str(),
+                            fn_type,
+                            None,
+                        );
+                        let fn_temp = self.context.append_basic_block(function, "entry");
+                        self.builder.position_at_end(fn_temp);
+
+                        // Add the two arguments and store the result in a temporary value
+                        let sum = self.builder.build_int_add(
+                            function.get_first_param().unwrap().into_int_value(),
+                            function.get_last_param().unwrap().into_int_value(),
+                            "sum",
+                        );
+
+                        // Return the result
+                        self.builder.build_return(Some(&sum));
+                    } else if name == "rename" {
+                        let void = self.context.i32_type().fn_type(&[i32_type.into()], false);
+
+                        let function = self.module.add_function(
+                            format!("a_{}", libfunc.id.id).as_str(),
+                            void,
+                            None,
+                        );
+                        let fn_temp = self.context.append_basic_block(function, "entry");
+                        self.builder.position_at_end(fn_temp);
+                        self.builder.build_return(Some(&function.get_first_param().unwrap()));
+                    }
                 }
-            });
+                // If the libfunc declaration has no debug name, print "no name".
+                None => println!("no name"),
+            }
+        });
         // Move to the next state.
         self.move_to(CompilationState::CoreLibFunctionsProcessed)
     }
@@ -366,15 +360,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
                 // If the statement is a return, print the return.
                 sierra::program::Statement::Return(ret) => {
-                    self.builder.build_return(Some(
-                        &self.builder.build_load(
-                            self.variables
-                                .get(ret[0].id.to_string().as_str())
-                                .unwrap()
-                                .unwrap(),
-                            ret[0].id.to_string().as_str(),
-                        ),
-                    ));
+                    self.builder.build_return(Some(&self.builder.build_load(
+                        self.variables.get(ret[0].id.to_string().as_str()).unwrap().unwrap(),
+                        ret[0].id.to_string().as_str(),
+                    )));
                 }
             }
         }
@@ -389,20 +378,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::StatementsProcessed)?;
         // Ensure that the current module is valid
-        self.module
-            .verify()
-            .map_err(|e| eyre::eyre!(e.to_string()))?;
+        self.module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
         // Ensure output path is valid and exists.
         let output_path = Path::new(self.output_path);
-        let parent = output_path
-            .parent()
-            .ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
+        let parent =
+            output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
         // Recursively create the output path parent directories if they don't exist.
         fs::create_dir_all(parent)?;
         // Write the module to the output path.
-        self.module
-            .print_to_file(output_path)
-            .map_err(|e| eyre::eyre!(e.to_string()))?;
+        self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
         // Move to the next state.
         self.move_to(CompilationState::Finalized)
     }
@@ -458,20 +442,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Initialize valid state transitions.
     fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
         HashMap::from([
-            (
-                (
-                    CompilationState::NotStarted,
-                    CompilationState::TypesProcessed,
-                ),
-                true,
-            ),
-            (
-                (
-                    CompilationState::TypesProcessed,
-                    CompilationState::CoreLibFunctionsProcessed,
-                ),
-                true,
-            ),
+            ((CompilationState::NotStarted, CompilationState::TypesProcessed), true),
+            ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), true),
             (
                 (
                     CompilationState::CoreLibFunctionsProcessed,
@@ -479,13 +451,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 ),
                 true,
             ),
-            (
-                (
-                    CompilationState::StatementsProcessed,
-                    CompilationState::Finalized,
-                ),
-                true,
-            ),
+            ((CompilationState::StatementsProcessed, CompilationState::Finalized), true),
         ])
     }
 
