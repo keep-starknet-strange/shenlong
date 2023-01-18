@@ -2,28 +2,29 @@
 //!
 //! Specifically, it enables you to compile Sierra code to LLVM IR.
 //!
-//! Sierra is the intermediate representation of Cairo, ensuring that the resulting Cairo assembly is always valid and provable.
+//! Sierra is the intermediate representation of Cairo, ensuring that the resulting Cairo assembly
+//! is always valid and provable.
 //!
 //! The flow of the compilation is as follows:
 //!
 //! ```text
-//!+-----------------------+
-//!|                       |
-//!|     Cairo code        |
-//!|                       |
-//!+----------+------------+
+//! +-----------------------+
+//! |                       |
+//! |     Cairo code        |
+//! |                       |
+//! +----------+------------+
 //!           |
 //!           |
-//!+----------+------------+
-//!|                       |
-//!|      Sierra           |
-//!+----------+------------+
+//! +----------+------------+
+//! |                       |
+//! |      Sierra           |
+//! +----------+------------+
 //!           |
 //!           |
-//!+----------v------------+
-//!|       LLVM IR         |
-//!|                       |
-//!+-----------------------+
+//! +----------v------------+
+//! |       LLVM IR         |
+//! |                       |
+//! +-----------------------+
 //! ```
 
 /// The core library of Shenlong compiler.

@@ -1,7 +1,8 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 use eyre::Result;
 use shenlong_core::sierra::llvm_compiler;
-use std::path::PathBuf;
 
 use crate::emoji;
 
@@ -27,20 +28,14 @@ impl Command {
     pub async fn run(self) -> Result<()> {
         match self.command {
             Commands::Sierra(sierra_commands) => match sierra_commands.command {
-                SierraSubCommands::CompileToLlvm {
-                    program_path,
-                    output_path,
-                } => {
+                SierraSubCommands::CompileToLlvm { program_path, output_path } => {
                     // Compile the program.
                     // TODO: Handle the output path properly.
                     llvm_compiler::Compiler::compile_from_file(
                         &program_path,
                         &output_path.unwrap(),
                     )?;
-                    println!(
-                        "{} Program compiled successfully.",
-                        emoji::CHECK_MARK_BUTTON
-                    );
+                    println!("{} Program compiled successfully.", emoji::CHECK_MARK_BUTTON);
                     Ok(())
                 }
             },
