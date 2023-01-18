@@ -6,6 +6,10 @@
 
 For now only numeric and boolean types are supported
 
+### NonZero
+
+This type is only useful in sierra to make sure that everything is provable
+
 #### Structs
 
 Cairo syntax
@@ -145,6 +149,13 @@ Felt and u128 literals are functions for sure. For now
 it seems like they're the only type that can be literals.
 
 locals and tempvars are managed by the store_temp and store_local functions.
+
+* `branch_align`: in case of an if/else ap needs to be at the same value at the
+end of each branch
+* `drop`: "garbage collect" a data object
+* `store_temp`: store value in a tempvar
+* `jump`: jumps somewhere
+* `rename`: rename a variable (useful for debug infos ?)
 
 ### list of instructions
 
