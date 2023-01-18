@@ -86,6 +86,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfb24e866b15a1af2a1b663f10c6b6b8f397a84aadb828f12e5b289ec23a3a3c"
 
 [[package]]
+name = "cairo-lang-sierra"
+version = "0.1.0"
+source = "git+https://github.com/starkware-libs/cairo?branch=main#cc654d7fb49cd8a02b1fe680d43a0746c5f596fc"
+dependencies = [
+ "cairo-lang-utils",
+ "const-fnv1a-hash",
+ "convert_case",
+ "derivative",
+ "itertools",
+ "lalrpop",
+ "lalrpop-util",
+ "num-bigint",
+ "num-traits",
+ "regex",
+ "salsa",
+ "serde",
+ "smol_str",
+ "thiserror",
+]
+
+[[package]]
+name = "cairo-lang-utils"
+version = "0.1.0"
+source = "git+https://github.com/starkware-libs/cairo?branch=main#cc654d7fb49cd8a02b1fe680d43a0746c5f596fc"
+dependencies = [
+ "chrono",
+ "env_logger 0.9.3",
+ "indexmap",
+ "itertools",
+ "log",
+]
+
+[[package]]
 name = "cargo-husky"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -377,6 +410,17 @@ name = "cxxbridge-macro"
 version = "1.0.85"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e7e2adeb6a0d4a282e581096b06e1791532b7d576dcde5ccd9382acf55db8e6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "derivative"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1311,32 +1355,12 @@ dependencies = [
 name = "shenlong_core"
 version = "0.1.0"
 dependencies = [
+ "cairo-lang-sierra",
  "env_logger 0.10.0",
  "eyre",
  "inkwell",
  "log",
- "sierra",
  "tempdir",
-]
-
-[[package]]
-name = "sierra"
-version = "0.1.0"
-source = "git+https://github.com/starkware-libs/cairo#7796f5fa3373523445b934c560fe5ec0357ccc99"
-dependencies = [
- "const-fnv1a-hash",
- "convert_case",
- "itertools",
- "lalrpop",
- "lalrpop-util",
- "num-bigint",
- "num-traits",
- "regex",
- "salsa",
- "serde",
- "smol_str",
- "thiserror",
- "utils",
 ]
 
 [[package]]
@@ -1559,18 +1583,6 @@ name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
-
-[[package]]
-name = "utils"
-version = "0.1.0"
-source = "git+https://github.com/starkware-libs/cairo#7796f5fa3373523445b934c560fe5ec0357ccc99"
-dependencies = [
- "chrono",
- "env_logger 0.9.3",
- "indexmap",
- "itertools",
- "log",
-]
 
 [[package]]
 name = "version_check"

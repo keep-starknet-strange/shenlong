@@ -34,18 +34,19 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use eyre::Result;
+use cairo_lang_sierra::program::{GenericArg, Program, Statement, StatementIdx};
+use cairo_lang_sierra::ProgramParser;
+use eyre::{eyre, Result};
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
+use inkwell::types::AnyType;
 use inkwell::values::{BasicMetadataValueEnum, PointerValue};
 use log::debug;
-use sierra::program::{GenericArg, Program, StatementIdx};
-use sierra::ProgramParser;
 
 /// Compiler is the main entry point for the LLVM backend.
 /// It is responsible for compiling a Sierra program to LLVM IR.
-pub struct Compiler<'a, 'ctx> {
+pub struct Compiler<'ctx, 'a> {
     pub program: &'a Program,
     pub context: &'ctx Context,
     pub builder: &'a Builder<'ctx>,
@@ -54,6 +55,7 @@ pub struct Compiler<'a, 'ctx> {
     pub output_path: &'a str,
     pub state: CompilationState,
     pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
+    pub types: HashMap<&'ctx str, Box<dyn AnyType<'ctx> + 'ctx>>,
 }
 
 /// Compilation state.
@@ -165,6 +167,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Instantiate variables map.
         let variables: HashMap<String, Option<PointerValue>> = HashMap::new();
+        let types = HashMap::new();
 
         // Create a map of valid state transitions.
         let valid_state_transitions = Compiler::init_state_transitions();
@@ -179,6 +182,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             output_path,
             state: CompilationState::NotStarted,
             valid_state_transitions,
+            types,
         };
 
         // Process the types in the Sierra program.
@@ -199,15 +203,27 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// context.
     fn process_types(&mut self) -> Result<()> {
         debug!("processing types");
+
         // Check that the current state is valid.
         self.check_state(&CompilationState::NotStarted)?;
-        self.program.type_declarations.iter().for_each(|_type_decl| {
-            // TODO: Implement this.
-            // For now this is a stub implementation that works for one specific test program.
-            let i32_type = self.context.i32_type();
-            let _i32_fn_type = i32_type.fn_type(&[], false);
-            // TODO store in context
-        });
+        for type_declaration in self.program.type_declarations.iter() {
+            match &type_declaration.long_id.generic_id.debug_name {
+                Some(type_name) => match type_name.as_str() {
+                    "felt" => {
+                        self.types
+                            .insert("felt", Box::from(self.context.custom_width_int_type(252)));
+                    }
+                    "NonZero" => (),
+                    _ => println!("this is not a felt"),
+                },
+                _ => return Err(eyre!("No type name found")),
+            }
+            // // TODO: Implement this.
+            // // For now this is a stub implementation that works for one specific test program.
+            // let i32_type = self.context.i32_type();
+            // let _i32_fn_type = i32_type.fn_type(&[], false);
+            // // TODO store in context
+        }
         // Move to the next state.
         self.move_to(CompilationState::TypesProcessed)
     }
@@ -317,7 +333,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             let _statement_idx = StatementIdx(statement_id);
             match _statement {
                 // If the statement is an invocation, print the invocation.
-                sierra::program::Statement::Invocation(invocation) => {
+                Statement::Invocation(invocation) => {
                     if invocation.libfunc_id.id.to_string().as_str() != "3" {
                         let function = self
                             .module
@@ -359,7 +375,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     }
                 }
                 // If the statement is a return, print the return.
-                sierra::program::Statement::Return(ret) => {
+                Statement::Return(ret) => {
                     self.builder.build_return(Some(&self.builder.build_load(
                         self.variables.get(ret[0].id.to_string().as_str()).unwrap().unwrap(),
                         ret[0].id.to_string().as_str(),

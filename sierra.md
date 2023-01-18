@@ -150,12 +150,14 @@ it seems like they're the only type that can be literals.
 
 locals and tempvars are managed by the store_temp and store_local functions.
 
-* `branch_align`: in case of an if/else ap needs to be at the same value at the
+1. `branch_align`: in case of an if/else ap needs to be at the same value at the
 end of each branch
-* `drop`: "garbage collect" a data object
-* `store_temp`: store value in a tempvar
-* `jump`: jumps somewhere
-* `rename`: rename a variable (useful for debug infos ?)
+2. `drop`: "garbage collect" a data object
+3. `store_temp`: store value in a tempvar
+4. `jump`: jumps somewhere
+5. `rename`: rename a variable (useful for debug infos ?)
+6. `revoke_ap_tracking`: switches ap state from `Known` to `Unknown` to merge
+with a branch that has an unknown ap state
 
 ### list of instructions
 
