@@ -32,17 +32,19 @@
 //! once.
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+use std::hash::Hash;
 
-use cairo_lang_sierra::program::{GenericArg, Program, Statement, StatementIdx};
+use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra::ProgramParser;
 use eyre::{eyre, Result};
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
-use inkwell::types::AnyType;
-use inkwell::values::{BasicMetadataValueEnum, PointerValue};
+use inkwell::types::BasicType;
+use inkwell::values::PointerValue;
 use log::debug;
+
+use super::libfunc::LibfuncProcessor;
 
 /// Compiler is the main entry point for the LLVM backend.
 /// It is responsible for compiling a Sierra program to LLVM IR.
@@ -55,7 +57,8 @@ pub struct Compiler<'ctx, 'a> {
     pub output_path: &'a str,
     pub state: CompilationState,
     pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
-    pub types: HashMap<&'ctx str, Box<dyn AnyType<'ctx> + 'ctx>>,
+    pub types: HashMap<&'ctx str, Box<dyn BasicType<'ctx> + 'ctx>>,
+    pub libfunc_processors: HashMap<&'ctx str, Box<dyn LibfuncProcessor<'ctx> + 'ctx>>,
 }
 
 /// Compilation state.
@@ -168,6 +171,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Instantiate variables map.
         let variables: HashMap<String, Option<PointerValue>> = HashMap::new();
         let types = HashMap::new();
+        let libfunc_processors = HashMap::new();
 
         // Create a map of valid state transitions.
         let valid_state_transitions = Compiler::init_state_transitions();
@@ -183,8 +187,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             state: CompilationState::NotStarted,
             valid_state_transitions,
             types,
+            libfunc_processors,
         };
 
+        // compiler.prepare_libfunc_processor();
         // Process the types in the Sierra program.
         compiler.process_types()?;
 
@@ -198,6 +204,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         compiler.finalize_compilation()
     }
 
+    // fn prepare_libfunc_processor(&mut self) -> Result<()> {
+    //     let llvm_type = self.context.custom_width_int_type(252).as_basic_type_enum();
+    //     let boxed1: Box<dyn BasicType<'ctx> + 'ctx> = Box::from(llvm_type);
+    //     let add = Add::new(boxed1, "felt_add");
+    //     let boxed: Box<dyn LibfuncProcessor<'ctx> + 'ctx> = Box::from(add);
+    //     self.libfunc_processors.insert("felt_add", boxed);
+    //     Ok(())
+    // }
+
     /// Process types in the Sierra program.
     /// For each type declaration in the Sierra program, create a corresponding type in the LLVM
     /// context.
@@ -207,6 +222,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::NotStarted)?;
         for type_declaration in self.program.type_declarations.iter() {
+            // Matching on the long id because it'll always ? have a debug name (see
+            // fib.weird.sierra)
             match &type_declaration.long_id.generic_id.debug_name {
                 Some(type_name) => match type_name.as_str() {
                     "felt" => {
@@ -218,11 +235,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 },
                 _ => return Err(eyre!("No type name found")),
             }
-            // // TODO: Implement this.
-            // // For now this is a stub implementation that works for one specific test program.
-            // let i32_type = self.context.i32_type();
-            // let _i32_fn_type = i32_type.fn_type(&[], false);
-            // // TODO store in context
         }
         // Move to the next state.
         self.move_to(CompilationState::TypesProcessed)
@@ -234,77 +246,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::TypesProcessed)?;
         // Iterate over the libfunc declarations in the Sierra program.
-        self.program.libfunc_declarations.iter().for_each(|libfunc| {
-            // TODO: Implement this.
-            // For now this is a stub implementation that works for one specific test program.
-
-            // Create an i128 type and function type in the LLVM context.
-            // The types must be created and stored in the global context before they can be used.
-            // TODO: implement in `process_types`.
-            let i32_type = self.context.i32_type();
-            let fn_type = i32_type.fn_type(&[], false);
-
-            match &libfunc.long_id.generic_id.debug_name {
-                Some(name) => {
-                    // If the libfunc declaration has a debug name that contains "const" and has at
-                    // least one generic argument, create a new function in the LLVM
-                    // module with the libfunc's ID as the name and set the function's return value
-                    // to the value of the first generic argument.
-                    if name.contains("const") && !libfunc.long_id.generic_args.is_empty() {
-                        if let GenericArg::Value(value) = libfunc.long_id.generic_args[0].clone() {
-                            let function = self.module.add_function(
-                                format!("a_{}", libfunc.id.id).as_str(),
-                                fn_type,
-                                None,
-                            );
-                            let fn_temp = self.context.append_basic_block(function, "entry");
-                            self.builder.position_at_end(fn_temp);
-                            self.builder.build_return(Some(
-                                &self
-                                    .context
-                                    .i32_type()
-                                    .const_int(value.to_u64_digits().1[0], false),
-                            ));
-                        }
-                    }
-                    // If the libfunc declaration has a debug name of "felt_add" create a llvm ir
-                    // add function.
-                    else if name == "felt_add" {
-                        let fn_type = i32_type.fn_type(&[i32_type.into(), i32_type.into()], false);
-                        let function = self.module.add_function(
-                            format!("a_{}", libfunc.id.id).as_str(),
-                            fn_type,
-                            None,
-                        );
-                        let fn_temp = self.context.append_basic_block(function, "entry");
-                        self.builder.position_at_end(fn_temp);
-
-                        // Add the two arguments and store the result in a temporary value
-                        let sum = self.builder.build_int_add(
-                            function.get_first_param().unwrap().into_int_value(),
-                            function.get_last_param().unwrap().into_int_value(),
-                            "sum",
-                        );
-
-                        // Return the result
-                        self.builder.build_return(Some(&sum));
-                    } else if name == "rename" {
-                        let void = self.context.i32_type().fn_type(&[i32_type.into()], false);
-
-                        let function = self.module.add_function(
-                            format!("a_{}", libfunc.id.id).as_str(),
-                            void,
-                            None,
-                        );
-                        let fn_temp = self.context.append_basic_block(function, "entry");
-                        self.builder.position_at_end(fn_temp);
-                        self.builder.build_return(Some(&function.get_first_param().unwrap()));
+        for libfunc_declaration in self.program.libfunc_declarations.iter() {
+            match &libfunc_declaration.long_id.generic_id.debug_name {
+                Some(libfunc) => {
+                    if let Some(processor) = self.libfunc_processors.get(libfunc.as_str()) {
+                        processor.to_llvm(self.module, self.context, self.builder)?
                     }
                 }
-                // If the libfunc declaration has no debug name, print "no name".
-                None => println!("no name"),
+                None => (),
             }
-        });
+        }
         // Move to the next state.
         self.move_to(CompilationState::CoreLibFunctionsProcessed)
     }
@@ -317,72 +268,72 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // This section is very specific to the test program.
         // TODO: Think about how to implement this in a more general way.
         // Init param var
-        let i32_type = self.context.i32_type();
-        let main_type = i32_type.fn_type(&[self.context.i32_type().into()], false);
-        let main_func = self.module.add_function("main", main_type, None);
-        let main_bb = self.context.append_basic_block(main_func, "entry");
-        self.builder.position_at_end(main_bb);
-        for func in self.program.funcs.iter() {
-            for param in func.params.iter() {
-                self.variables.insert(param.id.id.to_string(), None);
-            }
-        }
+        // let i32_type = self.context.i32_type();
+        // let main_type = i32_type.fn_type(&[self.context.i32_type().into()], false);
+        // let main_func = self.module.add_function("main", main_type, None);
+        // let main_bb = self.context.append_basic_block(main_func, "entry");
+        // self.builder.position_at_end(main_bb);
+        // for func in self.program.funcs.iter() {
+        //     for param in func.params.iter() {
+        //         self.variables.insert(param.id.id.to_string(), None);
+        //     }
+        // }
 
-        // Iterate over the statements in the Sierra program, but do nothing with them.
-        for (statement_id, _statement) in self.program.statements.iter().enumerate() {
-            let _statement_idx = StatementIdx(statement_id);
-            match _statement {
-                // If the statement is an invocation, print the invocation.
-                Statement::Invocation(invocation) => {
-                    if invocation.libfunc_id.id.to_string().as_str() != "3" {
-                        let function = self
-                            .module
-                            .get_function(format!("a_{}", invocation.libfunc_id.id).as_str())
-                            .ok_or_else(|| eyre::eyre!("function not found"))?;
-                        let mut args: Vec<BasicMetadataValueEnum> = vec![];
-                        invocation.args.clone().into_iter().for_each(|var_id| {
-                            args.push(
-                                match self.variables.get(var_id.id.to_string().as_str()).unwrap() {
-                                    Some(val) => self
-                                        .builder
-                                        .build_load(*val, var_id.id.to_string().as_str())
-                                        .into(),
-                                    None => {
-                                        main_func.get_nth_param(var_id.id as u32).unwrap().into()
-                                    }
-                                },
-                            );
-                        });
-                        let res_ptr = self.builder.build_alloca(
-                            i32_type,
-                            format!("ptr{}", invocation.branches[0].results[0].id).as_str(),
-                        );
-                        let res_val = self
-                            .builder
-                            .build_call(
-                                function,
-                                &args,
-                                format!("val{}", invocation.branches[0].results[0].id).as_str(),
-                            )
-                            .try_as_basic_value()
-                            .left()
-                            .unwrap();
-                        self.builder.build_store(res_ptr, res_val);
-                        self.variables.insert(
-                            invocation.branches[0].results[0].id.to_string(),
-                            Some(res_ptr),
-                        );
-                    }
-                }
-                // If the statement is a return, print the return.
-                Statement::Return(ret) => {
-                    self.builder.build_return(Some(&self.builder.build_load(
-                        self.variables.get(ret[0].id.to_string().as_str()).unwrap().unwrap(),
-                        ret[0].id.to_string().as_str(),
-                    )));
-                }
-            }
-        }
+        // // Iterate over the statements in the Sierra program, but do nothing with them.
+        // for (statement_id, _statement) in self.program.statements.iter().enumerate() {
+        //     let _statement_idx = StatementIdx(statement_id);
+        //     match _statement {
+        //         // If the statement is an invocation, print the invocation.
+        //         Statement::Invocation(invocation) => {
+        //             if invocation.libfunc_id.id.to_string().as_str() != "3" {
+        //                 let function = self
+        //                     .module
+        //                     .get_function(format!("a_{}", invocation.libfunc_id.id).as_str())
+        //                     .ok_or_else(|| eyre::eyre!("function not found"))?;
+        //                 let mut args: Vec<BasicMetadataValueEnum> = vec![];
+        //                 invocation.args.clone().into_iter().for_each(|var_id| {
+        //                     args.push(
+        //                         match self.variables.get(var_id.id.to_string().as_str()).unwrap()
+        // {                             Some(val) => self
+        //                                 .builder
+        //                                 .build_load(*val, var_id.id.to_string().as_str())
+        //                                 .into(),
+        //                             None => {
+        //                                 main_func.get_nth_param(var_id.id as u32).unwrap().into()
+        //                             }
+        //                         },
+        //                     );
+        //                 });
+        //                 let res_ptr = self.builder.build_alloca(
+        //                     i32_type,
+        //                     format!("ptr{}", invocation.branches[0].results[0].id).as_str(),
+        //                 );
+        //                 let res_val = self
+        //                     .builder
+        //                     .build_call(
+        //                         function,
+        //                         &args,
+        //                         format!("val{}", invocation.branches[0].results[0].id).as_str(),
+        //                     )
+        //                     .try_as_basic_value()
+        //                     .left()
+        //                     .unwrap();
+        //                 self.builder.build_store(res_ptr, res_val);
+        //                 self.variables.insert(
+        //                     invocation.branches[0].results[0].id.to_string(),
+        //                     Some(res_ptr),
+        //                 );
+        //             }
+        //         }
+        //         // If the statement is a return, print the return.
+        //         Statement::Return(ret) => {
+        //             self.builder.build_return(Some(&self.builder.build_load(
+        //                 self.variables.get(ret[0].id.to_string().as_str()).unwrap().unwrap(),
+        //                 ret[0].id.to_string().as_str(),
+        //             )));
+        //         }
+        //     }
+        // }
         // Move to the next state.
         self.move_to(CompilationState::StatementsProcessed)
     }
@@ -394,15 +345,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::StatementsProcessed)?;
         // Ensure that the current module is valid
-        self.module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
+        // self.module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
         // Ensure output path is valid and exists.
-        let output_path = Path::new(self.output_path);
-        let parent =
-            output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
-        // Recursively create the output path parent directories if they don't exist.
-        fs::create_dir_all(parent)?;
-        // Write the module to the output path.
-        self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
+        // let output_path = Path::new(self.output_path);
+        // let parent =
+        //     output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
+        // // Recursively create the output path parent directories if they don't exist.
+        // fs::create_dir_all(parent)?;
+        // // Write the module to the output path.
+        // self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
+        println!("{:?}", self.module.print_to_string());
         // Move to the next state.
         self.move_to(CompilationState::Finalized)
     }
