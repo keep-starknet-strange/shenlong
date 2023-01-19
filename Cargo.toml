@@ -17,6 +17,7 @@ license = "MIT"
 
 
 [dependencies]
+cairo-vm = "0.1.1"
 shenlong_core = { path = "./core" }
 
 [dev-dependencies]
@@ -34,5 +35,5 @@ features = [
 ]
 
 [[bench]]
-name = "sierra_2_llvm_benchmark"
+name = "llvm_execution"
 harness = false
