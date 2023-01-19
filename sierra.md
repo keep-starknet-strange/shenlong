@@ -158,6 +158,7 @@ end of each branch
 5. `rename`: rename a variable (useful for debug infos ?)
 6. `revoke_ap_tracking`: switches ap state from `Known` to `Unknown` to merge
 with a branch that has an unknown ap state
+7. `..._jump_nz`: jump if the condition is true
 
 ### list of instructions
 
