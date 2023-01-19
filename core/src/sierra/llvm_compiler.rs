@@ -70,7 +70,7 @@ pub struct Compiler<'a, 'ctx> {
     pub types: HashMap<&'ctx str, Box<dyn BasicType<'ctx> + 'ctx>>,
     /// The library functions processors. Each processor is responsible for processing a specific
     /// libfunc and generating the corresponding LLVM IR.
-    pub libfunc_processors: HashMap<&'ctx str, Box<dyn LibfuncProcessor<'ctx> + 'ctx>>,
+    pub libfunc_processors: HashMap<&'ctx str, Box<dyn LibfuncProcessor<'a, 'ctx> + 'ctx>>,
 }
 
 /// Compilation state.
@@ -202,11 +202,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             libfunc_processors,
         };
 
-        // Prepare the libfunc processors.
-        compiler.prepare_libfunc_processors()?;
-
         // Process the types in the Sierra program.
         compiler.process_types()?;
+
+        // Prepare the libfunc processors.
+        compiler.prepare_libfunc_processors()?;
 
         // Process the core library functions in the Sierra program.
         compiler.process_core_lib_functions()?;
@@ -220,9 +220,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Prepare the libfunc processors.
     fn prepare_libfunc_processors(&mut self) -> Result<()> {
-        let add = Add {};
-        let boxed: Box<dyn LibfuncProcessor<'ctx> + 'ctx> = Box::from(add);
-        self.libfunc_processors.insert("felt_add", boxed);
+        // Add two felts and return the result.
+        self.libfunc_processors.insert("felt_add", Box::from(Add {}));
         Ok(())
     }
 
@@ -263,15 +262,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             match &libfunc_declaration.long_id.generic_id.debug_name {
                 Some(libfunc) => {
                     if let Some(processor) = self.libfunc_processors.get(libfunc.as_str()) {
-                        let llvm_type = self.context.custom_width_int_type(252);
+                        let felt_type = self.types.get("felt").unwrap();
 
                         processor.to_llvm(
-                            "felt_add",
-                            &llvm_type.as_basic_type_enum(),
+                            libfunc.as_str(),
+                            felt_type.as_basic_type_enum(),
+                            vec![felt_type, felt_type],
                             self.module,
                             self.context,
                             self.builder,
-                        )?
+                        )?;
                     }
                 }
                 None => (),
@@ -394,7 +394,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 function,
                 &[
                     inkwell::values::BasicMetadataValueEnum::IntValue(
-                        args_type.const_int(34, false),
+                        args_type.const_int(42, false),
                     ),
                     inkwell::values::BasicMetadataValueEnum::IntValue(
                         args_type.const_int(3, false),
