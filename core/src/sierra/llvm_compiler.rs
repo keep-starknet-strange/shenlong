@@ -33,6 +33,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::hash::Hash;
+use std::path::Path;
 
 use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra::ProgramParser;
@@ -367,16 +368,46 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Ensure that the current module is valid
         // self.module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
         // Ensure output path is valid and exists.
-        // let output_path = Path::new(self.output_path);
+        let output_path = Path::new(self.output_path);
         // let parent =
         //     output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
         // // Recursively create the output path parent directories if they don't exist.
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
-        // self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
+        self.build_main()?;
+        self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
+
         println!("{:?}", self.module.print_to_string());
         // Move to the next state.
         self.move_to(CompilationState::Finalized)
+    }
+    fn build_main(&mut self) -> Result<()> {
+        let args_type = self.context.custom_width_int_type(252);
+        let main_type = args_type.fn_type(&[], false);
+        let main_func = self.module.add_function("main", main_type, None);
+        let main_bb = self.context.append_basic_block(main_func, "entry");
+        self.builder.position_at_end(main_bb);
+        let function = self.module.get_function("felt_add").ok_or(eyre!("Function not found"))?;
+        let res = self
+            .builder
+            .build_call(
+                function,
+                &[
+                    inkwell::values::BasicMetadataValueEnum::IntValue(
+                        args_type.const_int(34, false),
+                    ),
+                    inkwell::values::BasicMetadataValueEnum::IntValue(
+                        args_type.const_int(3, false),
+                    ),
+                ],
+                "call_felt_add",
+            )
+            .try_as_basic_value()
+            .left()
+            .ok_or(eyre!("No return value"))?;
+        self.builder.build_return(Some(&res));
+
+        Ok(())
     }
 
     /// Check if the compilation is in a valid state.
