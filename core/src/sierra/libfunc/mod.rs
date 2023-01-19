@@ -2,35 +2,32 @@ use eyre::Result;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
-use inkwell::types::BasicType;
+use inkwell::types::{BasicType, BasicTypeEnum};
 
-pub struct Add<'ctx> {
-    pub fn_name: &'ctx str,
-    pub llvm_type: Box<dyn BasicType<'ctx> + 'ctx>,
-}
-impl<'ctx> Add<'ctx> {
-    pub fn new(llvm_type: Box<dyn BasicType<'ctx>>, fn_name: &'ctx str) -> Self {
-        Self { llvm_type, fn_name }
-    }
-}
-
+pub struct Add {}
 pub trait LibfuncProcessor<'ctx> {
-    fn to_llvm(&self, module: &Module<'ctx>, context: &Context, builder: &Builder) -> Result<()>;
-}
-impl<'ctx> LibfuncProcessor<'ctx> for Add<'ctx> {
     fn to_llvm(
         &self,
+        fn_name: &'ctx str,
+        llvm_type: &BasicTypeEnum<'ctx>,
         module: &Module<'ctx>,
-        context: &inkwell::context::Context,
+        context: &Context,
+        builder: &Builder,
+    ) -> Result<()>;
+}
+impl<'ctx> LibfuncProcessor<'ctx> for Add {
+    fn to_llvm(
+        &self,
+        fn_name: &'ctx str,
+        llvm_type: &BasicTypeEnum<'ctx>,
+        module: &Module<'ctx>,
+        context: &Context,
         builder: &Builder,
     ) -> Result<()> {
         let function = module.add_function(
-            self.fn_name,
-            self.llvm_type.fn_type(
-                &[
-                    self.llvm_type.as_basic_type_enum().into(),
-                    self.llvm_type.as_basic_type_enum().into(),
-                ],
+            fn_name,
+            llvm_type.fn_type(
+                &[llvm_type.as_basic_type_enum().into(), llvm_type.as_basic_type_enum().into()],
                 false,
             ),
             None,

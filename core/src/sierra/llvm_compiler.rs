@@ -44,20 +44,31 @@ use inkwell::types::BasicType;
 use inkwell::values::PointerValue;
 use log::debug;
 
-use super::libfunc::LibfuncProcessor;
+use super::libfunc::{Add, LibfuncProcessor};
 
 /// Compiler is the main entry point for the LLVM backend.
 /// It is responsible for compiling a Sierra program to LLVM IR.
-pub struct Compiler<'ctx, 'a> {
+pub struct Compiler<'a, 'ctx> {
+    /// The Sierra program.
     pub program: &'a Program,
+    /// The LLVM context.
     pub context: &'ctx Context,
+    /// The LLVM builder.
     pub builder: &'a Builder<'ctx>,
+    /// The LLVM module.
     pub module: &'a Module<'ctx>,
+    /// The variables of the program.
     pub variables: HashMap<String, Option<PointerValue<'ctx>>>,
+    /// The output path.
     pub output_path: &'a str,
+    /// The current compilation state.
     pub state: CompilationState,
+    /// The valid state transitions.
     pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
+    /// The types.
     pub types: HashMap<&'ctx str, Box<dyn BasicType<'ctx> + 'ctx>>,
+    /// The library functions processors. Each processor is responsible for processing a specific
+    /// libfunc and generating the corresponding LLVM IR.
     pub libfunc_processors: HashMap<&'ctx str, Box<dyn LibfuncProcessor<'ctx> + 'ctx>>,
 }
 
@@ -190,7 +201,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             libfunc_processors,
         };
 
-        // compiler.prepare_libfunc_processor();
+        // Prepare the libfunc processors.
+        compiler.prepare_libfunc_processors()?;
+
         // Process the types in the Sierra program.
         compiler.process_types()?;
 
@@ -204,14 +217,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         compiler.finalize_compilation()
     }
 
-    // fn prepare_libfunc_processor(&mut self) -> Result<()> {
-    //     let llvm_type = self.context.custom_width_int_type(252).as_basic_type_enum();
-    //     let boxed1: Box<dyn BasicType<'ctx> + 'ctx> = Box::from(llvm_type);
-    //     let add = Add::new(boxed1, "felt_add");
-    //     let boxed: Box<dyn LibfuncProcessor<'ctx> + 'ctx> = Box::from(add);
-    //     self.libfunc_processors.insert("felt_add", boxed);
-    //     Ok(())
-    // }
+    /// Prepare the libfunc processors.
+    fn prepare_libfunc_processors(&mut self) -> Result<()> {
+        let add = Add {};
+        let boxed: Box<dyn LibfuncProcessor<'ctx> + 'ctx> = Box::from(add);
+        self.libfunc_processors.insert("felt_add", boxed);
+        Ok(())
+    }
 
     /// Process types in the Sierra program.
     /// For each type declaration in the Sierra program, create a corresponding type in the LLVM
@@ -250,7 +262,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             match &libfunc_declaration.long_id.generic_id.debug_name {
                 Some(libfunc) => {
                     if let Some(processor) = self.libfunc_processors.get(libfunc.as_str()) {
-                        processor.to_llvm(self.module, self.context, self.builder)?
+                        let llvm_type = self.context.custom_width_int_type(252);
+
+                        processor.to_llvm(
+                            "felt_add",
+                            &llvm_type.as_basic_type_enum(),
+                            self.module,
+                            self.context,
+                            self.builder,
+                        )?
                     }
                 }
                 None => (),
