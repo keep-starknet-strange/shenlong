@@ -30,3 +30,5 @@ target/
 
 # Flamegraph files
 **/flamegraph*.svg
+
+test.ll
