@@ -45,7 +45,8 @@ use inkwell::types::BasicType;
 use inkwell::values::PointerValue;
 use log::debug;
 
-use super::libfunc::{Add, LibfuncProcessor};
+use super::libfunc::{Func, LibfuncProcessor};
+use crate::sierra::libfunc::LlvmMathAdd;
 
 /// Compiler is the main entry point for the LLVM backend.
 /// It is responsible for compiling a Sierra program to LLVM IR.
@@ -221,7 +222,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Prepare the libfunc processors.
     fn prepare_libfunc_processors(&mut self) -> Result<()> {
         // Add two felts and return the result.
-        self.libfunc_processors.insert("felt_add", Box::from(Add {}));
+        self.libfunc_processors.insert("felt_add", Box::from(Func {}));
         Ok(())
     }
 
@@ -268,6 +269,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             libfunc.as_str(),
                             felt_type.as_basic_type_enum(),
                             vec![felt_type, felt_type],
+                            &LlvmMathAdd {},
                             self.module,
                             self.context,
                             self.builder,
@@ -397,7 +399,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         args_type.const_int(42, false),
                     ),
                     inkwell::values::BasicMetadataValueEnum::IntValue(
-                        args_type.const_int(3, false),
+                        args_type.const_int(2, false),
                     ),
                 ],
                 "call_felt_add",
