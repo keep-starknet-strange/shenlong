@@ -5,14 +5,18 @@ use inkwell::module::Module;
 use inkwell::types::{BasicType, BasicTypeEnum};
 use inkwell::values::{FunctionValue, IntValue};
 
-pub enum LlvmCoreTypes<'a, 'ctx> {
-    Felt(BasicTypeEnum<'ctx>, Box<dyn LlvmBodyProcessor<'a, 'ctx>>),
-    Int128(BasicTypeEnum<'ctx>),
+pub trait LlvmCoreType<'ctx> {
+    fn llvm_type() -> BasicTypeEnum<'ctx>;
 }
 
 /// Add is a processor that will generate the LLVM IR for the add function.
-/// It can hande any numeric types.
-pub struct Func {}
+/// It can handle any numeric types.
+pub struct Func<'a, 'ctx> {
+    pub name: &'ctx str,
+    pub parameter_types: Vec<Box<dyn BasicType<'ctx> + 'ctx>>,
+    pub output_type: BasicTypeEnum<'ctx>,
+    pub body_creator_type: &'ctx (dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx),
+}
 
 pub struct LlvmMathAdd {}
 
@@ -49,45 +53,38 @@ pub trait LibfuncProcessor<'a, 'ctx> {
     /// * `builder` - The builder used to create the function.
     fn to_llvm(
         &self,
-        fn_name: &'a str,
-        output_type: BasicTypeEnum<'ctx>,
-        parameter_types: Vec<&Box<dyn BasicType<'ctx> + 'ctx>>,
-        body_creator_type: &(dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx),
         module: &Module<'ctx>,
         context: &Context,
         builder: &Builder<'ctx>,
     ) -> Result<()>;
 }
 
-impl<'a, 'ctx> LibfuncProcessor<'a, 'ctx> for Func {
+impl<'a, 'ctx> LibfuncProcessor<'a, 'ctx> for Func<'a, 'ctx> {
     /// See the trait documentation (`LibfuncProcessor`).
     fn to_llvm(
         &self,
-        fn_name: &'a str,
-        output_type: BasicTypeEnum<'ctx>,
-        parameter_types: Vec<&Box<dyn BasicType<'ctx> + 'ctx>>,
-        body_creator_type: &(dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx),
         module: &Module<'ctx>,
         context: &Context,
         builder: &Builder<'ctx>,
     ) -> Result<()> {
         // Check the parameters.
-        if parameter_types.len() != 2 {
+        if self.parameter_types.len() != 2 {
             return Err(eyre::eyre!("Add function must have 2 parameters"));
         }
 
         // Convert the parameters to BasicTypeEnum and store them in a vector.
         let parameters = vec![
-            parameter_types[0].as_basic_type_enum().into(),
-            parameter_types[1].as_basic_type_enum().into(),
+            self.parameter_types[0].as_basic_type_enum().into(),
+            self.parameter_types[1].as_basic_type_enum().into(),
         ];
 
         // Create the function,
-        let function = module.add_function(fn_name, output_type.fn_type(&parameters, false), None);
+        let function =
+            module.add_function(self.name, self.output_type.fn_type(&parameters, false), None);
         builder.position_at_end(context.append_basic_block(function, "entry"));
 
         // Return the result
-        builder.build_return(Some(&body_creator_type.create_body(builder, &function)));
+        builder.build_return(Some(&self.body_creator_type.create_body(builder, &function)));
         Ok(())
     }
 }
