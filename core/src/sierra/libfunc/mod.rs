@@ -17,8 +17,18 @@ pub struct Func<'a, 'ctx> {
     pub output_type: BasicTypeEnum<'ctx>,
     pub body_creator_type: &'ctx (dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx),
 }
-
+impl<'a, 'ctx> Func<'a, 'ctx> {
+    pub fn new(
+        name: &'ctx str,
+        parameter_types: Vec<Box<dyn BasicType<'ctx> + 'ctx>>,
+        output_type: BasicTypeEnum<'ctx>,
+        body_creator_type: &'ctx (dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx),
+    ) -> Self {
+        Self { name, parameter_types, output_type, body_creator_type }
+    }
+}
 pub struct LlvmMathAdd {}
+pub struct LlvmMathSub {}
 
 pub trait LlvmBodyProcessor<'a, 'ctx> {
     fn create_body(&self, builder: &Builder<'ctx>, fn_type: &FunctionValue<'ctx>)
@@ -32,6 +42,19 @@ impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathAdd {
         fn_type: &FunctionValue<'ctx>,
     ) -> IntValue<'ctx> {
         builder.build_int_add(
+            fn_type.get_first_param().unwrap().into_int_value(),
+            fn_type.get_last_param().unwrap().into_int_value(),
+            "res",
+        )
+    }
+}
+impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathSub {
+    fn create_body(
+        &self,
+        builder: &Builder<'ctx>,
+        fn_type: &FunctionValue<'ctx>,
+    ) -> IntValue<'ctx> {
+        builder.build_int_sub(
             fn_type.get_first_param().unwrap().into_int_value(),
             fn_type.get_last_param().unwrap().into_int_value(),
             "res",
