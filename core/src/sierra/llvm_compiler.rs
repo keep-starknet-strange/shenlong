@@ -58,7 +58,7 @@ pub struct Compiler<'a, 'ctx> {
     /// The LLVM builder.
     pub builder: &'a Builder<'ctx>,
     /// The LLVM module.
-    pub module: &'a Module<'ctx>,
+    pub module: Module<'ctx>,
     /// The variables of the program.
     pub variables: HashMap<String, Option<PointerValue<'ctx>>>,
     /// The output path.
@@ -68,10 +68,10 @@ pub struct Compiler<'a, 'ctx> {
     /// The valid state transitions.
     pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
     /// The types.
-    pub types: HashMap<&'ctx str, Box<dyn BasicType<'ctx> + 'ctx>>,
+    pub types: HashMap<&'ctx str, Box<dyn BasicType<'ctx> + 'a>>,
     /// The library functions processors. Each processor is responsible for processing a specific
     /// libfunc and generating the corresponding LLVM IR.
-    pub libfunc_processors: HashMap<&'ctx str, Box<dyn LibfuncProcessor<'a, 'ctx> + 'ctx>>,
+    pub libfunc_processors: HashMap<&'ctx str, Func<'a, 'ctx>>,
 }
 
 /// Compilation state.
@@ -194,7 +194,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             program: &program,
             context: &context,
             builder: &builder,
-            module: &module,
+            module,
             variables,
             output_path,
             state: CompilationState::NotStarted,
@@ -221,8 +221,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Prepare the libfunc processors.
     fn prepare_libfunc_processors(&mut self) -> Result<()> {
+        let felt_type = self.types.get("felt").unwrap();
         // Add two felts and return the result.
-        self.libfunc_processors.insert("felt_add", Box::from(Func {}));
+        self.libfunc_processors.insert(
+            "felt_add",
+            Func {
+                name: "felt_add",
+                parameter_types: vec![
+                    Box::from(felt_type.as_basic_type_enum()),
+                    Box::from(felt_type.as_basic_type_enum()),
+                ],
+                output_type: (*felt_type).as_basic_type_enum(),
+                body_creator_type: &LlvmMathAdd {},
+            },
+        );
         Ok(())
     }
 
@@ -240,8 +252,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             match &type_declaration.long_id.generic_id.debug_name {
                 Some(type_name) => match type_name.as_str() {
                     "felt" => {
-                        self.types
-                            .insert("felt", Box::from(self.context.custom_width_int_type(252)));
+                        self.types.insert(
+                            "felt",
+                            Box::new(self.context.custom_width_int_type(252).as_basic_type_enum()),
+                        );
                     }
                     "NonZero" => (),
                     _ => println!("this is not a felt"),
@@ -263,17 +277,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             match &libfunc_declaration.long_id.generic_id.debug_name {
                 Some(libfunc) => {
                     if let Some(processor) = self.libfunc_processors.get(libfunc.as_str()) {
-                        let felt_type = self.types.get("felt").unwrap();
-
-                        processor.to_llvm(
-                            libfunc.as_str(),
-                            felt_type.as_basic_type_enum(),
-                            vec![felt_type, felt_type],
-                            &LlvmMathAdd {},
-                            self.module,
-                            self.context,
-                            self.builder,
-                        )?;
+                        processor.to_llvm(&self.module, self.context, self.builder)?;
                     }
                 }
                 None => (),
