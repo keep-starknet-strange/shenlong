@@ -45,7 +45,7 @@ use inkwell::types::BasicType;
 use inkwell::values::PointerValue;
 use log::debug;
 
-use super::libfunc::{Func, LibfuncProcessor};
+use super::libfunc::{Func, LibfuncProcessor, LlvmMathSub};
 use crate::sierra::libfunc::LlvmMathAdd;
 
 /// Compiler is the main entry point for the LLVM backend.
@@ -221,19 +221,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Prepare the libfunc processors.
     fn prepare_libfunc_processors(&mut self) -> Result<()> {
-        let felt_type = self.types.get("felt").unwrap();
+        let felt_type = self.types.get("felt").unwrap(); //.ok_or(eyre!("Type not found"))?;
         // Add two felts and return the result.
+        let felt_add = "felt_add";
+        let parameter_types: Vec<Box<dyn BasicType>> = vec![
+            Box::from(felt_type.as_basic_type_enum()),
+            Box::from(felt_type.as_basic_type_enum()),
+        ];
         self.libfunc_processors.insert(
-            "felt_add",
-            Func {
-                name: "felt_add",
-                parameter_types: vec![
-                    Box::from(felt_type.as_basic_type_enum()),
-                    Box::from(felt_type.as_basic_type_enum()),
-                ],
-                output_type: (*felt_type).as_basic_type_enum(),
-                body_creator_type: &LlvmMathAdd {},
-            },
+            felt_add,
+            Func::new(felt_add, parameter_types, felt_type.as_basic_type_enum(), &LlvmMathAdd {}),
+        );
+        let felt_sub = "felt_sub";
+        let parameter_types: Vec<Box<dyn BasicType>> = vec![
+            Box::from(felt_type.as_basic_type_enum()),
+            Box::from(felt_type.as_basic_type_enum()),
+        ];
+        self.libfunc_processors.insert(
+            felt_sub,
+            Func::new(felt_sub, parameter_types, felt_type.as_basic_type_enum(), &LlvmMathSub {}),
         );
         Ok(())
     }
@@ -292,75 +298,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug!("processing statements");
         // Check that the current state is valid.
         self.check_state(&CompilationState::CoreLibFunctionsProcessed)?;
-        // This section is very specific to the test program.
-        // TODO: Think about how to implement this in a more general way.
-        // Init param var
-        // let i32_type = self.context.i32_type();
-        // let main_type = i32_type.fn_type(&[self.context.i32_type().into()], false);
-        // let main_func = self.module.add_function("main", main_type, None);
-        // let main_bb = self.context.append_basic_block(main_func, "entry");
-        // self.builder.position_at_end(main_bb);
-        // for func in self.program.funcs.iter() {
-        //     for param in func.params.iter() {
-        //         self.variables.insert(param.id.id.to_string(), None);
-        //     }
-        // }
-
-        // // Iterate over the statements in the Sierra program, but do nothing with them.
-        // for (statement_id, _statement) in self.program.statements.iter().enumerate() {
-        //     let _statement_idx = StatementIdx(statement_id);
-        //     match _statement {
-        //         // If the statement is an invocation, print the invocation.
-        //         Statement::Invocation(invocation) => {
-        //             if invocation.libfunc_id.id.to_string().as_str() != "3" {
-        //                 let function = self
-        //                     .module
-        //                     .get_function(format!("a_{}", invocation.libfunc_id.id).as_str())
-        //                     .ok_or_else(|| eyre::eyre!("function not found"))?;
-        //                 let mut args: Vec<BasicMetadataValueEnum> = vec![];
-        //                 invocation.args.clone().into_iter().for_each(|var_id| {
-        //                     args.push(
-        //                         match self.variables.get(var_id.id.to_string().as_str()).unwrap()
-        // {                             Some(val) => self
-        //                                 .builder
-        //                                 .build_load(*val, var_id.id.to_string().as_str())
-        //                                 .into(),
-        //                             None => {
-        //                                 main_func.get_nth_param(var_id.id as u32).unwrap().into()
-        //                             }
-        //                         },
-        //                     );
-        //                 });
-        //                 let res_ptr = self.builder.build_alloca(
-        //                     i32_type,
-        //                     format!("ptr{}", invocation.branches[0].results[0].id).as_str(),
-        //                 );
-        //                 let res_val = self
-        //                     .builder
-        //                     .build_call(
-        //                         function,
-        //                         &args,
-        //                         format!("val{}", invocation.branches[0].results[0].id).as_str(),
-        //                     )
-        //                     .try_as_basic_value()
-        //                     .left()
-        //                     .unwrap();
-        //                 self.builder.build_store(res_ptr, res_val);
-        //                 self.variables.insert(
-        //                     invocation.branches[0].results[0].id.to_string(),
-        //                     Some(res_ptr),
-        //                 );
-        //             }
-        //         }
-        //         // If the statement is a return, print the return.
-        //         Statement::Return(ret) => {
-        //             self.builder.build_return(Some(&self.builder.build_load(
-        //                 self.variables.get(ret[0].id.to_string().as_str()).unwrap().unwrap(),
-        //                 ret[0].id.to_string().as_str(),
-        //             )));
-        //         }
-        //     }
-        // }
         // Move to the next state.
         self.move_to(CompilationState::StatementsProcessed)
     }
