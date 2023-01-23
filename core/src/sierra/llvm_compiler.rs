@@ -273,7 +273,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         );
                     }
                     "NonZero" => (),
-                    _ => println!("this is not a felt"),
+                    _ => println!("{type_name} is not a felt"),
                 },
                 _ => return Err(eyre!("No type name found")),
             }
@@ -282,7 +282,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.move_to(CompilationState::TypesProcessed)
     }
 
-    fn process_const(&mut self, libfunc_declaration: &LibfuncDeclaration) -> Result<()> {
+    fn process_const(&mut self, libfunc_declaration: &LibfuncDeclaration) -> Result<String> {
         let converted = libfunc_declaration
             .long_id
             .generic_args
@@ -313,13 +313,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.libfunc_processors.insert(
             felt_const.clone(),
             Func::new(
-                felt_const,
+                felt_const.clone(),
                 parameter_types,
                 const_type.as_basic_type_enum(),
                 Box::from(LlvmMathConst { value: converted[0] }),
             ),
         );
-        Ok(())
+        Ok(felt_const)
     }
 
     /// Process core library functions in the Sierra program.
@@ -330,15 +330,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
             if let Some(libfunc) = &libfunc_declaration.long_id.generic_id.debug_name {
+                let mut func_name = libfunc.to_string();
                 if libfunc.ends_with("const") {
-                    self.process_const(libfunc_declaration)?;
+                    func_name = self.process_const(libfunc_declaration)?;
                 }
-                if libfunc == "felt_const" {
-                    if let Some(processor) = self.libfunc_processors.get("felt_const_1") {
-                        processor.to_llvm(&self.module, self.context, self.builder)?;
-                    }
-                }
-                if let Some(processor) = self.libfunc_processors.get(libfunc.as_str()) {
+                if let Some(processor) = self.libfunc_processors.get(&func_name) {
                     processor.to_llvm(&self.module, self.context, self.builder)?;
                 }
             }
@@ -372,6 +368,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
         self.build_main()?;
+        println!("{:?}", output_path);
         self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
 
         println!("{:?}", self.module.print_to_string());
