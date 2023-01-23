@@ -8,19 +8,17 @@ use inkwell::values::{FunctionValue, IntValue};
 /// Add is a processor that will generate the LLVM IR for the add function.
 /// It can handle any numeric types.
 pub struct Func<'a, 'ctx> {
-    pub name: String,
     pub parameter_types: Vec<BasicMetadataTypeEnum<'ctx>>,
     pub output_type: BasicTypeEnum<'ctx>,
     pub body_creator_type: Box<dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx>,
 }
 impl<'a, 'ctx> Func<'a, 'ctx> {
     pub fn new(
-        name: String,
         parameter_types: Vec<BasicMetadataTypeEnum<'ctx>>,
         output_type: BasicTypeEnum<'ctx>,
         body_creator_type: Box<dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx>,
     ) -> Self {
-        Self { name, parameter_types, output_type, body_creator_type }
+        Self { parameter_types, output_type, body_creator_type }
     }
 }
 pub struct LlvmMathAdd {}
@@ -96,6 +94,7 @@ pub trait LibfuncProcessor<'a, 'ctx> {
         module: &Module<'ctx>,
         context: &Context,
         builder: &Builder<'ctx>,
+        func_name: &str,
     ) -> Result<()>;
 }
 
@@ -106,12 +105,13 @@ impl<'a, 'ctx> LibfuncProcessor<'a, 'ctx> for Func<'a, 'ctx> {
         module: &Module<'ctx>,
         context: &Context,
         builder: &Builder<'ctx>,
+        func_name: &str,
     ) -> Result<()> {
         // Convert the parameters to BasicTypeEnum and store them in a vector.
 
         // Create the function,
         let function = module.add_function(
-            &self.name,
+            func_name,
             self.output_type.fn_type(&self.parameter_types[..], false),
             None,
         );
