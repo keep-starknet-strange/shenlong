@@ -36,14 +36,14 @@ use std::hash::Hash;
 use std::path::Path;
 
 use cairo_lang_sierra::program::GenericArg::Value;
-use cairo_lang_sierra::program::{LibfuncDeclaration, Program};
+use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, LibfuncDeclaration, Program};
 use cairo_lang_sierra::ProgramParser;
 use eyre::{eyre, Result};
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType};
-use inkwell::values::PointerValue;
+use inkwell::values::{BasicValueEnum, PointerValue};
 use log::debug;
 use num_bigint::BigInt;
 
@@ -74,6 +74,7 @@ pub struct Compiler<'a, 'ctx> {
     /// The library functions processors. Each processor is responsible for processing a specific
     /// libfunc and generating the corresponding LLVM IR.
     pub libfunc_processors: HashMap<String, Func<'a, 'ctx>>,
+    pub main_calls: Vec<BasicValueEnum<'ctx>>,
 }
 
 /// Compilation state.
@@ -187,6 +188,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let variables: HashMap<String, Option<PointerValue>> = HashMap::new();
         let types = HashMap::new();
         let libfunc_processors = HashMap::new();
+        let main_calls = vec![];
 
         // Create a map of valid state transitions.
         let valid_state_transitions = Compiler::init_state_transitions();
@@ -203,6 +205,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             valid_state_transitions,
             types,
             libfunc_processors,
+            main_calls,
         };
 
         // Process the types in the Sierra program.
@@ -230,24 +233,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let felt_param: BasicMetadataTypeEnum = felt_type.as_basic_type_enum().into();
         let parameter_types = vec![felt_param, felt_param];
         self.libfunc_processors.insert(
-            felt_add.clone(),
-            Func::new(
-                felt_add,
-                parameter_types,
-                felt_type.as_basic_type_enum(),
-                Box::from(LlvmMathAdd {}),
-            ),
+            felt_add,
+            Func::new(parameter_types, felt_type.as_basic_type_enum(), Box::from(LlvmMathAdd {})),
         );
         let felt_sub = "felt_sub".to_owned();
         let parameter_types = vec![felt_param, felt_param];
         self.libfunc_processors.insert(
-            felt_sub.clone(),
-            Func::new(
-                felt_sub,
-                parameter_types,
-                felt_type.as_basic_type_enum(),
-                Box::from(LlvmMathSub {}),
-            ),
+            felt_sub,
+            Func::new(parameter_types, felt_type.as_basic_type_enum(), Box::from(LlvmMathSub {})),
         );
 
         Ok(())
@@ -313,7 +306,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.libfunc_processors.insert(
             felt_const.clone(),
             Func::new(
-                felt_const.clone(),
                 parameter_types,
                 const_type.as_basic_type_enum(),
                 Box::from(LlvmMathConst { value: converted[0] }),
@@ -335,19 +327,89 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     func_name = self.process_const(libfunc_declaration)?;
                 }
                 if let Some(processor) = self.libfunc_processors.get(&func_name) {
-                    processor.to_llvm(&self.module, self.context, self.builder)?;
+                    processor.to_llvm(
+                        &self.module,
+                        self.context,
+                        self.builder,
+                        libfunc_declaration.id.id.to_string().as_str(),
+                    )?;
                 }
             }
         }
         // Move to the next state.
         self.move_to(CompilationState::CoreLibFunctionsProcessed)
     }
-
+    fn save_in_var(&mut self, id: &u64) -> Result<()> {
+        let felt_type = self.types.get("felt").ok_or(eyre!("Type not found"))?;
+        let var_ptr =
+            self.builder.build_alloca(felt_type.as_basic_type_enum(), &format!("{id:}_ptr"));
+        // let res_val = self
+        //     .builder
+        //     .build_call(
+        //         function,
+        //         &args,
+        //         format!("val{}", invocation.branches[0].results[0].id).as_str(),
+        //     )
+        //     .try_as_basic_value()
+        //     .left()
+        //     .unwrap();
+        // self.builder.build_store(res_ptr, res_val);
+        self.variables.insert(id.to_string(), Some(var_ptr));
+        Ok(())
+    }
     /// Process statements in the Sierra program.
     fn process_statements(&mut self) -> Result<()> {
         debug!("processing statements");
         // Check that the current state is valid.
         self.check_state(&CompilationState::CoreLibFunctionsProcessed)?;
+        self.build_main()?;
+        for statement in self.program.statements.iter() {
+            if let GenStatement::Invocation(invocation) = statement {
+                let func = self.module.get_function(invocation.libfunc_id.id.to_string().as_str());
+                if func.is_none() {
+                    continue;
+                }
+                let function = func.unwrap();
+
+                let mut args = vec![];
+                if !invocation.args.is_empty() {
+                    for argument in invocation.args.iter() {
+                        args.push(
+                            self.builder
+                                .build_load(
+                                    self.variables
+                                        .get(&argument.id.to_string())
+                                        .ok_or(eyre!("Variable not found"))?
+                                        .ok_or(eyre!("Variable not found"))?,
+                                    &argument.id.to_string(),
+                                )
+                                .into(),
+                        );
+                    }
+                }
+                if invocation.branches.len() == 1
+                    && invocation.branches[0].target == GenBranchTarget::Fallthrough
+                {
+                    for result in invocation.branches[0].results.iter() {
+                        self.save_in_var(&result.id)?;
+                    }
+                }
+                let res = self
+                    .builder
+                    .build_call(function, &args, "call_felt_add")
+                    .try_as_basic_value()
+                    .left()
+                    .ok_or(eyre!("No left value"))?;
+                let ptr = self
+                    .variables
+                    .get(invocation.branches[0].results[0].id.to_string().as_str())
+                    .ok_or(eyre!("Variable not found"))?
+                    .ok_or(eyre!("Variable not found"))?;
+                self.builder.build_store(ptr, res);
+            }
+            // println!("{:?}", statement);
+        }
+        self.builder.build_return(None);
         // Move to the next state.
         self.move_to(CompilationState::StatementsProcessed)
     }
@@ -359,7 +421,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::StatementsProcessed)?;
         // Ensure that the current module is valid
-        // self.module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
+        println!("{:?}", self.module.print_to_string());
         // Ensure output path is valid and exists.
         let output_path = Path::new(self.output_path);
         // let parent =
@@ -367,39 +429,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // // Recursively create the output path parent directories if they don't exist.
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
-        self.build_main()?;
-        println!("{:?}", output_path);
         self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
+        self.module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
 
-        println!("{:?}", self.module.print_to_string());
         // Move to the next state.
         self.move_to(CompilationState::Finalized)
     }
     fn build_main(&mut self) -> Result<()> {
-        let args_type = self.context.custom_width_int_type(252);
+        let args_type = self.context.void_type();
         let main_type = args_type.fn_type(&[], false);
         let main_func = self.module.add_function("main", main_type, None);
         let main_bb = self.context.append_basic_block(main_func, "entry");
         self.builder.position_at_end(main_bb);
-        let function = self.module.get_function("felt_add").ok_or(eyre!("Function not found"))?;
-        let res = self
-            .builder
-            .build_call(
-                function,
-                &[
-                    inkwell::values::BasicMetadataValueEnum::IntValue(
-                        args_type.const_int(42, false),
-                    ),
-                    inkwell::values::BasicMetadataValueEnum::IntValue(
-                        args_type.const_int(2, false),
-                    ),
-                ],
-                "call_felt_add",
-            )
-            .try_as_basic_value()
-            .left()
-            .ok_or(eyre!("No return value"))?;
-        self.builder.build_return(Some(&res));
 
         Ok(())
     }
