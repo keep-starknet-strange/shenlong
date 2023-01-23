@@ -35,17 +35,19 @@ use std::fs;
 use std::hash::Hash;
 use std::path::Path;
 
-use cairo_lang_sierra::program::Program;
+use cairo_lang_sierra::program::GenericArg::Value;
+use cairo_lang_sierra::program::{LibfuncDeclaration, Program};
 use cairo_lang_sierra::ProgramParser;
 use eyre::{eyre, Result};
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
-use inkwell::types::BasicType;
+use inkwell::types::{BasicMetadataTypeEnum, BasicType};
 use inkwell::values::PointerValue;
 use log::debug;
+use num_bigint::BigInt;
 
-use super::libfunc::{Func, LibfuncProcessor, LlvmMathSub};
+use super::libfunc::{Func, LibfuncProcessor, LlvmMathConst, LlvmMathSub};
 use crate::sierra::libfunc::LlvmMathAdd;
 
 /// Compiler is the main entry point for the LLVM backend.
@@ -71,7 +73,7 @@ pub struct Compiler<'a, 'ctx> {
     pub types: HashMap<&'ctx str, Box<dyn BasicType<'ctx> + 'a>>,
     /// The library functions processors. Each processor is responsible for processing a specific
     /// libfunc and generating the corresponding LLVM IR.
-    pub libfunc_processors: HashMap<&'ctx str, Func<'a, 'ctx>>,
+    pub libfunc_processors: HashMap<String, Func<'a, 'ctx>>,
 }
 
 /// Compilation state.
@@ -223,24 +225,31 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     fn prepare_libfunc_processors(&mut self) -> Result<()> {
         let felt_type = self.types.get("felt").unwrap(); //.ok_or(eyre!("Type not found"))?;
         // Add two felts and return the result.
-        let felt_add = "felt_add";
-        let parameter_types: Vec<Box<dyn BasicType>> = vec![
-            Box::from(felt_type.as_basic_type_enum()),
-            Box::from(felt_type.as_basic_type_enum()),
-        ];
+        let felt_add = "felt_add".to_owned();
+
+        let felt_param: BasicMetadataTypeEnum = felt_type.as_basic_type_enum().into();
+        let parameter_types = vec![felt_param, felt_param];
         self.libfunc_processors.insert(
-            felt_add,
-            Func::new(felt_add, parameter_types, felt_type.as_basic_type_enum(), &LlvmMathAdd {}),
+            felt_add.clone(),
+            Func::new(
+                felt_add,
+                parameter_types,
+                felt_type.as_basic_type_enum(),
+                Box::from(LlvmMathAdd {}),
+            ),
         );
-        let felt_sub = "felt_sub";
-        let parameter_types: Vec<Box<dyn BasicType>> = vec![
-            Box::from(felt_type.as_basic_type_enum()),
-            Box::from(felt_type.as_basic_type_enum()),
-        ];
+        let felt_sub = "felt_sub".to_owned();
+        let parameter_types = vec![felt_param, felt_param];
         self.libfunc_processors.insert(
-            felt_sub,
-            Func::new(felt_sub, parameter_types, felt_type.as_basic_type_enum(), &LlvmMathSub {}),
+            felt_sub.clone(),
+            Func::new(
+                felt_sub,
+                parameter_types,
+                felt_type.as_basic_type_enum(),
+                Box::from(LlvmMathSub {}),
+            ),
         );
+
         Ok(())
     }
 
@@ -273,6 +282,46 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.move_to(CompilationState::TypesProcessed)
     }
 
+    fn process_const(&mut self, libfunc_declaration: &LibfuncDeclaration) -> Result<()> {
+        let converted = libfunc_declaration
+            .long_id
+            .generic_args
+            .clone()
+            .into_iter()
+            .map(|arg| {
+                let val = match arg {
+                    Value(val) => val.iter_u64_digits().collect::<Vec<u64>>()[0],
+                    _ => BigInt::from(1).iter_u64_digits().collect::<Vec<u64>>()[0],
+                };
+                val
+            })
+            .collect::<Vec<u64>>();
+        let felt_const = format!(
+            "{}_{}",
+            libfunc_declaration
+                .long_id
+                .generic_id
+                .debug_name
+                .clone()
+                .ok_or(eyre!("No debug name"))?
+                .to_string(),
+            converted[0]
+        );
+
+        let parameter_types = vec![];
+        let const_type = self.types.get("felt").ok_or(eyre!("Type doesn't exist"))?;
+        self.libfunc_processors.insert(
+            felt_const.clone(),
+            Func::new(
+                felt_const,
+                parameter_types,
+                const_type.as_basic_type_enum(),
+                Box::from(LlvmMathConst { value: converted[0] }),
+            ),
+        );
+        Ok(())
+    }
+
     /// Process core library functions in the Sierra program.
     fn process_core_lib_functions(&mut self) -> Result<()> {
         debug!("processing core lib functions");
@@ -280,13 +329,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.check_state(&CompilationState::TypesProcessed)?;
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
-            match &libfunc_declaration.long_id.generic_id.debug_name {
-                Some(libfunc) => {
-                    if let Some(processor) = self.libfunc_processors.get(libfunc.as_str()) {
+            if let Some(libfunc) = &libfunc_declaration.long_id.generic_id.debug_name {
+                if libfunc.ends_with("const") {
+                    self.process_const(libfunc_declaration)?;
+                }
+                if libfunc == "felt_const" {
+                    if let Some(processor) = self.libfunc_processors.get("felt_const_1") {
                         processor.to_llvm(&self.module, self.context, self.builder)?;
                     }
                 }
-                None => (),
+                if let Some(processor) = self.libfunc_processors.get(libfunc.as_str()) {
+                    processor.to_llvm(&self.module, self.context, self.builder)?;
+                }
             }
         }
         // Move to the next state.
