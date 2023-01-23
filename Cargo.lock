@@ -1817,6 +1817,7 @@ dependencies = [
  "eyre",
  "inkwell",
  "log",
+ "num-bigint",
  "tempdir",
 ]
 
