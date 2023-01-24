@@ -71,7 +71,7 @@ pub struct Compiler<'a, 'ctx> {
     pub types: HashMap<&'ctx str, Box<dyn BasicType<'ctx> + 'a>>,
     /// The library functions processors. Each processor is responsible for processing a specific
     /// libfunc and generating the corresponding LLVM IR.
-    pub libfunc_processors: HashMap<String, Func<'a, 'ctx>>,
+    pub libfunc_processors: HashMap<String, Func<'ctx>>,
     pub main_calls: Vec<BasicValueEnum<'ctx>>,
 }
 

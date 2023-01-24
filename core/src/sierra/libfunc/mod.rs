@@ -8,16 +8,16 @@ use super::errors::CompilerError;
 
 /// Add is a processor that will generate the LLVM IR for the add function.
 /// It can handle any numeric types.
-pub struct Func<'a, 'ctx> {
+pub struct Func<'ctx> {
     pub parameter_types: Vec<BasicMetadataTypeEnum<'ctx>>,
     pub output_type: BasicTypeEnum<'ctx>,
-    pub body_creator_type: Box<dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx>,
+    pub body_creator_type: Box<dyn LlvmBodyProcessor<'ctx> + 'ctx>,
 }
-impl<'a, 'ctx> Func<'a, 'ctx> {
+impl<'ctx> Func<'ctx> {
     pub fn new(
         parameter_types: Vec<BasicMetadataTypeEnum<'ctx>>,
         output_type: BasicTypeEnum<'ctx>,
-        body_creator_type: Box<dyn LlvmBodyProcessor<'a, 'ctx> + 'ctx>,
+        body_creator_type: Box<dyn LlvmBodyProcessor<'ctx> + 'ctx>,
     ) -> Self {
         Self { parameter_types, output_type, body_creator_type }
     }
@@ -29,7 +29,7 @@ pub struct LlvmMathConst {
     pub value: u64,
 }
 
-pub trait LlvmBodyProcessor<'a, 'ctx> {
+pub trait LlvmBodyProcessor<'ctx> {
     fn create_body(
         &self,
         builder: &Builder<'ctx>,
@@ -37,7 +37,7 @@ pub trait LlvmBodyProcessor<'a, 'ctx> {
     ) -> Result<IntValue<'ctx>, CompilerError>;
 }
 
-impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathAdd {
+impl<'ctx> LlvmBodyProcessor<'ctx> for LlvmMathAdd {
     fn create_body(
         &self,
         builder: &Builder<'ctx>,
@@ -50,7 +50,7 @@ impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathAdd {
         ))
     }
 }
-impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathSub {
+impl<'ctx> LlvmBodyProcessor<'ctx> for LlvmMathSub {
     fn create_body(
         &self,
         builder: &Builder<'ctx>,
@@ -63,7 +63,7 @@ impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathSub {
         ))
     }
 }
-impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathConst {
+impl<'ctx> LlvmBodyProcessor<'ctx> for LlvmMathConst {
     fn create_body(
         &self,
         _builder: &Builder<'ctx>,
@@ -80,7 +80,7 @@ impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathConst {
 
 /// LibfuncProcessor is a trait that will be implemented by all libfunc processors.
 /// It will be used to generate the LLVM IR for the libfunc.
-pub trait LibfuncProcessor<'a, 'ctx> {
+pub trait LibfuncProcessor<'ctx> {
     /// Generate the LLVM IR for the libfunc.
     /// The function will be added to the module.
     /// The function will be named `fn_name`.
@@ -99,7 +99,7 @@ pub trait LibfuncProcessor<'a, 'ctx> {
     ) -> Result<(), CompilerError>;
 }
 
-impl<'a, 'ctx> LibfuncProcessor<'a, 'ctx> for Func<'a, 'ctx> {
+impl<'ctx> LibfuncProcessor<'ctx> for Func<'ctx> {
     /// See the trait documentation (`LibfuncProcessor`).
     fn to_llvm(
         &self,
