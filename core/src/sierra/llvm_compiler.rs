@@ -62,7 +62,7 @@ pub struct Compiler<'a, 'ctx> {
     /// The variables of the program.
     pub variables: HashMap<String, Option<PointerValue<'ctx>>>,
     /// The output path.
-    pub output_path: &'a str,
+    pub output_path: String,
     /// The current compilation state.
     pub state: CompilationState,
     /// The valid state transitions.
@@ -201,7 +201,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             builder: &builder,
             module,
             variables,
-            output_path,
+            output_path: output_path.to_owned(),
             state: CompilationState::NotStarted,
             valid_state_transitions,
             types,
@@ -232,7 +232,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::StatementsProcessed)?;
         // Ensure output path is valid and exists.
-        let output_path = Path::new(self.output_path);
+        let output_path = Path::new(self.output_path.as_str());
         // let parent =
         //     output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
         // // Recursively create the output path parent directories if they don't exist.
