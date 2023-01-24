@@ -2,9 +2,9 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum};
-use inkwell::values::{FunctionValue, IntValue};
+use inkwell::values::{BasicValue, FunctionValue};
 
-use crate::sierra::errors::CompilerError;
+use crate::sierra::errors::{CompilerError, CompilerResult};
 
 /// LibfuncProcessor is a trait that will be implemented by all libfunc processors.
 /// It will be used to generate the LLVM IR for the libfunc.
@@ -36,8 +36,6 @@ impl<'ctx> LibfuncProcessor<'ctx> for Func<'ctx> {
         builder: &Builder<'ctx>,
         func_name: &str,
     ) -> Result<(), CompilerError> {
-        // Convert the parameters to BasicTypeEnum and store them in a vector.
-
         // Create the function,
         let function = module.add_function(
             func_name,
@@ -47,18 +45,30 @@ impl<'ctx> LibfuncProcessor<'ctx> for Func<'ctx> {
         builder.position_at_end(context.append_basic_block(function, "entry"));
 
         // Return the result
-        builder
-            .build_return(Some(&self.body_creator_type.create_body(builder, &function).unwrap()));
+        builder.build_return(Some(
+            &self.body_creator_type.create_body(builder, &function).unwrap().as_basic_value_enum(),
+        ));
         Ok(())
     }
 }
 
+/// LlvmBodyProcessor is a trait that will be implemented by all llvm types.
+/// It will be used to generate the LLVM IR body of a function.
 pub trait LlvmBodyProcessor<'ctx> {
+    /// Generate the LLVM IR body for a core lib function.
+    /// The body will be added in the function.
+    ///
+    /// # Arguments
+    ///
+    /// * `builder` - The builder used to create the function.
+    /// * `fn_value` - The rust object representing the LLVM IR function.
+    ///
+    /// # Returns
     fn create_body(
         &self,
         builder: &Builder<'ctx>,
-        fn_type: &FunctionValue<'ctx>,
-    ) -> Result<IntValue<'ctx>, CompilerError>;
+        fn_value: &FunctionValue<'ctx>,
+    ) -> CompilerResult<Box<dyn BasicValue<'ctx> + 'ctx>>;
 }
 
 /// Add is a processor that will generate the LLVM IR for the add function.
