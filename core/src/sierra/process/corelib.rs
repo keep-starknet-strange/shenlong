@@ -9,6 +9,10 @@ use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Prepare the libfunc core processors (those are functions from the core lib).
+    ///
+    /// # Errors
+    ///
+    /// If the preparation of the processing of the core lib functions fails.
     pub fn prepare_libfunc_processors(&mut self) -> CompilerResult<()> {
         let felt_type = self.types.get("felt").unwrap();
         // Add two felts and return the result.
@@ -35,6 +39,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Process core library functions in the Sierra program.
+    ///
+    /// # Errors
+    ///
+    /// if the processing of the core lib functions fails.
     pub fn process_core_lib_functions(&mut self) -> CompilerResult<()> {
         debug!("processing core lib functions");
         // Check that the current state is valid.
