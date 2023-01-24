@@ -253,9 +253,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         compiler.finalize_compilation()
     }
 
-    /// Prepare the libfunc processors.
+    /// Prepare the libfunc core processors (those are functions from the core lib).
     fn prepare_libfunc_processors(&mut self) -> Result<(), CompilerErr> {
-        let felt_type = self.types.get("felt").unwrap(); //.ok_or(eyre!("Type not found"))?;
+        let felt_type = self.types.get("felt").unwrap();
         // Add two felts and return the result.
         let felt_add = "felt_add".to_owned();
 
@@ -284,8 +284,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::NotStarted)?;
         for type_declaration in self.program.type_declarations.iter() {
-            // Matching on the long id because it'll always ? have a debug name (see
-            // fib.weird.sierra)
+            // Matching on the long id because it'll always have a debug name
             match &type_declaration.long_id.generic_id.debug_name {
                 Some(type_name) => match type_name.as_str() {
                     "felt" => {
@@ -304,6 +303,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.move_to(CompilationState::TypesProcessed)
     }
 
+    /// Process the constants of this sierra program.
     fn process_const(
         &mut self,
         libfunc_declaration: &LibfuncDeclaration,
@@ -372,22 +372,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Move to the next state.
         self.move_to(CompilationState::CoreLibFunctionsProcessed)
     }
+
+    /// Allocate an llvm pointer variable and save it in the hashmap.
     fn save_in_var(&mut self, id: &u64) -> Result<(), CompilerErr> {
         let felt_type =
             self.types.get("felt").ok_or(CompilerErr::TypeNotFound("felt".to_owned()))?;
         let var_ptr =
             self.builder.build_alloca(felt_type.as_basic_type_enum(), &format!("{id:}_ptr"));
-        // let res_val = self
-        //     .builder
-        //     .build_call(
-        //         function,
-        //         &args,
-        //         format!("val{}", invocation.branches[0].results[0].id).as_str(),
-        //     )
-        //     .try_as_basic_value()
-        //     .left()
-        //     .unwrap();
-        // self.builder.build_store(res_ptr, res_val);
         self.variables.insert(id.to_string(), Some(var_ptr));
         Ok(())
     }
@@ -503,6 +494,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Check if the compilation is in a valid state.
     /// If the compilation is not in a valid state, return an error.
+    #[inline(always)]
     fn check_state(&self, expected_state: &CompilationState) -> Result<(), CompilerErr> {
         if self.state() != expected_state { Err(CompilerErr::InvalidState) } else { Ok(()) }
     }
@@ -527,6 +519,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// * `valid_transitions` - The valid state transitions.
     /// # Errors
     /// If the transition is not valid, return an error.
+    #[inline]
     fn is_valid_transition(
         transition: CompilationStateTransition,
         valid_transitions: &HashMap<(CompilationState, CompilationState), bool>,
@@ -541,6 +534,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Get the current compilation state.
+    #[inline(always)]
     pub fn state(&self) -> &CompilationState {
         &self.state
     }
@@ -566,6 +560,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// * `invalid_transition` - The invalid state transition.
     /// # Errors
     /// Always returns an error.
+    #[inline(always)]
     fn err_invalid_state_transition(invalid_transition: CompilationStateTransition) -> CompilerErr {
         CompilerErr::InvalidStateTransition(invalid_transition.0, invalid_transition.1)
     }
