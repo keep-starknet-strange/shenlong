@@ -4,6 +4,7 @@ use log::debug;
 use crate::sierra::errors::{CompilerError, CompilerResult};
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 
+/// Implementation for the type processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Process types in the Sierra program.
     /// For each type declaration in the Sierra program, create a corresponding type in the LLVM

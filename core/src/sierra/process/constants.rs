@@ -7,6 +7,7 @@ use crate::sierra::libfunc::math::constants::LlvmMathConst;
 use crate::sierra::libfunc::processor::Func;
 use crate::sierra::llvm_compiler::Compiler;
 
+/// Implementation of the constant processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Process the constants of this sierra program.
     ///
