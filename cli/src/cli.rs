@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use eyre::Result;
+use eyre::{eyre, Result};
 use shenlong_core::sierra::llvm_compiler;
 
 use crate::emoji;
@@ -34,7 +34,8 @@ impl Command {
                     llvm_compiler::Compiler::compile_from_file(
                         &program_path,
                         &output_path.unwrap(),
-                    )?;
+                    )
+                    .map_err(|e| eyre!(e.to_string()))?;
                     println!("{} Program compiled successfully.", emoji::CHECK_MARK_BUTTON);
                     Ok(())
                 }

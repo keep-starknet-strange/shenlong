@@ -10,8 +10,8 @@ inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", feat
     "llvm10-0",
 ] }
 cairo-lang-sierra = { git = "https://github.com/starkware-libs/cairo", branch = "main" }
-eyre = "0.6.8"
 log = "0.4.17"
 env_logger = "0.10.0"
 tempdir = "0.3.7"
 num-bigint = "0.4"
+thiserror = "1.0.38"

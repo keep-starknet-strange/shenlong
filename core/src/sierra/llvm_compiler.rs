@@ -38,7 +38,6 @@ use std::path::Path;
 use cairo_lang_sierra::program::GenericArg::Value;
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, LibfuncDeclaration, Program};
 use cairo_lang_sierra::ProgramParser;
-use eyre::{eyre, Result};
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
@@ -46,9 +45,36 @@ use inkwell::types::{BasicMetadataTypeEnum, BasicType};
 use inkwell::values::{BasicValue, BasicValueEnum, PointerValue};
 use log::debug;
 use num_bigint::BigInt;
+use thiserror::Error;
 
 use super::libfunc::{Func, LibfuncProcessor, LlvmMathConst, LlvmMathSub};
 use crate::sierra::libfunc::LlvmMathAdd;
+
+#[derive(Error, Debug)]
+pub enum CompilerErr {
+    #[error("Variable \"{0}\" not found")]
+    VarNotFound(String),
+    #[error("Function \"{0}\" not found")]
+    FuncNotFound(String),
+    #[error("Type \"{0}\" not found")]
+    TypeNotFound(String),
+    #[error("No type provided")]
+    NoTypeProvided,
+    #[error("Variable has no debug name")]
+    NoDebugName,
+    #[error("No return value")]
+    NoReturnValue,
+    #[error("No return type")]
+    NoReturnType,
+    #[error(transparent)]
+    LlvmPrintError(#[from] inkwell::support::LLVMString),
+    #[error(transparent)]
+    PathNotFound(#[from] std::io::Error),
+    #[error("invalid state transition: {0:?} -> {1:?}")]
+    InvalidStateTransition(CompilationState, CompilationState),
+    #[error("Invalid state")]
+    InvalidState,
+}
 
 /// Compiler is the main entry point for the LLVM backend.
 /// It is responsible for compiling a Sierra program to LLVM IR.
@@ -118,7 +144,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    pub fn compile_from_file(program_path: &str, output_path: &str) -> Result<()> {
+    pub fn compile_from_file(program_path: &str, output_path: &str) -> Result<(), CompilerErr> {
         // Read the program from the file.
         let sierra_code = fs::read_to_string(program_path)?;
         Compiler::compile_from_code(&sierra_code, output_path)
@@ -132,7 +158,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    pub fn compile_from_code(sierra_code: &str, output_path: &str) -> Result<()> {
+    pub fn compile_from_code(sierra_code: &str, output_path: &str) -> Result<(), CompilerErr> {
         // Parse the program.
         let program = ProgramParser::new().parse(sierra_code).unwrap();
         Compiler::compile_sierra_program_to_llvm(program, output_path)
@@ -172,7 +198,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
     /// // Check the result.
     /// ```
-    pub fn compile_sierra_program_to_llvm(program: Program, output_path: &str) -> Result<()> {
+    pub fn compile_sierra_program_to_llvm(
+        program: Program,
+        output_path: &str,
+    ) -> Result<(), CompilerErr> {
         // Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
         // Context is an opaque object that owns a lot of core LLVM data structures, such as the
@@ -225,7 +254,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Prepare the libfunc processors.
-    fn prepare_libfunc_processors(&mut self) -> Result<()> {
+    fn prepare_libfunc_processors(&mut self) -> Result<(), CompilerErr> {
         let felt_type = self.types.get("felt").unwrap(); //.ok_or(eyre!("Type not found"))?;
         // Add two felts and return the result.
         let felt_add = "felt_add".to_owned();
@@ -249,7 +278,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Process types in the Sierra program.
     /// For each type declaration in the Sierra program, create a corresponding type in the LLVM
     /// context.
-    fn process_types(&mut self) -> Result<()> {
+    fn process_types(&mut self) -> Result<(), CompilerErr> {
         debug!("processing types");
 
         // Check that the current state is valid.
@@ -268,14 +297,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     "NonZero" => (),
                     _ => println!("{type_name} is not a felt"),
                 },
-                _ => return Err(eyre!("No type name found")),
+                _ => return Err(CompilerErr::NoTypeProvided),
             }
         }
         // Move to the next state.
         self.move_to(CompilationState::TypesProcessed)
     }
 
-    fn process_const(&mut self, libfunc_declaration: &LibfuncDeclaration) -> Result<String> {
+    fn process_const(
+        &mut self,
+        libfunc_declaration: &LibfuncDeclaration,
+    ) -> Result<String, CompilerErr> {
         let converted = libfunc_declaration
             .long_id
             .generic_args
@@ -296,13 +328,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .generic_id
                 .debug_name
                 .clone()
-                .ok_or(eyre!("No debug name"))?
+                .ok_or(CompilerErr::NoDebugName)?
                 .to_string(),
             converted[0]
         );
 
         let parameter_types = vec![];
-        let const_type = self.types.get("felt").ok_or(eyre!("Type doesn't exist"))?;
+        let const_type =
+            self.types.get("felt").ok_or(CompilerErr::TypeNotFound("felt".to_owned()))?;
         self.libfunc_processors.insert(
             felt_const.clone(),
             Func::new(
@@ -315,7 +348,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Process core library functions in the Sierra program.
-    fn process_core_lib_functions(&mut self) -> Result<()> {
+    fn process_core_lib_functions(&mut self) -> Result<(), CompilerErr> {
         debug!("processing core lib functions");
         // Check that the current state is valid.
         self.check_state(&CompilationState::TypesProcessed)?;
@@ -339,8 +372,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Move to the next state.
         self.move_to(CompilationState::CoreLibFunctionsProcessed)
     }
-    fn save_in_var(&mut self, id: &u64) -> Result<()> {
-        let felt_type = self.types.get("felt").ok_or(eyre!("Type not found"))?;
+    fn save_in_var(&mut self, id: &u64) -> Result<(), CompilerErr> {
+        let felt_type =
+            self.types.get("felt").ok_or(CompilerErr::TypeNotFound("felt".to_owned()))?;
         let var_ptr =
             self.builder.build_alloca(felt_type.as_basic_type_enum(), &format!("{id:}_ptr"));
         // let res_val = self
@@ -358,7 +392,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         Ok(())
     }
     /// Process statements in the Sierra program.
-    fn process_statements(&mut self) -> Result<()> {
+    fn process_statements(&mut self) -> Result<(), CompilerErr> {
         debug!("processing statements");
         // Check that the current state is valid.
         self.check_state(&CompilationState::CoreLibFunctionsProcessed)?;
@@ -377,8 +411,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                     .build_load(
                                         self.variables
                                             .get(&argument.id.to_string())
-                                            .ok_or(eyre!("Variable not found"))?
-                                            .ok_or(eyre!("Variable not found"))?,
+                                            .ok_or(CompilerErr::VarNotFound(
+                                                argument.id.to_string(),
+                                            ))?
+                                            .ok_or(CompilerErr::VarNotFound(
+                                                argument.id.to_string(),
+                                            ))?,
                                         &argument.id.to_string(),
                                     )
                                     .into(),
@@ -397,15 +435,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .build_call(function, &args, "call_felt_add")
                             .try_as_basic_value()
                             .left()
-                            .ok_or(eyre!("No left value"))?
+                            .ok_or(CompilerErr::NoReturnValue)?
                     } else {
                         args[0].into_int_value().as_basic_value_enum()
                     };
                     let ptr = self
                         .variables
                         .get(invocation.branches[0].results[0].id.to_string().as_str())
-                        .ok_or(eyre!("Variable not found"))?
-                        .ok_or(eyre!("Variable not found"))?;
+                        .ok_or(CompilerErr::VarNotFound(
+                            invocation.branches[0].results[0].id.to_string(),
+                        ))?
+                        .ok_or(CompilerErr::VarNotFound(
+                            invocation.branches[0].results[0].id.to_string(),
+                        ))?;
                     self.builder.build_store(ptr, res);
                 }
                 GenStatement::Return(ret) => {
@@ -415,8 +457,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             &self.builder.build_load(
                                 self.variables
                                     .get(&ret[0].id.to_string())
-                                    .ok_or(eyre!("Variable not found"))?
-                                    .ok_or(eyre!("Variable not found"))?,
+                                    .ok_or(CompilerErr::VarNotFound(ret[0].id.to_string()))?
+                                    .ok_or(CompilerErr::VarNotFound(ret[0].id.to_string()))?,
                                 &ret[0].id.to_string(),
                             ),
                         ));
@@ -430,7 +472,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Finalize the compilation.
     /// This includes verifying the module and writing it to the output path.
-    fn finalize_compilation(&mut self) -> Result<()> {
+    fn finalize_compilation(&mut self) -> Result<(), CompilerErr> {
         debug!("finalizing compilation");
         // Check that the current state is valid.
         self.check_state(&CompilationState::StatementsProcessed)?;
@@ -441,15 +483,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // // Recursively create the output path parent directories if they don't exist.
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
-        self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
+        self.module.print_to_file(output_path)?;
         // Ensure that the current module is valid
-        self.module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
+        self.module.verify()?;
 
         // Move to the next state.
         self.move_to(CompilationState::Finalized)
     }
-    fn build_main(&mut self) -> Result<()> {
-        let args_type = self.types.get("felt").ok_or(eyre!("Type not found"))?;
+    fn build_main(&mut self) -> Result<(), CompilerErr> {
+        let args_type =
+            self.types.get("felt").ok_or(CompilerErr::TypeNotFound("felt".to_owned()))?;
         let main_type = args_type.fn_type(&[], false);
         let main_func = self.module.add_function("main", main_type, None);
         let main_bb = self.context.append_basic_block(main_func, "entry");
@@ -460,12 +503,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Check if the compilation is in a valid state.
     /// If the compilation is not in a valid state, return an error.
-    fn check_state(&self, expected_state: &CompilationState) -> Result<()> {
-        if self.state() != expected_state {
-            Err(eyre::eyre!("compilation is not in a valid state"))
-        } else {
-            Ok(())
-        }
+    fn check_state(&self, expected_state: &CompilationState) -> Result<(), CompilerErr> {
+        if self.state() != expected_state { Err(CompilerErr::InvalidState) } else { Ok(()) }
     }
 
     /// Move the compilation state to the next state.
@@ -473,7 +512,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// * `state` - The new compilation state.
     /// # Errors
     /// If the transition is not valid, return an error.
-    fn move_to(&mut self, state: CompilationState) -> Result<()> {
+    fn move_to(&mut self, state: CompilationState) -> Result<(), CompilerErr> {
         Compiler::is_valid_transition(
             (self.state().clone(), state.clone()),
             &self.valid_state_transitions,
@@ -491,7 +530,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     fn is_valid_transition(
         transition: CompilationStateTransition,
         valid_transitions: &HashMap<(CompilationState, CompilationState), bool>,
-    ) -> Result<()> {
+    ) -> Result<(), CompilerErr> {
         match valid_transitions.get(&transition) {
             Some(valid) => match valid {
                 true => Ok(()),
@@ -527,13 +566,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// * `invalid_transition` - The invalid state transition.
     /// # Errors
     /// Always returns an error.
-    fn err_invalid_state_transition(
-        invalid_transition: CompilationStateTransition,
-    ) -> eyre::Report {
-        eyre::eyre!(
-            "invalid state transition: {:?} -> {:?}",
-            invalid_transition.0,
-            invalid_transition.1
-        )
+    fn err_invalid_state_transition(invalid_transition: CompilationStateTransition) -> CompilerErr {
+        CompilerErr::InvalidStateTransition(invalid_transition.0, invalid_transition.1)
     }
 }

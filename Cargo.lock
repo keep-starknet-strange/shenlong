@@ -1814,11 +1814,11 @@ version = "0.1.0"
 dependencies = [
  "cairo-lang-sierra",
  "env_logger 0.10.0",
- "eyre",
  "inkwell",
  "log",
  "num-bigint",
  "tempdir",
+ "thiserror",
 ]
 
 [[package]]
