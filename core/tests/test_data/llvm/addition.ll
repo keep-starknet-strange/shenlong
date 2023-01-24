@@ -20,25 +20,25 @@ entry:
 define i252 @main() {
 entry:
   %"0_ptr" = alloca i252
-  %call_felt_add = call i252 @"1"()
-  store i252 %call_felt_add, i252* %"0_ptr"
+  %0 = call i252 @"1"()
+  store i252 %0, i252* %"0_ptr"
   %"1_ptr" = alloca i252
-  %call_felt_add1 = call i252 @"2"()
-  store i252 %call_felt_add1, i252* %"1_ptr"
+  %1 = call i252 @"2"()
+  store i252 %1, i252* %"1_ptr"
   %"0" = load i252, i252* %"0_ptr"
-  %"0_ptr2" = alloca i252
-  store i252 %"0", i252* %"0_ptr2"
-  %"03" = load i252, i252* %"0_ptr2"
+  %"0_ptr1" = alloca i252
+  store i252 %"0", i252* %"0_ptr1"
+  %"02" = load i252, i252* %"0_ptr1"
   %"1" = load i252, i252* %"1_ptr"
   %"2_ptr" = alloca i252
-  %call_felt_add4 = call i252 @"0"(i252 %"03", i252 %"1")
-  store i252 %call_felt_add4, i252* %"2_ptr"
+  %2 = call i252 @"0"(i252 %"02", i252 %"1")
+  store i252 %2, i252* %"2_ptr"
   %"2" = load i252, i252* %"2_ptr"
-  %"2_ptr5" = alloca i252
-  store i252 %"2", i252* %"2_ptr5"
-  %"26" = load i252, i252* %"2_ptr5"
+  %"2_ptr3" = alloca i252
+  store i252 %"2", i252* %"2_ptr3"
+  %"24" = load i252, i252* %"2_ptr3"
   %"3_ptr" = alloca i252
-  store i252 %"26", i252* %"3_ptr"
+  store i252 %"24", i252* %"3_ptr"
   %"3" = load i252, i252* %"3_ptr"
   ret i252 %"3"
 }

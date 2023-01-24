@@ -68,7 +68,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     }
                     let res = if let Some(function) = func {
                         self.builder
-                            .build_call(function, &args, "call_felt_add")
+                            .build_call(function, &args, "")
                             .try_as_basic_value()
                             .left()
                             .ok_or(CompilerError::NoReturnValue)?
