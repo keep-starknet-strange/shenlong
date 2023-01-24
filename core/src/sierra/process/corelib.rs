@@ -7,6 +7,7 @@ use crate::sierra::libfunc::math::sub::LlvmMathSub;
 use crate::sierra::libfunc::processor::{Func, LibfuncProcessor};
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 
+/// Implementation of the corelib functions processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Prepare the libfunc core processors (those are functions from the core lib).
     ///

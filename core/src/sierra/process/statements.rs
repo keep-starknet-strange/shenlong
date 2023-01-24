@@ -5,6 +5,7 @@ use log::debug;
 use crate::sierra::errors::{CompilerError, CompilerResult};
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 
+/// Implementation of the statement processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Build an artificial main function to be able to run the generated LLVM IR file.
     fn build_main(&mut self) -> CompilerResult<()> {
