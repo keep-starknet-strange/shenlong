@@ -43,7 +43,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType};
-use inkwell::values::{BasicValueEnum, PointerValue};
+use inkwell::values::{BasicValue, BasicValueEnum, PointerValue};
 use log::debug;
 use num_bigint::BigInt;
 
@@ -364,52 +364,66 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.check_state(&CompilationState::CoreLibFunctionsProcessed)?;
         self.build_main()?;
         for statement in self.program.statements.iter() {
-            if let GenStatement::Invocation(invocation) = statement {
-                let func = self.module.get_function(invocation.libfunc_id.id.to_string().as_str());
-                if func.is_none() {
-                    continue;
-                }
-                let function = func.unwrap();
+            match statement {
+                GenStatement::Invocation(invocation) => {
+                    let func =
+                        self.module.get_function(invocation.libfunc_id.id.to_string().as_str());
 
-                let mut args = vec![];
-                if !invocation.args.is_empty() {
-                    for argument in invocation.args.iter() {
-                        args.push(
-                            self.builder
-                                .build_load(
-                                    self.variables
-                                        .get(&argument.id.to_string())
-                                        .ok_or(eyre!("Variable not found"))?
-                                        .ok_or(eyre!("Variable not found"))?,
-                                    &argument.id.to_string(),
-                                )
-                                .into(),
-                        );
+                    let mut args = vec![];
+                    if !invocation.args.is_empty() {
+                        for argument in invocation.args.iter() {
+                            args.push(
+                                self.builder
+                                    .build_load(
+                                        self.variables
+                                            .get(&argument.id.to_string())
+                                            .ok_or(eyre!("Variable not found"))?
+                                            .ok_or(eyre!("Variable not found"))?,
+                                        &argument.id.to_string(),
+                                    )
+                                    .into(),
+                            );
+                        }
+                    }
+                    if invocation.branches.len() == 1
+                        && invocation.branches[0].target == GenBranchTarget::Fallthrough
+                    {
+                        for result in invocation.branches[0].results.iter() {
+                            self.save_in_var(&result.id)?;
+                        }
+                    }
+                    let res = if let Some(function) = func {
+                        self.builder
+                            .build_call(function, &args, "call_felt_add")
+                            .try_as_basic_value()
+                            .left()
+                            .ok_or(eyre!("No left value"))?
+                    } else {
+                        args[0].into_int_value().as_basic_value_enum()
+                    };
+                    let ptr = self
+                        .variables
+                        .get(invocation.branches[0].results[0].id.to_string().as_str())
+                        .ok_or(eyre!("Variable not found"))?
+                        .ok_or(eyre!("Variable not found"))?;
+                    self.builder.build_store(ptr, res);
+                }
+                GenStatement::Return(ret) => {
+                    if ret.len() == 1 {
+                        println!("{:?}", self.variables);
+                        self.builder.build_return(Some(
+                            &self.builder.build_load(
+                                self.variables
+                                    .get(&ret[0].id.to_string())
+                                    .ok_or(eyre!("Variable not found"))?
+                                    .ok_or(eyre!("Variable not found"))?,
+                                &ret[0].id.to_string(),
+                            ),
+                        ));
                     }
                 }
-                if invocation.branches.len() == 1
-                    && invocation.branches[0].target == GenBranchTarget::Fallthrough
-                {
-                    for result in invocation.branches[0].results.iter() {
-                        self.save_in_var(&result.id)?;
-                    }
-                }
-                let res = self
-                    .builder
-                    .build_call(function, &args, "call_felt_add")
-                    .try_as_basic_value()
-                    .left()
-                    .ok_or(eyre!("No left value"))?;
-                let ptr = self
-                    .variables
-                    .get(invocation.branches[0].results[0].id.to_string().as_str())
-                    .ok_or(eyre!("Variable not found"))?
-                    .ok_or(eyre!("Variable not found"))?;
-                self.builder.build_store(ptr, res);
             }
-            // println!("{:?}", statement);
         }
-        self.builder.build_return(None);
         // Move to the next state.
         self.move_to(CompilationState::StatementsProcessed)
     }
@@ -420,8 +434,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug!("finalizing compilation");
         // Check that the current state is valid.
         self.check_state(&CompilationState::StatementsProcessed)?;
-        // Ensure that the current module is valid
-        println!("{:?}", self.module.print_to_string());
         // Ensure output path is valid and exists.
         let output_path = Path::new(self.output_path);
         // let parent =
@@ -430,13 +442,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
         self.module.print_to_file(output_path).map_err(|e| eyre::eyre!(e.to_string()))?;
+        // Ensure that the current module is valid
         self.module.verify().map_err(|e| eyre::eyre!(e.to_string()))?;
 
         // Move to the next state.
         self.move_to(CompilationState::Finalized)
     }
     fn build_main(&mut self) -> Result<()> {
-        let args_type = self.context.void_type();
+        let args_type = self.types.get("felt").ok_or(eyre!("Type not found"))?;
         let main_type = args_type.fn_type(&[], false);
         let main_func = self.module.add_function("main", main_type, None);
         let main_bb = self.context.append_basic_block(main_func, "entry");
