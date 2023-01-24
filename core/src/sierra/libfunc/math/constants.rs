@@ -4,7 +4,9 @@ use inkwell::values::{BasicValue, FunctionValue};
 use crate::sierra::errors::{CompilerError, CompilerResult};
 use crate::sierra::libfunc::processor::LlvmBodyProcessor;
 
+/// LlvmMathConst represents a constant of a numeric type.
 pub struct LlvmMathConst {
+    /// The value of the constant.
     pub value: u64,
 }
 

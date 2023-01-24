@@ -64,6 +64,8 @@ pub trait LlvmBodyProcessor<'ctx> {
     /// * `fn_value` - The rust object representing the LLVM IR function.
     ///
     /// # Returns
+    ///
+    /// The LLVM IR function return value.
     fn create_body(
         &self,
         builder: &Builder<'ctx>,
@@ -71,13 +73,17 @@ pub trait LlvmBodyProcessor<'ctx> {
     ) -> CompilerResult<Box<dyn BasicValue<'ctx> + 'ctx>>;
 }
 
-/// Add is a processor that will generate the LLVM IR for the add function.
-/// It can handle any numeric types.
+/// Func stores all the needed information to process a sierra function into a LLVM IR function.
 pub struct Func<'ctx> {
+    /// The function's input LLVM IR type.
     pub parameter_types: Vec<BasicMetadataTypeEnum<'ctx>>,
+    /// The function's output LLVM IR type.
     pub output_type: BasicTypeEnum<'ctx>,
+    /// The appropriate LLVM IR body creator.
     pub body_creator_type: Box<dyn LlvmBodyProcessor<'ctx> + 'ctx>,
 }
+
+/// Implementation of Func.
 impl<'ctx> Func<'ctx> {
     pub fn new(
         parameter_types: Vec<BasicMetadataTypeEnum<'ctx>>,
