@@ -3,7 +3,8 @@ use cairo_lang_sierra::program::LibfuncDeclaration;
 use num_bigint::BigInt;
 
 use crate::sierra::errors::{CompilerError, CompilerResult};
-use crate::sierra::libfunc::{Func, LlvmMathConst};
+use crate::sierra::libfunc::math::constants::LlvmMathConst;
+use crate::sierra::libfunc::processor::Func;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {

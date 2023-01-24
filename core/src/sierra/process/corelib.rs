@@ -2,7 +2,9 @@ use inkwell::types::BasicMetadataTypeEnum;
 use log::debug;
 
 use crate::sierra::errors::CompilerResult;
-use crate::sierra::libfunc::{Func, LibfuncProcessor, LlvmMathAdd, LlvmMathSub};
+use crate::sierra::libfunc::math::add::LlvmMathAdd;
+use crate::sierra::libfunc::math::sub::LlvmMathSub;
+use crate::sierra::libfunc::processor::{Func, LibfuncProcessor};
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {

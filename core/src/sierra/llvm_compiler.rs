@@ -45,7 +45,7 @@ use inkwell::values::{BasicValueEnum, PointerValue};
 use log::debug;
 
 use super::errors::CompilerResult;
-use super::libfunc::Func;
+use super::libfunc::processor::Func;
 use crate::sierra::errors::CompilerError;
 
 /// Compiler is the main entry point for the LLVM backend.
