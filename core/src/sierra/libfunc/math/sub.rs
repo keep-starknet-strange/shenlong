@@ -4,6 +4,7 @@ use inkwell::values::{BasicValue, FunctionValue};
 use crate::sierra::errors::CompilerResult;
 use crate::sierra::libfunc::processor::LlvmBodyProcessor;
 
+/// Body processor for the `-` operator of any numeric type.
 pub struct LlvmMathSub {}
 
 /// Implementation of the LlvmBodyProcessor trait for the - function for int types.

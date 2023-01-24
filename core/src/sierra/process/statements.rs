@@ -1,3 +1,4 @@
+/// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement};
 use inkwell::values::BasicValue;
 use log::debug;
