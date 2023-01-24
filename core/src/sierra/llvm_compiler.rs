@@ -183,11 +183,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// ```rust
     /// use std::fs;
     ///
+    /// use cairo_lang_sierra::ProgramParser;
     /// use shenlong_core::sierra::llvm_compiler::Compiler;
-    /// use sierra::ProgramParser;
     ///
-    /// let sierra_program_path = "examples/program.sierra";
-    /// let llvm_ir_path = "examples/program.ll";
+    /// let sierra_program_path = "../examples/program.sierra";
+    /// let llvm_ir_path = "../examples/program.ll";
     ///
     /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
@@ -443,7 +443,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
                 GenStatement::Return(ret) => {
                     if ret.len() == 1 {
-                        println!("{:?}", self.variables);
                         self.builder.build_return(Some(
                             &self.builder.build_load(
                                 self.variables
