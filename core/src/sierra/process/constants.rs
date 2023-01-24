@@ -1,3 +1,4 @@
+/// This file contains everything related to sierra constant processing.
 use cairo_lang_sierra::program::GenericArg::Value;
 use cairo_lang_sierra::program::LibfuncDeclaration;
 use num_bigint::BigInt;
