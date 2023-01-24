@@ -4,7 +4,7 @@ use inkwell::module::Module;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum};
 use inkwell::values::{FunctionValue, IntValue};
 
-use super::llvm_compiler::CompilerErr;
+use super::errors::CompilerError;
 
 /// Add is a processor that will generate the LLVM IR for the add function.
 /// It can handle any numeric types.
@@ -34,7 +34,7 @@ pub trait LlvmBodyProcessor<'a, 'ctx> {
         &self,
         builder: &Builder<'ctx>,
         fn_type: &FunctionValue<'ctx>,
-    ) -> Result<IntValue<'ctx>, CompilerErr>;
+    ) -> Result<IntValue<'ctx>, CompilerError>;
 }
 
 impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathAdd {
@@ -42,7 +42,7 @@ impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathAdd {
         &self,
         builder: &Builder<'ctx>,
         fn_type: &FunctionValue<'ctx>,
-    ) -> Result<IntValue<'ctx>, CompilerErr> {
+    ) -> Result<IntValue<'ctx>, CompilerError> {
         Ok(builder.build_int_add(
             fn_type.get_first_param().unwrap().into_int_value(),
             fn_type.get_last_param().unwrap().into_int_value(),
@@ -55,7 +55,7 @@ impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathSub {
         &self,
         builder: &Builder<'ctx>,
         fn_type: &FunctionValue<'ctx>,
-    ) -> Result<IntValue<'ctx>, CompilerErr> {
+    ) -> Result<IntValue<'ctx>, CompilerError> {
         Ok(builder.build_int_sub(
             fn_type.get_first_param().unwrap().into_int_value(),
             fn_type.get_last_param().unwrap().into_int_value(),
@@ -68,11 +68,11 @@ impl<'a, 'ctx> LlvmBodyProcessor<'a, 'ctx> for LlvmMathConst {
         &self,
         _builder: &Builder<'ctx>,
         fn_type: &FunctionValue<'ctx>,
-    ) -> Result<IntValue<'ctx>, CompilerErr> {
+    ) -> Result<IntValue<'ctx>, CompilerError> {
         Ok(fn_type
             .get_type()
             .get_return_type()
-            .ok_or(CompilerErr::NoReturnType)?
+            .ok_or(CompilerError::NoReturnType)?
             .into_int_type()
             .const_int(self.value, false))
     }
@@ -96,7 +96,7 @@ pub trait LibfuncProcessor<'a, 'ctx> {
         context: &Context,
         builder: &Builder<'ctx>,
         func_name: &str,
-    ) -> Result<(), CompilerErr>;
+    ) -> Result<(), CompilerError>;
 }
 
 impl<'a, 'ctx> LibfuncProcessor<'a, 'ctx> for Func<'a, 'ctx> {
@@ -107,7 +107,7 @@ impl<'a, 'ctx> LibfuncProcessor<'a, 'ctx> for Func<'a, 'ctx> {
         context: &Context,
         builder: &Builder<'ctx>,
         func_name: &str,
-    ) -> Result<(), CompilerErr> {
+    ) -> Result<(), CompilerError> {
         // Convert the parameters to BasicTypeEnum and store them in a vector.
 
         // Create the function,
