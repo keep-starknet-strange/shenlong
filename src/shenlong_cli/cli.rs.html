@@ -75,14 +75,11 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
-<span id="78">78</span>
-<span id="79">79</span>
-<span id="80">80</span>
-<span id="81">81</span>
-</pre><pre class="rust"><code><span class="kw">use </span>clap::{Parser, Subcommand};
-<span class="kw">use </span>eyre::Result;
+</pre><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
+
+<span class="kw">use </span>clap::{Parser, Subcommand};
+<span class="kw">use </span>eyre::{eyre, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>shenlong_core::sierra::llvm_compiler;
-<span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span><span class="kw">crate</span>::emoji;
 
@@ -108,20 +105,15 @@
     </span><span class="kw">pub async fn </span>run(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span><span class="self">self</span>.command {
             Commands::Sierra(sierra_commands) =&gt; <span class="kw">match </span>sierra_commands.command {
-                SierraSubCommands::CompileToLlvm {
-                    program_path,
-                    output_path,
-                } =&gt; {
+                SierraSubCommands::CompileToLlvm { program_path, output_path } =&gt; {
                     <span class="comment">// Compile the program.
                     // TODO: Handle the output path properly.
                     </span>llvm_compiler::Compiler::compile_from_file(
                         <span class="kw-2">&amp;</span>program_path,
                         <span class="kw-2">&amp;</span>output_path.unwrap(),
-                    )<span class="question-mark">?</span>;
-                    <span class="macro">println!</span>(
-                        <span class="string">&quot;{} Program compiled successfully.&quot;</span>,
-                        emoji::CHECK_MARK_BUTTON
-                    );
+                    )
+                    .map_err(|e| <span class="macro">eyre!</span>(e.to_string()))<span class="question-mark">?</span>;
+                    <span class="macro">println!</span>(<span class="string">&quot;{} Program compiled successfully.&quot;</span>, emoji::CHECK_MARK_BUTTON);
                     <span class="prelude-val">Ok</span>(())
                 }
             },
@@ -161,4 +153,4 @@
     },
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="shenlong_cli" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="shenlong_cli" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

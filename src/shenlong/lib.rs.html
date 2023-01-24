@@ -30,32 +30,34 @@
 <span id="30">30</span>
 <span id="31">31</span>
 <span id="32">32</span>
+<span id="33">33</span>
 </pre><pre class="rust"><code><span class="doccomment">//! Shenlong is a library for building LLVM IR from Cairo.
 //!
 //! Specifically, it enables you to compile Sierra code to LLVM IR.
 //!
-//! Sierra is the intermediate representation of Cairo, ensuring that the resulting Cairo assembly is always valid and provable.
+//! Sierra is the intermediate representation of Cairo, ensuring that the resulting Cairo assembly
+//! is always valid and provable.
 //!
 //! The flow of the compilation is as follows:
 //!
 //! ```text
-//!+-----------------------+
-//!|                       |
-//!|     Cairo code        |
-//!|                       |
-//!+----------+------------+
+//! +-----------------------+
+//! |                       |
+//! |     Cairo code        |
+//! |                       |
+//! +----------+------------+
 //!           |
 //!           |
-//!+----------+------------+
-//!|                       |
-//!|      Sierra           |
-//!+----------+------------+
+//! +----------+------------+
+//! |                       |
+//! |      Sierra           |
+//! +----------+------------+
 //!           |
 //!           |
-//!+----------v------------+
-//!|       LLVM IR         |
-//!|                       |
-//!+-----------------------+
+//! +----------v------------+
+//! |       LLVM IR         |
+//! |                       |
+//! +-----------------------+
 //! ```
 
 /// The core library of Shenlong compiler.
@@ -63,4 +65,4 @@
     <span class="kw">pub use </span>shenlong_core::<span class="kw-2">*</span>;
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="shenlong" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="shenlong" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

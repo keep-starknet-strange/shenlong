@@ -504,18 +504,79 @@
 <span id="504">504</span>
 <span id="505">505</span>
 <span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
 </pre><pre class="rust"><code><span class="doccomment">//! # LLVM compiler.
 //! ## Description
 //! This module contains the compiler that compiles a Sierra program to LLVM IR.
 //! The compilation can be triggered by calling different functions, depending on the input source.
-//! The input source can be a Sierra program file path, a Sierra program code as a string, or a Sierra program as a `Program` object.
-//! If the Sierra program is compiled from a file, the file will be read and the program code will be extracted.
-//! The program code will then be parsed into a `Program` object.
-//! The `Program` object will then be compiled to LLVM IR and written to a file.
+//! The input source can be a Sierra program file path, a Sierra program code as a string, or a
+//! Sierra program as a `Program` object. If the Sierra program is compiled from a file, the file
+//! will be read and the program code will be extracted. The program code will then be parsed into a
+//! `Program` object. The `Program` object will then be compiled to LLVM IR and written to a file.
 //! Here are the 3 functions that can be used to trigger the compilation:
 //! * `compile_from_file`: When the input source is a Sierra program file path.
 //! * `compile_from_code`: When the input source is a Sierra program code as a string.
-//! * `compile_sierra_program_to_llvm`: When the input source is a Sierra program as a `Program` object.
+//! * `compile_sierra_program_to_llvm`: When the input source is a Sierra program as a `Program`
+//!   object.
 //! ## Compilation steps
 //! The compilation process is split into multiple steps.
 //! The steps are executed in the following order:
@@ -525,47 +586,94 @@
 //! 4. Finalize the compilation.
 //! ## State machine
 //! The compiler is implemented as a state machine.
-//! The state machine is implemented using a `HashMap` that maps a `CompilationStateTransition` to a `bool`.
-//! The `CompilationStateTransition` is a tuple of two `CompilationState`s.
+//! The state machine is implemented using a `HashMap` that maps a `CompilationStateTransition` to a
+//! `bool`. The `CompilationStateTransition` is a tuple of two `CompilationState`s.
 //! The first state is the current state.
 //! The second state is the next state.
 //! The `bool` indicates whether the transition is valid.
 //! The state machine is initialized with all valid transitions.
 //! The state machine is updated after each compilation step.
-//! The state machine is used to ensure that the compilation steps are executed in the correct order.
-//! The state machine is also used to ensure that the compilation steps are executed only once.
-</span><span class="kw">use </span>eyre::Result;
-<span class="kw">use </span>inkwell::{
-    builder::Builder,
-    context::Context,
-    module::Module,
-    values::{BasicMetadataValueEnum, PointerValue},
-};
+//! The state machine is used to ensure that the compilation steps are executed in the correct
+//! order. The state machine is also used to ensure that the compilation steps are executed only
+//! once.
+</span><span class="kw">use </span>std::collections::HashMap;
+<span class="kw">use </span>std::fs;
+<span class="kw">use </span>std::hash::Hash;
+<span class="kw">use </span>std::path::Path;
+
+<span class="kw">use </span>cairo_lang_sierra::program::GenericArg::Value;
+<span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, GenStatement, LibfuncDeclaration, Program};
+<span class="kw">use </span>cairo_lang_sierra::ProgramParser;
+<span class="kw">use </span>inkwell::builder::Builder;
+<span class="kw">use </span>inkwell::context::Context;
+<span class="kw">use </span>inkwell::module::Module;
+<span class="kw">use </span>inkwell::types::{BasicMetadataTypeEnum, BasicType};
+<span class="kw">use </span>inkwell::values::{BasicValue, BasicValueEnum, PointerValue};
 <span class="kw">use </span>log::debug;
-<span class="kw">use </span>sierra::{
-    program::{GenericArg, Program, StatementIdx},
-    ProgramParser,
-};
-<span class="kw">use </span>std::{collections::HashMap, fs, path::Path};
+<span class="kw">use </span>num_bigint::BigInt;
+<span class="kw">use </span>thiserror::Error;
+
+<span class="kw">use </span><span class="kw">super</span>::libfunc::{Func, LibfuncProcessor, LlvmMathConst, LlvmMathSub};
+<span class="kw">use </span><span class="kw">crate</span>::sierra::libfunc::LlvmMathAdd;
+
+<span class="attribute">#[derive(Error, Debug)]
+</span><span class="kw">pub enum </span>CompilerErr {
+    <span class="attribute">#[error(<span class="string">&quot;Variable \&quot;{0}\&quot; not found&quot;</span>)]
+    </span>VarNotFound(String),
+    <span class="attribute">#[error(<span class="string">&quot;Function \&quot;{0}\&quot; not found&quot;</span>)]
+    </span>FuncNotFound(String),
+    <span class="attribute">#[error(<span class="string">&quot;Type \&quot;{0}\&quot; not found&quot;</span>)]
+    </span>TypeNotFound(String),
+    <span class="attribute">#[error(<span class="string">&quot;No type provided&quot;</span>)]
+    </span>NoTypeProvided,
+    <span class="attribute">#[error(<span class="string">&quot;Variable has no debug name&quot;</span>)]
+    </span>NoDebugName,
+    <span class="attribute">#[error(<span class="string">&quot;No return value&quot;</span>)]
+    </span>NoReturnValue,
+    <span class="attribute">#[error(<span class="string">&quot;No return type&quot;</span>)]
+    </span>NoReturnType,
+    <span class="attribute">#[error(transparent)]
+    </span>LlvmPrintError(<span class="attribute">#[from] </span>inkwell::support::LLVMString),
+    <span class="attribute">#[error(transparent)]
+    </span>PathNotFound(<span class="attribute">#[from] </span>std::io::Error),
+    <span class="attribute">#[error(<span class="string">&quot;invalid state transition: {0:?} -&gt; {1:?}&quot;</span>)]
+    </span>InvalidStateTransition(CompilationState, CompilationState),
+    <span class="attribute">#[error(<span class="string">&quot;Invalid state&quot;</span>)]
+    </span>InvalidState,
+}
 
 <span class="doccomment">/// Compiler is the main entry point for the LLVM backend.
 /// It is responsible for compiling a Sierra program to LLVM IR.
 </span><span class="kw">pub struct </span>Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-    <span class="kw">pub </span>program: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Program,
-    <span class="kw">pub </span>context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context,
-    <span class="kw">pub </span>builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Builder&lt;<span class="lifetime">&#39;ctx</span>&gt;,
-    <span class="kw">pub </span>module: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Module&lt;<span class="lifetime">&#39;ctx</span>&gt;,
-    <span class="kw">pub </span>variables: HashMap&lt;String, <span class="prelude-ty">Option</span>&lt;PointerValue&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt;&gt;,
-    <span class="kw">pub </span>output_path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str,
-    <span class="kw">pub </span>state: CompilationState,
-    <span class="kw">pub </span>valid_state_transitions: HashMap&lt;CompilationStateTransition, bool&gt;,
+    <span class="doccomment">/// The Sierra program.
+    </span><span class="kw">pub </span>program: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Program,
+    <span class="doccomment">/// The LLVM context.
+    </span><span class="kw">pub </span>context: <span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>Context,
+    <span class="doccomment">/// The LLVM builder.
+    </span><span class="kw">pub </span>builder: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Builder&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    <span class="doccomment">/// The LLVM module.
+    </span><span class="kw">pub </span>module: Module&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    <span class="doccomment">/// The variables of the program.
+    </span><span class="kw">pub </span>variables: HashMap&lt;String, <span class="prelude-ty">Option</span>&lt;PointerValue&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt;&gt;,
+    <span class="doccomment">/// The output path.
+    </span><span class="kw">pub </span>output_path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str,
+    <span class="doccomment">/// The current compilation state.
+    </span><span class="kw">pub </span>state: CompilationState,
+    <span class="doccomment">/// The valid state transitions.
+    </span><span class="kw">pub </span>valid_state_transitions: HashMap&lt;CompilationStateTransition, bool&gt;,
+    <span class="doccomment">/// The types.
+    </span><span class="kw">pub </span>types: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;ctx </span>str, Box&lt;<span class="kw">dyn </span>BasicType&lt;<span class="lifetime">&#39;ctx</span>&gt; + <span class="lifetime">&#39;a</span>&gt;&gt;,
+    <span class="doccomment">/// The library functions processors. Each processor is responsible for processing a specific
+    /// libfunc and generating the corresponding LLVM IR.
+    </span><span class="kw">pub </span>libfunc_processors: HashMap&lt;String, Func&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt;&gt;,
+    <span class="kw">pub </span>main_calls: Vec&lt;BasicValueEnum&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt;,
 }
 
 <span class="doccomment">/// Compilation state.
 /// This is used to keep track of the current compilation state.
 /// The reason is that the compilation process is split into multiple steps.
-/// The state will be used to implement a state machine that will keep track of the current compilation step.
-/// Goal is to ensure consistency in the order of the compilation steps.
+/// The state will be used to implement a state machine that will keep track of the current
+/// compilation step. Goal is to ensure consistency in the order of the compilation steps.
 /// This is important because the compilation steps are not independent.
 /// For example, the type declarations must be processed before the statements.
 /// The state machine will ensure that the compilation steps are executed in the correct order.
@@ -602,7 +710,7 @@
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    </span><span class="kw">pub fn </span>compile_from_file(program_path: <span class="kw-2">&amp;</span>str, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>compile_from_file(program_path: <span class="kw-2">&amp;</span>str, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         <span class="comment">// Read the program from the file.
         </span><span class="kw">let </span>sierra_code = fs::read_to_string(program_path)<span class="question-mark">?</span>;
         Compiler::compile_from_code(<span class="kw-2">&amp;</span>sierra_code, output_path)
@@ -616,7 +724,7 @@
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    </span><span class="kw">pub fn </span>compile_from_code(sierra_code: <span class="kw-2">&amp;</span>str, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>compile_from_code(sierra_code: <span class="kw-2">&amp;</span>str, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         <span class="comment">// Parse the program.
         </span><span class="kw">let </span>program = ProgramParser::new().parse(sierra_code).unwrap();
         Compiler::compile_sierra_program_to_llvm(program, output_path)
@@ -639,26 +747,31 @@
     /// If the compilation fails.
     /// # Example
     /// ```rust
-    /// use sierra::ProgramParser;
-    /// use shenlong_core::sierra::llvm_compiler::Compiler;
     /// use std::fs;
     ///
-    /// let sierra_program_path = &quot;examples/program.sierra&quot;;
-    /// let llvm_ir_path = &quot;examples/program.ll&quot;;
+    /// use cairo_lang_sierra::ProgramParser;
+    /// use shenlong_core::sierra::llvm_compiler::Compiler;
+    ///
+    /// let sierra_program_path = &quot;../examples/program.sierra&quot;;
+    /// let llvm_ir_path = &quot;../examples/program.ll&quot;;
     ///
     /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
     /// let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
     /// // Parse the program.
     /// let program = ProgramParser::new().parse(&amp;sierra_code).unwrap();
-    /// //Compile the program to LLVM IR.
+    /// // Compile the program to LLVM IR.
     /// let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
     /// // Check the result.
     /// ```
-    </span><span class="kw">pub fn </span>compile_sierra_program_to_llvm(program: Program, output_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub fn </span>compile_sierra_program_to_llvm(
+        program: Program,
+        output_path: <span class="kw-2">&amp;</span>str,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         <span class="comment">// Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
-        // Context is an opaque object that owns a lot of core LLVM data structures, such as the type and constant value tables
+        // Context is an opaque object that owns a lot of core LLVM data structures, such as the
+        // type and constant value tables
         </span><span class="kw">let </span>context = inkwell::context::Context::create();
         <span class="comment">// Builder is a helper object that makes it easy to create LLVM instructions.
         </span><span class="kw">let </span>builder = context.create_builder();
@@ -668,6 +781,9 @@
 
         <span class="comment">// Instantiate variables map.
         </span><span class="kw">let </span>variables: HashMap&lt;String, <span class="prelude-ty">Option</span>&lt;PointerValue&gt;&gt; = HashMap::new();
+        <span class="kw">let </span>types = HashMap::new();
+        <span class="kw">let </span>libfunc_processors = HashMap::new();
+        <span class="kw">let </span>main_calls = <span class="macro">vec!</span>[];
 
         <span class="comment">// Create a map of valid state transitions.
         </span><span class="kw">let </span>valid_state_transitions = Compiler::init_state_transitions();
@@ -677,15 +793,21 @@
             program: <span class="kw-2">&amp;</span>program,
             context: <span class="kw-2">&amp;</span>context,
             builder: <span class="kw-2">&amp;</span>builder,
-            module: <span class="kw-2">&amp;</span>module,
+            module,
             variables,
             output_path,
             state: CompilationState::NotStarted,
             valid_state_transitions,
+            types,
+            libfunc_processors,
+            main_calls,
         };
 
         <span class="comment">// Process the types in the Sierra program.
         </span>compiler.process_types()<span class="question-mark">?</span>;
+
+        <span class="comment">// Prepare the libfunc processors.
+        </span>compiler.prepare_libfunc_processors()<span class="question-mark">?</span>;
 
         <span class="comment">// Process the core library functions in the Sierra program.
         </span>compiler.process_core_lib_functions()<span class="question-mark">?</span>;
@@ -697,190 +819,206 @@
         </span>compiler.finalize_compilation()
     }
 
+    <span class="doccomment">/// Prepare the libfunc core processors (those are functions from the core lib).
+    </span><span class="kw">fn </span>prepare_libfunc_processors(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
+        <span class="kw">let </span>felt_type = <span class="self">self</span>.types.get(<span class="string">&quot;felt&quot;</span>).unwrap();
+        <span class="comment">// Add two felts and return the result.
+        </span><span class="kw">let </span>felt_add = <span class="string">&quot;felt_add&quot;</span>.to_owned();
+
+        <span class="kw">let </span>felt_param: BasicMetadataTypeEnum = felt_type.as_basic_type_enum().into();
+        <span class="kw">let </span>parameter_types = <span class="macro">vec!</span>[felt_param, felt_param];
+        <span class="self">self</span>.libfunc_processors.insert(
+            felt_add,
+            Func::new(parameter_types, felt_type.as_basic_type_enum(), Box::from(LlvmMathAdd {})),
+        );
+        <span class="kw">let </span>felt_sub = <span class="string">&quot;felt_sub&quot;</span>.to_owned();
+        <span class="kw">let </span>parameter_types = <span class="macro">vec!</span>[felt_param, felt_param];
+        <span class="self">self</span>.libfunc_processors.insert(
+            felt_sub,
+            Func::new(parameter_types, felt_type.as_basic_type_enum(), Box::from(LlvmMathSub {})),
+        );
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
     <span class="doccomment">/// Process types in the Sierra program.
-    /// For each type declaration in the Sierra program, create a corresponding type in the LLVM context.
-    </span><span class="kw">fn </span>process_types(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    /// For each type declaration in the Sierra program, create a corresponding type in the LLVM
+    /// context.
+    </span><span class="kw">fn </span>process_types(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         <span class="macro">debug!</span>(<span class="string">&quot;processing types&quot;</span>);
+
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::NotStarted)<span class="question-mark">?</span>;
-        <span class="self">self</span>.program
-            .type_declarations
-            .iter()
-            .for_each(|_type_decl| {
-                <span class="comment">// TODO: Implement this.
-                // For now this is a stub implementation that works for one specific test program.
-                </span><span class="kw">let </span>i32_type = <span class="self">self</span>.context.i32_type();
-                <span class="kw">let </span>_i32_fn_type = i32_type.fn_type(<span class="kw-2">&amp;</span>[], <span class="bool-val">false</span>);
-                <span class="comment">// TODO store in context
-            </span>});
+        <span class="kw">for </span>type_declaration <span class="kw">in </span><span class="self">self</span>.program.type_declarations.iter() {
+            <span class="comment">// Matching on the long id because it&#39;ll always have a debug name
+            </span><span class="kw">match </span><span class="kw-2">&amp;</span>type_declaration.long_id.generic_id.debug_name {
+                <span class="prelude-val">Some</span>(type_name) =&gt; <span class="kw">match </span>type_name.as_str() {
+                    <span class="string">&quot;felt&quot; </span>=&gt; {
+                        <span class="self">self</span>.types.insert(
+                            <span class="string">&quot;felt&quot;</span>,
+                            Box::new(<span class="self">self</span>.context.custom_width_int_type(<span class="number">252</span>).as_basic_type_enum()),
+                        );
+                    }
+                    <span class="string">&quot;NonZero&quot; </span>=&gt; (),
+                    <span class="kw">_ </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;{type_name} is not a felt&quot;</span>),
+                },
+                <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(CompilerErr::NoTypeProvided),
+            }
+        }
         <span class="comment">// Move to the next state.
         </span><span class="self">self</span>.move_to(CompilationState::TypesProcessed)
     }
 
+    <span class="doccomment">/// Process the constants of this sierra program.
+    </span><span class="kw">fn </span>process_const(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;String, CompilerErr&gt; {
+        <span class="kw">let </span>converted = libfunc_declaration
+            .long_id
+            .generic_args
+            .clone()
+            .into_iter()
+            .map(|arg| {
+                <span class="kw">let </span>val = <span class="kw">match </span>arg {
+                    Value(val) =&gt; val.iter_u64_digits().collect::&lt;Vec&lt;u64&gt;&gt;()[<span class="number">0</span>],
+                    <span class="kw">_ </span>=&gt; BigInt::from(<span class="number">1</span>).iter_u64_digits().collect::&lt;Vec&lt;u64&gt;&gt;()[<span class="number">0</span>],
+                };
+                val
+            })
+            .collect::&lt;Vec&lt;u64&gt;&gt;();
+        <span class="kw">let </span>felt_const = <span class="macro">format!</span>(
+            <span class="string">&quot;{}_{}&quot;</span>,
+            libfunc_declaration
+                .long_id
+                .generic_id
+                .debug_name
+                .clone()
+                .ok_or(CompilerErr::NoDebugName)<span class="question-mark">?
+                </span>.to_string(),
+            converted[<span class="number">0</span>]
+        );
+
+        <span class="kw">let </span>parameter_types = <span class="macro">vec!</span>[];
+        <span class="kw">let </span>const_type =
+            <span class="self">self</span>.types.get(<span class="string">&quot;felt&quot;</span>).ok_or(CompilerErr::TypeNotFound(<span class="string">&quot;felt&quot;</span>.to_owned()))<span class="question-mark">?</span>;
+        <span class="self">self</span>.libfunc_processors.insert(
+            felt_const.clone(),
+            Func::new(
+                parameter_types,
+                const_type.as_basic_type_enum(),
+                Box::from(LlvmMathConst { value: converted[<span class="number">0</span>] }),
+            ),
+        );
+        <span class="prelude-val">Ok</span>(felt_const)
+    }
+
     <span class="doccomment">/// Process core library functions in the Sierra program.
-    </span><span class="kw">fn </span>process_core_lib_functions(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">fn </span>process_core_lib_functions(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         <span class="macro">debug!</span>(<span class="string">&quot;processing core lib functions&quot;</span>);
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::TypesProcessed)<span class="question-mark">?</span>;
         <span class="comment">// Iterate over the libfunc declarations in the Sierra program.
-        </span><span class="self">self</span>.program
-            .libfunc_declarations
-            .iter()
-            .for_each(|libfunc| {
-                <span class="comment">// TODO: Implement this.
-                // For now this is a stub implementation that works for one specific test program.
-
-                // Create an i128 type and function type in the LLVM context.
-                // The types must be created and stored in the global context before they can be used.
-                // TODO: implement in `process_types`.
-                </span><span class="kw">let </span>i32_type = <span class="self">self</span>.context.i32_type();
-                <span class="kw">let </span>fn_type = i32_type.fn_type(<span class="kw-2">&amp;</span>[], <span class="bool-val">false</span>);
-
-                <span class="kw">match </span><span class="kw-2">&amp;</span>libfunc.long_id.generic_id.debug_name {
-                    <span class="prelude-val">Some</span>(name) =&gt; {
-                        <span class="comment">// If the libfunc declaration has a debug name that contains &quot;const&quot; and has at
-                        // least one generic argument, create a new function in the LLVM
-                        // module with the libfunc&#39;s ID as the name and set the function&#39;s return value
-                        // to the value of the first generic argument.
-                        </span><span class="kw">if </span>name.contains(<span class="string">&quot;const&quot;</span>) &amp;&amp; !libfunc.long_id.generic_args.is_empty() {
-                            <span class="kw">if let </span>GenericArg::Value(value) =
-                                libfunc.long_id.generic_args[<span class="number">0</span>].clone()
-                            {
-                                <span class="kw">let </span>function = <span class="self">self</span>.module.add_function(
-                                    <span class="macro">format!</span>(<span class="string">&quot;a_{}&quot;</span>, libfunc.id.id).as_str(),
-                                    fn_type,
-                                    <span class="prelude-val">None</span>,
-                                );
-                                <span class="kw">let </span>fn_temp = <span class="self">self</span>.context.append_basic_block(function, <span class="string">&quot;entry&quot;</span>);
-                                <span class="self">self</span>.builder.position_at_end(fn_temp);
-                                <span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(
-                                    <span class="kw-2">&amp;</span><span class="self">self
-                                        </span>.context
-                                        .i32_type()
-                                        .const_int(value.to_u64_digits().<span class="number">1</span>[<span class="number">0</span>], <span class="bool-val">false</span>),
-                                ));
-                            }
-                        }
-                        <span class="comment">// If the libfunc declaration has a debug name of &quot;felt_add&quot; create a llvm ir
-                        // add function.
-                        </span><span class="kw">else if </span>name == <span class="string">&quot;felt_add&quot; </span>{
-                            <span class="kw">let </span>fn_type =
-                                i32_type.fn_type(<span class="kw-2">&amp;</span>[i32_type.into(), i32_type.into()], <span class="bool-val">false</span>);
-                            <span class="kw">let </span>function = <span class="self">self</span>.module.add_function(
-                                <span class="macro">format!</span>(<span class="string">&quot;a_{}&quot;</span>, libfunc.id.id).as_str(),
-                                fn_type,
-                                <span class="prelude-val">None</span>,
-                            );
-                            <span class="kw">let </span>fn_temp = <span class="self">self</span>.context.append_basic_block(function, <span class="string">&quot;entry&quot;</span>);
-                            <span class="self">self</span>.builder.position_at_end(fn_temp);
-
-                            <span class="comment">// Add the two arguments and store the result in a temporary value
-                            </span><span class="kw">let </span>sum = <span class="self">self</span>.builder.build_int_add(
-                                function.get_first_param().unwrap().into_int_value(),
-                                function.get_last_param().unwrap().into_int_value(),
-                                <span class="string">&quot;sum&quot;</span>,
-                            );
-
-                            <span class="comment">// Return the result
-                            </span><span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>sum));
-                        } <span class="kw">else if </span>name == <span class="string">&quot;rename&quot; </span>{
-                            <span class="kw">let </span>void = <span class="self">self</span>.context.i32_type().fn_type(<span class="kw-2">&amp;</span>[i32_type.into()], <span class="bool-val">false</span>);
-
-                            <span class="kw">let </span>function = <span class="self">self</span>.module.add_function(
-                                <span class="macro">format!</span>(<span class="string">&quot;a_{}&quot;</span>, libfunc.id.id).as_str(),
-                                void,
-                                <span class="prelude-val">None</span>,
-                            );
-                            <span class="kw">let </span>fn_temp = <span class="self">self</span>.context.append_basic_block(function, <span class="string">&quot;entry&quot;</span>);
-                            <span class="self">self</span>.builder.position_at_end(fn_temp);
-                            <span class="self">self</span>.builder
-                                .build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>function.get_first_param().unwrap()));
-                        }
-                    }
-                    <span class="comment">// If the libfunc declaration has no debug name, print &quot;no name&quot;.
-                    </span><span class="prelude-val">None </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;no name&quot;</span>),
+        </span><span class="kw">for </span>libfunc_declaration <span class="kw">in </span><span class="self">self</span>.program.libfunc_declarations.iter() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(libfunc) = <span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_id.debug_name {
+                <span class="kw">let </span><span class="kw-2">mut </span>func_name = libfunc.to_string();
+                <span class="kw">if </span>libfunc.ends_with(<span class="string">&quot;const&quot;</span>) {
+                    func_name = <span class="self">self</span>.process_const(libfunc_declaration)<span class="question-mark">?</span>;
                 }
-            });
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(processor) = <span class="self">self</span>.libfunc_processors.get(<span class="kw-2">&amp;</span>func_name) {
+                    processor.to_llvm(
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.module,
+                        <span class="self">self</span>.context,
+                        <span class="self">self</span>.builder,
+                        libfunc_declaration.id.id.to_string().as_str(),
+                    )<span class="question-mark">?</span>;
+                }
+            }
+        }
         <span class="comment">// Move to the next state.
         </span><span class="self">self</span>.move_to(CompilationState::CoreLibFunctionsProcessed)
     }
 
+    <span class="doccomment">/// Allocate an llvm pointer variable and save it in the hashmap.
+    </span><span class="kw">fn </span>save_in_var(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>u64) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
+        <span class="kw">let </span>felt_type =
+            <span class="self">self</span>.types.get(<span class="string">&quot;felt&quot;</span>).ok_or(CompilerErr::TypeNotFound(<span class="string">&quot;felt&quot;</span>.to_owned()))<span class="question-mark">?</span>;
+        <span class="kw">let </span>var_ptr =
+            <span class="self">self</span>.builder.build_alloca(felt_type.as_basic_type_enum(), <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;{id:}_ptr&quot;</span>));
+        <span class="self">self</span>.variables.insert(id.to_string(), <span class="prelude-val">Some</span>(var_ptr));
+        <span class="prelude-val">Ok</span>(())
+    }
     <span class="doccomment">/// Process statements in the Sierra program.
-    </span><span class="kw">fn </span>process_statements(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">fn </span>process_statements(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         <span class="macro">debug!</span>(<span class="string">&quot;processing statements&quot;</span>);
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::CoreLibFunctionsProcessed)<span class="question-mark">?</span>;
-        <span class="comment">// This section is very specific to the test program.
-        // TODO: Think about how to implement this in a more general way.
-        // Init param var
-        </span><span class="kw">let </span>i32_type = <span class="self">self</span>.context.i32_type();
-        <span class="kw">let </span>main_type = i32_type.fn_type(<span class="kw-2">&amp;</span>[<span class="self">self</span>.context.i32_type().into()], <span class="bool-val">false</span>);
-        <span class="kw">let </span>main_func = <span class="self">self</span>.module.add_function(<span class="string">&quot;main&quot;</span>, main_type, <span class="prelude-val">None</span>);
-        <span class="kw">let </span>main_bb = <span class="self">self</span>.context.append_basic_block(main_func, <span class="string">&quot;entry&quot;</span>);
-        <span class="self">self</span>.builder.position_at_end(main_bb);
-        <span class="kw">for </span>func <span class="kw">in </span><span class="self">self</span>.program.funcs.iter() {
-            <span class="kw">for </span>param <span class="kw">in </span>func.params.iter() {
-                <span class="self">self</span>.variables.insert(param.id.id.to_string(), <span class="prelude-val">None</span>);
-            }
-        }
+        <span class="self">self</span>.build_main()<span class="question-mark">?</span>;
+        <span class="kw">for </span>statement <span class="kw">in </span><span class="self">self</span>.program.statements.iter() {
+            <span class="kw">match </span>statement {
+                GenStatement::Invocation(invocation) =&gt; {
+                    <span class="kw">let </span>func =
+                        <span class="self">self</span>.module.get_function(invocation.libfunc_id.id.to_string().as_str());
 
-        <span class="comment">// Iterate over the statements in the Sierra program, but do nothing with them.
-        </span><span class="kw">for </span>(statement_id, _statement) <span class="kw">in </span><span class="self">self</span>.program.statements.iter().enumerate() {
-            <span class="kw">let </span>_statement_idx = StatementIdx(statement_id);
-            <span class="kw">match </span>_statement {
-                <span class="comment">// If the statement is an invocation, print the invocation.
-                </span>sierra::program::Statement::Invocation(invocation) =&gt; {
-                    <span class="kw">if </span>invocation.libfunc_id.id.to_string().as_str() != <span class="string">&quot;3&quot; </span>{
-                        <span class="kw">let </span>function = <span class="self">self
-                            </span>.module
-                            .get_function(<span class="macro">format!</span>(<span class="string">&quot;a_{}&quot;</span>, invocation.libfunc_id.id).as_str())
-                            .ok_or_else(|| <span class="macro">eyre::eyre!</span>(<span class="string">&quot;function not found&quot;</span>))<span class="question-mark">?</span>;
-                        <span class="kw">let </span><span class="kw-2">mut </span>args: Vec&lt;BasicMetadataValueEnum&gt; = <span class="macro">vec!</span>[];
-                        invocation.args.clone().into_iter().for_each(|var_id| {
+                    <span class="kw">let </span><span class="kw-2">mut </span>args = <span class="macro">vec!</span>[];
+                    <span class="kw">if </span>!invocation.args.is_empty() {
+                        <span class="kw">for </span>argument <span class="kw">in </span>invocation.args.iter() {
                             args.push(
-                                <span class="kw">match </span><span class="self">self</span>.variables.get(var_id.id.to_string().as_str()).unwrap() {
-                                    <span class="prelude-val">Some</span>(val) =&gt; <span class="self">self
-                                        </span>.builder
-                                        .build_load(<span class="kw-2">*</span>val, var_id.id.to_string().as_str())
-                                        .into(),
-                                    <span class="prelude-val">None </span>=&gt; {
-                                        main_func.get_nth_param(var_id.id <span class="kw">as </span>u32).unwrap().into()
-                                    }
-                                },
+                                <span class="self">self</span>.builder
+                                    .build_load(
+                                        <span class="self">self</span>.variables
+                                            .get(<span class="kw-2">&amp;</span>argument.id.to_string())
+                                            .ok_or(CompilerErr::VarNotFound(
+                                                argument.id.to_string(),
+                                            ))<span class="question-mark">?
+                                            </span>.ok_or(CompilerErr::VarNotFound(
+                                                argument.id.to_string(),
+                                            ))<span class="question-mark">?</span>,
+                                        <span class="kw-2">&amp;</span>argument.id.to_string(),
+                                    )
+                                    .into(),
                             );
-                        });
-                        <span class="kw">let </span>res_ptr = <span class="self">self</span>.builder.build_alloca(
-                            i32_type,
-                            <span class="macro">format!</span>(<span class="string">&quot;ptr{}&quot;</span>, invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id).as_str(),
-                        );
-                        <span class="kw">let </span>res_val = <span class="self">self
-                            </span>.builder
-                            .build_call(
-                                function,
-                                <span class="kw-2">&amp;</span>args,
-                                <span class="macro">format!</span>(<span class="string">&quot;val{}&quot;</span>, invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id).as_str(),
-                            )
+                        }
+                    }
+                    <span class="kw">if </span>invocation.branches.len() == <span class="number">1
+                        </span>&amp;&amp; invocation.branches[<span class="number">0</span>].target == GenBranchTarget::Fallthrough
+                    {
+                        <span class="kw">for </span>result <span class="kw">in </span>invocation.branches[<span class="number">0</span>].results.iter() {
+                            <span class="self">self</span>.save_in_var(<span class="kw-2">&amp;</span>result.id)<span class="question-mark">?</span>;
+                        }
+                    }
+                    <span class="kw">let </span>res = <span class="kw">if let </span><span class="prelude-val">Some</span>(function) = func {
+                        <span class="self">self</span>.builder
+                            .build_call(function, <span class="kw-2">&amp;</span>args, <span class="string">&quot;call_felt_add&quot;</span>)
                             .try_as_basic_value()
                             .left()
-                            .unwrap();
-                        <span class="self">self</span>.builder.build_store(res_ptr, res_val);
-                        <span class="self">self</span>.variables.insert(
+                            .ok_or(CompilerErr::NoReturnValue)<span class="question-mark">?
+                    </span>} <span class="kw">else </span>{
+                        args[<span class="number">0</span>].into_int_value().as_basic_value_enum()
+                    };
+                    <span class="kw">let </span>ptr = <span class="self">self
+                        </span>.variables
+                        .get(invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id.to_string().as_str())
+                        .ok_or(CompilerErr::VarNotFound(
                             invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id.to_string(),
-                            <span class="prelude-val">Some</span>(res_ptr),
-                        );
-                    }
+                        ))<span class="question-mark">?
+                        </span>.ok_or(CompilerErr::VarNotFound(
+                            invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id.to_string(),
+                        ))<span class="question-mark">?</span>;
+                    <span class="self">self</span>.builder.build_store(ptr, res);
                 }
-                <span class="comment">// If the statement is a return, print the return.
-                </span>sierra::program::Statement::Return(ret) =&gt; {
-                    <span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(
-                        <span class="kw-2">&amp;</span><span class="self">self</span>.builder.build_load(
-                            <span class="self">self</span>.variables
-                                .get(ret[<span class="number">0</span>].id.to_string().as_str())
-                                .unwrap()
-                                .unwrap(),
-                            ret[<span class="number">0</span>].id.to_string().as_str(),
-                        ),
-                    ));
+                GenStatement::Return(ret) =&gt; {
+                    <span class="kw">if </span>ret.len() == <span class="number">1 </span>{
+                        <span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(
+                            <span class="kw-2">&amp;</span><span class="self">self</span>.builder.build_load(
+                                <span class="self">self</span>.variables
+                                    .get(<span class="kw-2">&amp;</span>ret[<span class="number">0</span>].id.to_string())
+                                    .ok_or(CompilerErr::VarNotFound(ret[<span class="number">0</span>].id.to_string()))<span class="question-mark">?
+                                    </span>.ok_or(CompilerErr::VarNotFound(ret[<span class="number">0</span>].id.to_string()))<span class="question-mark">?</span>,
+                                <span class="kw-2">&amp;</span>ret[<span class="number">0</span>].id.to_string(),
+                            ),
+                        ));
+                    }
                 }
             }
         }
@@ -890,37 +1028,40 @@
 
     <span class="doccomment">/// Finalize the compilation.
     /// This includes verifying the module and writing it to the output path.
-    </span><span class="kw">fn </span>finalize_compilation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">fn </span>finalize_compilation(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         <span class="macro">debug!</span>(<span class="string">&quot;finalizing compilation&quot;</span>);
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::StatementsProcessed)<span class="question-mark">?</span>;
-        <span class="comment">// Ensure that the current module is valid
-        </span><span class="self">self</span>.module
-            .verify()
-            .map_err(|e| <span class="macro">eyre::eyre!</span>(e.to_string()))<span class="question-mark">?</span>;
         <span class="comment">// Ensure output path is valid and exists.
         </span><span class="kw">let </span>output_path = Path::new(<span class="self">self</span>.output_path);
-        <span class="kw">let </span>parent = output_path
-            .parent()
-            .ok_or_else(|| <span class="macro">eyre::eyre!</span>(<span class="string">&quot;parent output path is not valid&quot;</span>))<span class="question-mark">?</span>;
-        <span class="comment">// Recursively create the output path parent directories if they don&#39;t exist.
-        </span>fs::create_dir_all(parent)<span class="question-mark">?</span>;
-        <span class="comment">// Write the module to the output path.
-        </span><span class="self">self</span>.module
-            .print_to_file(output_path)
-            .map_err(|e| <span class="macro">eyre::eyre!</span>(e.to_string()))<span class="question-mark">?</span>;
+        <span class="comment">// let parent =
+        //     output_path.parent().ok_or_else(|| eyre::eyre!(&quot;parent output path is not valid&quot;))?;
+        // // Recursively create the output path parent directories if they don&#39;t exist.
+        // fs::create_dir_all(parent)?;
+        // // Write the module to the output path.
+        </span><span class="self">self</span>.module.print_to_file(output_path)<span class="question-mark">?</span>;
+        <span class="comment">// Ensure that the current module is valid
+        </span><span class="self">self</span>.module.verify()<span class="question-mark">?</span>;
+
         <span class="comment">// Move to the next state.
         </span><span class="self">self</span>.move_to(CompilationState::Finalized)
+    }
+    <span class="kw">fn </span>build_main(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
+        <span class="kw">let </span>args_type =
+            <span class="self">self</span>.types.get(<span class="string">&quot;felt&quot;</span>).ok_or(CompilerErr::TypeNotFound(<span class="string">&quot;felt&quot;</span>.to_owned()))<span class="question-mark">?</span>;
+        <span class="kw">let </span>main_type = args_type.fn_type(<span class="kw-2">&amp;</span>[], <span class="bool-val">false</span>);
+        <span class="kw">let </span>main_func = <span class="self">self</span>.module.add_function(<span class="string">&quot;main&quot;</span>, main_type, <span class="prelude-val">None</span>);
+        <span class="kw">let </span>main_bb = <span class="self">self</span>.context.append_basic_block(main_func, <span class="string">&quot;entry&quot;</span>);
+        <span class="self">self</span>.builder.position_at_end(main_bb);
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Check if the compilation is in a valid state.
     /// If the compilation is not in a valid state, return an error.
-    </span><span class="kw">fn </span>check_state(<span class="kw-2">&amp;</span><span class="self">self</span>, expected_state: <span class="kw-2">&amp;</span>CompilationState) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if </span><span class="self">self</span>.state() != expected_state {
-            <span class="prelude-val">Err</span>(<span class="macro">eyre::eyre!</span>(<span class="string">&quot;compilation is not in a valid state&quot;</span>))
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(())
-        }
+    </span><span class="attribute">#[inline(always)]
+    </span><span class="kw">fn </span>check_state(<span class="kw-2">&amp;</span><span class="self">self</span>, expected_state: <span class="kw-2">&amp;</span>CompilationState) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
+        <span class="kw">if </span><span class="self">self</span>.state() != expected_state { <span class="prelude-val">Err</span>(CompilerErr::InvalidState) } <span class="kw">else </span>{ <span class="prelude-val">Ok</span>(()) }
     }
 
     <span class="doccomment">/// Move the compilation state to the next state.
@@ -928,7 +1069,7 @@
     /// * `state` - The new compilation state.
     /// # Errors
     /// If the transition is not valid, return an error.
-    </span><span class="kw">fn </span>move_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: CompilationState) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">fn </span>move_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, state: CompilationState) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         Compiler::is_valid_transition(
             (<span class="self">self</span>.state().clone(), state.clone()),
             <span class="kw-2">&amp;</span><span class="self">self</span>.valid_state_transitions,
@@ -943,10 +1084,11 @@
     /// * `valid_transitions` - The valid state transitions.
     /// # Errors
     /// If the transition is not valid, return an error.
+    </span><span class="attribute">#[inline]
     </span><span class="kw">fn </span>is_valid_transition(
         transition: CompilationStateTransition,
         valid_transitions: <span class="kw-2">&amp;</span>HashMap&lt;(CompilationState, CompilationState), bool&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), CompilerErr&gt; {
         <span class="kw">match </span>valid_transitions.get(<span class="kw-2">&amp;</span>transition) {
             <span class="prelude-val">Some</span>(valid) =&gt; <span class="kw">match </span>valid {
                 <span class="bool-val">true </span>=&gt; <span class="prelude-val">Ok</span>(()),
@@ -957,6 +1099,7 @@
     }
 
     <span class="doccomment">/// Get the current compilation state.
+    </span><span class="attribute">#[inline(always)]
     </span><span class="kw">pub fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CompilationState {
         <span class="kw-2">&amp;</span><span class="self">self</span>.state
     }
@@ -964,20 +1107,8 @@
     <span class="doccomment">/// Initialize valid state transitions.
     </span><span class="kw">fn </span>init_state_transitions() -&gt; HashMap&lt;(CompilationState, CompilationState), bool&gt; {
         HashMap::from([
-            (
-                (
-                    CompilationState::NotStarted,
-                    CompilationState::TypesProcessed,
-                ),
-                <span class="bool-val">true</span>,
-            ),
-            (
-                (
-                    CompilationState::TypesProcessed,
-                    CompilationState::CoreLibFunctionsProcessed,
-                ),
-                <span class="bool-val">true</span>,
-            ),
+            ((CompilationState::NotStarted, CompilationState::TypesProcessed), <span class="bool-val">true</span>),
+            ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), <span class="bool-val">true</span>),
             (
                 (
                     CompilationState::CoreLibFunctionsProcessed,
@@ -985,13 +1116,7 @@
                 ),
                 <span class="bool-val">true</span>,
             ),
-            (
-                (
-                    CompilationState::StatementsProcessed,
-                    CompilationState::Finalized,
-                ),
-                <span class="bool-val">true</span>,
-            ),
+            ((CompilationState::StatementsProcessed, CompilationState::Finalized), <span class="bool-val">true</span>),
         ])
     }
 
@@ -1000,15 +1125,10 @@
     /// * `invalid_transition` - The invalid state transition.
     /// # Errors
     /// Always returns an error.
-    </span><span class="kw">fn </span>err_invalid_state_transition(
-        invalid_transition: CompilationStateTransition,
-    ) -&gt; eyre::Report {
-        <span class="macro">eyre::eyre!</span>(
-            <span class="string">&quot;invalid state transition: {:?} -&gt; {:?}&quot;</span>,
-            invalid_transition.<span class="number">0</span>,
-            invalid_transition.<span class="number">1
-        </span>)
+    </span><span class="attribute">#[inline(always)]
+    </span><span class="kw">fn </span>err_invalid_state_transition(invalid_transition: CompilationStateTransition) -&gt; CompilerErr {
+        CompilerErr::InvalidStateTransition(invalid_transition.<span class="number">0</span>, invalid_transition.<span class="number">1</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="shenlong_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0 (69f9c33d7 2022-12-12)" ></div></body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="shenlong_core" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>
