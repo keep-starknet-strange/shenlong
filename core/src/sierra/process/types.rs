@@ -8,6 +8,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Process types in the Sierra program.
     /// For each type declaration in the Sierra program, create a corresponding type in the LLVM
     /// context.
+    ///
+    /// # Errors
+    ///
+    /// If the processing of the sierra types fails.
     pub fn process_types(&mut self) -> CompilerResult<()> {
         debug!("processing types");
 

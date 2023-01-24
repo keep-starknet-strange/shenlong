@@ -4,7 +4,7 @@ use inkwell::module::Module;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum};
 use inkwell::values::{BasicValue, FunctionValue};
 
-use crate::sierra::errors::{CompilerError, CompilerResult};
+use crate::sierra::errors::CompilerResult;
 
 /// LibfuncProcessor is a trait that will be implemented by all libfunc processors.
 /// It will be used to generate the LLVM IR for the libfunc.
@@ -13,18 +13,23 @@ pub trait LibfuncProcessor<'ctx> {
     /// The function will be added to the module.
     /// The function will be named `fn_name`.
     /// # Arguments
+    ///
     /// * `fn_name` - The name of the function.
     /// * `llvm_type` - The type handled by the function, as input parameter or/and return type.
     /// * `module` - The module where the function will be added.
     /// * `context` - The context used to create the function.
     /// * `builder` - The builder used to create the function.
+    ///
+    /// # Errors
+    ///
+    /// If the LLVM IR processing fails.
     fn to_llvm(
         &self,
         module: &Module<'ctx>,
         context: &Context,
         builder: &Builder<'ctx>,
         func_name: &str,
-    ) -> Result<(), CompilerError>;
+    ) -> CompilerResult<()>;
 }
 
 impl<'ctx> LibfuncProcessor<'ctx> for Func<'ctx> {
@@ -35,7 +40,7 @@ impl<'ctx> LibfuncProcessor<'ctx> for Func<'ctx> {
         context: &Context,
         builder: &Builder<'ctx>,
         func_name: &str,
-    ) -> Result<(), CompilerError> {
+    ) -> CompilerResult<()> {
         // Create the function,
         let function = module.add_function(
             func_name,
@@ -66,6 +71,10 @@ pub trait LlvmBodyProcessor<'ctx> {
     /// # Returns
     ///
     /// The LLVM IR function return value.
+    ///
+    /// # Errors
+    ///
+    /// If LLVM IR body creation fails.
     fn create_body(
         &self,
         builder: &Builder<'ctx>,

@@ -33,6 +33,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Process statements in the Sierra program.
+    ///
+    /// # Errors
+    ///
+    /// If the processing of the sierra statements fails.
     pub fn process_statements(&mut self) -> CompilerResult<()> {
         debug!("processing statements");
         // Check that the current state is valid.

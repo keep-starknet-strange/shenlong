@@ -9,6 +9,18 @@ use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Process the constants of this sierra program.
+    ///
+    /// # Arguments
+    ///
+    /// *`libfunc_declaration` - Declaration of the corelib function in the sierra file.
+    ///
+    /// # Returns
+    ///
+    /// The constant mangled name.
+    ///
+    /// # Errors
+    ///
+    /// If the processing of the consant fails.
     pub fn process_const(
         &mut self,
         libfunc_declaration: &LibfuncDeclaration,

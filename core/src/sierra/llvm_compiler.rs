@@ -227,6 +227,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Finalize the compilation.
     /// This includes verifying the module and writing it to the output path.
+    ///
+    /// # Errors
+    ///
+    /// If the compiler is not in the right state or if there is a problem in the LLVM IR file.
     fn finalize_compilation(&mut self) -> CompilerResult<()> {
         debug!("finalizing compilation");
         // Check that the current state is valid.
@@ -248,6 +252,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Check if the compilation is in a valid state.
     /// If the compilation is not in a valid state, return an error.
+    ///
+    /// # Arguments
+    ///
+    /// *`expected_state` - State the compiler should be in.
+    ///
+    /// # Returns
+    ///
+    /// Result if the state is in an existing state.
+    ///
+    /// # Errors
+    ///
+    /// If the compiler is in a state that doesn't exist
     #[inline]
     pub fn check_state(&self, expected_state: &CompilationState) -> CompilerResult<()> {
         if self.state() != expected_state { Err(CompilerError::InvalidState) } else { Ok(()) }
