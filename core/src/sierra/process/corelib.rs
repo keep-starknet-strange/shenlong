@@ -13,15 +13,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let felt_type = self.types.get("felt").unwrap();
         // Add two felts and return the result.
         let felt_add = "felt_add".to_owned();
-
+        // Convert the dync BasicType into the appropriate argument type.
         let felt_param: BasicMetadataTypeEnum = felt_type.as_basic_type_enum().into();
+        // Input type of the function.
         let parameter_types = vec![felt_param, felt_param];
+        // Add the felt + function to the corelib processor HashMap.
         self.libfunc_processors.insert(
             felt_add,
             Func::new(parameter_types, felt_type.as_basic_type_enum(), Box::from(LlvmMathAdd {})),
         );
         let felt_sub = "felt_sub".to_owned();
+        // Input type of the function.
         let parameter_types = vec![felt_param, felt_param];
+        // Add the felt - function to the corelib processor HashMap.
         self.libfunc_processors.insert(
             felt_sub,
             Func::new(parameter_types, felt_type.as_basic_type_enum(), Box::from(LlvmMathSub {})),
@@ -37,11 +41,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.check_state(&CompilationState::TypesProcessed)?;
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
+            // Get the debug name of the function.
             if let Some(libfunc) = &libfunc_declaration.long_id.generic_id.debug_name {
                 let mut func_name = libfunc.to_string();
+                // If it's a constant process it.
                 if libfunc.ends_with("const") {
                     func_name = self.process_const(libfunc_declaration)?;
                 }
+                // If the processor is found process the function.
                 if let Some(processor) = self.libfunc_processors.get(&func_name) {
                     processor.to_llvm(
                         &self.module,
