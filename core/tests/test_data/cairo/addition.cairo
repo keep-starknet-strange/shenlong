@@ -1,3 +1,3 @@
-fn test() -> felt {
+fn main() -> felt {
     1 + 2
 }

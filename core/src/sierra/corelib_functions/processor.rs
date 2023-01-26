@@ -48,11 +48,16 @@ impl<'ctx> LibfuncProcessor<'ctx> for Func<'ctx> {
             None,
         );
         builder.position_at_end(context.append_basic_block(function, "entry"));
+        if self.output_type.to_string() == context.void_type().to_string() {
+            // Return the result
+            builder.build_return(None);
+        } else {
+            // Return the result
+            builder.build_return(Some(
+                &*self.body_creator_type.create_body(builder, &function)?.unwrap(),
+            ));
+        }
 
-        // Return the result
-        builder.build_return(Some(
-            &self.body_creator_type.create_body(builder, &function).unwrap().as_basic_value_enum(),
-        ));
         Ok(())
     }
 }
@@ -79,7 +84,7 @@ pub trait LlvmBodyProcessor<'ctx> {
         &self,
         builder: &Builder<'ctx>,
         fn_value: &FunctionValue<'ctx>,
-    ) -> CompilerResult<Box<dyn BasicValue<'ctx> + 'ctx>>;
+    ) -> CompilerResult<Option<Box<dyn BasicValue<'ctx> + 'ctx>>>;
 }
 
 /// Func stores all the needed information to process a sierra function into a LLVM IR function.

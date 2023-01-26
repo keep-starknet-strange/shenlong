@@ -1,8 +1,8 @@
 use inkwell::builder::Builder;
 use inkwell::values::{BasicValue, FunctionValue};
 
+use crate::sierra::corelib_functions::processor::LlvmBodyProcessor;
 use crate::sierra::errors::CompilerResult;
-use crate::sierra::libfunc::processor::LlvmBodyProcessor;
 
 pub struct LlvmMathAdd {}
 
@@ -12,11 +12,11 @@ impl<'ctx> LlvmBodyProcessor<'ctx> for LlvmMathAdd {
         &self,
         builder: &Builder<'ctx>,
         fn_value: &FunctionValue<'ctx>,
-    ) -> CompilerResult<Box<dyn BasicValue<'ctx> + 'ctx>> {
-        Ok(Box::from(builder.build_int_add(
+    ) -> CompilerResult<Option<Box<dyn BasicValue<'ctx> + 'ctx>>> {
+        Ok(Some(Box::from(builder.build_int_add(
             fn_value.get_first_param().unwrap().into_int_value(),
             fn_value.get_last_param().unwrap().into_int_value(),
             "res",
-        )))
+        ))))
     }
 }

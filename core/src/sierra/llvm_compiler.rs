@@ -44,8 +44,8 @@ use inkwell::types::BasicType;
 use inkwell::values::{BasicValueEnum, PointerValue};
 use log::debug;
 
+use super::corelib_functions::processor::Func;
 use super::errors::CompilerResult;
-use super::libfunc::processor::Func;
 use crate::sierra::errors::CompilerError;
 
 /// Compiler is the main entry point for the LLVM backend.
@@ -68,7 +68,9 @@ pub struct Compiler<'a, 'ctx> {
     /// The valid state transitions.
     pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
     /// The types.
-    pub types: HashMap<&'ctx str, Box<dyn BasicType<'ctx> + 'a>>,
+    pub types: HashMap<u64, Box<dyn BasicType<'ctx> + 'a>>,
+
+    pub id_from_name: HashMap<String, u64>,
     /// The library functions processors. Each processor is responsible for processing a specific
     /// libfunc and generating the corresponding LLVM IR.
     pub libfunc_processors: HashMap<String, Func<'ctx>>,
@@ -189,6 +191,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let variables: HashMap<String, Option<PointerValue>> = HashMap::new();
         let types = HashMap::new();
         let libfunc_processors = HashMap::new();
+        let id_from_name = HashMap::new();
         let main_calls = vec![];
 
         // Create a map of valid state transitions.
@@ -205,6 +208,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             state: CompilationState::NotStarted,
             valid_state_transitions,
             types,
+            id_from_name,
             libfunc_processors,
             main_calls,
         };

@@ -10,8 +10,14 @@ use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Build an artificial main function to be able to run the generated LLVM IR file.
     fn build_main(&mut self) -> CompilerResult<()> {
-        let args_type =
-            self.types.get("felt").ok_or(CompilerError::TypeNotFound("felt".to_owned()))?;
+        let args_type = self
+            .types
+            .get(
+                self.id_from_name
+                    .get("felt")
+                    .ok_or(CompilerError::TypeNotFound("felt".to_owned()))?,
+            )
+            .expect("felt type should have been declared");
         let main_type = args_type.fn_type(&[], false);
         let main_func = self.module.add_function("main", main_type, None);
         let main_bb = self.context.append_basic_block(main_func, "entry");
@@ -25,8 +31,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// We need to track them to pass them as arguments for future function calls.
     fn save_in_var(&mut self, id: &u64) -> CompilerResult<()> {
         // Currently only supports felt variables.
-        let felt_type =
-            self.types.get("felt").ok_or(CompilerError::TypeNotFound("felt".to_owned()))?;
+        let felt_type = self
+            .types
+            .get(
+                self.id_from_name
+                    .get("felt")
+                    .ok_or(CompilerError::TypeNotFound("felt".to_owned()))?,
+            )
+            .expect("felt type should have been declared");
         // Get the variable pointer.
         let var_ptr =
             self.builder.build_alloca(felt_type.as_basic_type_enum(), &format!("{id:}_ptr"));
@@ -48,7 +60,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
+                    if invocation.branches[0].results.is_empty() {
+                        continue;
+                    }
                     // Get the LLVM IR processed function.
+                    println!("{:?}", self.module.print_to_string());
                     let func =
                         self.module.get_function(invocation.libfunc_id.id.to_string().as_str());
                     // Declare an empty vec for the function call arguments.
@@ -89,14 +105,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                     // If a LLVM IR function was created for this sierra function call it.
                     let res = if let Some(function) = func {
-                        self.builder
-                            .build_call(function, &args, "")
-                            .try_as_basic_value()
-                            .left()
-                            .ok_or(CompilerError::NoReturnValue)?
-                    } else {
+                        self.builder.build_call(function, &args, "").try_as_basic_value().left()
+                    } else if !args.is_empty() {
                         // else just get the argument value.
-                        args[0].into_int_value().as_basic_value_enum()
+                        Some(args[0].into_int_value().as_basic_value_enum())
+                    } else {
+                        None
                     };
                     // Get the pointer to the corresponding variable.
                     let ptr = self
@@ -109,7 +123,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             invocation.branches[0].results[0].id.to_string(),
                         ))?;
                     // Save the function return value in the specified variable.
-                    self.builder.build_store(ptr, res);
+                    self.builder.build_store(ptr, res.unwrap());
                 }
                 // Return == return instruction
                 GenStatement::Return(ret) => {

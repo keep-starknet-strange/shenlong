@@ -23,8 +23,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             match &type_declaration.long_id.generic_id.debug_name {
                 Some(type_name) => match type_name.as_str() {
                     "felt" => {
+                        self.id_from_name.insert("felt".to_owned(), type_declaration.id.id);
                         self.types.insert(
-                            "felt",
+                            type_declaration.id.id,
                             Box::new(self.context.custom_width_int_type(252).as_basic_type_enum()),
                         );
                     }
