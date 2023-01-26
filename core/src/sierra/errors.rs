@@ -1,6 +1,5 @@
 /// This file contains everything error related.
 use thiserror::Error;
-
 /// Compiler errors.
 #[derive(Error, Debug)]
 pub enum CompilerError {

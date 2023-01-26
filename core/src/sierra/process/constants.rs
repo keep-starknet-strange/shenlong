@@ -3,9 +3,9 @@ use cairo_lang_sierra::program::GenericArg::Value;
 use cairo_lang_sierra::program::LibfuncDeclaration;
 use num_bigint::BigInt;
 
+use crate::sierra::corelib_functions::math::constants::LlvmMathConst;
+use crate::sierra::corelib_functions::processor::Func;
 use crate::sierra::errors::{CompilerError, CompilerResult};
-use crate::sierra::libfunc::math::constants::LlvmMathConst;
-use crate::sierra::libfunc::processor::Func;
 use crate::sierra::llvm_compiler::Compiler;
 
 /// Implementation of the constant processing for the compiler.
@@ -29,19 +29,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ) -> CompilerResult<String> {
         // Convert the generic arguments into an array of int. It assumes that we're only working
         // with numeric args.
-        let converted = libfunc_declaration
+        println!("{:?}", libfunc_declaration.long_id.generic_args.clone().iter());
+        let converted: Vec<String> = libfunc_declaration
             .long_id
             .generic_args
             .clone()
             .iter()
-            .map(|arg| {
-                let val = match arg {
-                    Value(val) => val.iter_u64_digits().collect::<Vec<u64>>()[0],
-                    _ => BigInt::from(1).iter_u64_digits().collect::<Vec<u64>>()[0],
-                };
-                val
+            .map(|arg| match arg {
+                Value(val) => val.to_string(),
+                _ => BigInt::from(1).to_string(),
             })
-            .collect::<Vec<u64>>();
+            .collect();
         // Mangle the name of the constant.
         let felt_const = format!(
             "{}_{}",
@@ -52,21 +50,27 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .clone()
                 .ok_or(CompilerError::NoDebugName)?
                 .to_string(),
-            converted[0]
+            converted[0].clone()
         );
 
         // Constants don't need any argument.
         let parameter_types = vec![];
         // Only handles the felt constant for now.
-        let const_type =
-            self.types.get("felt").ok_or(CompilerError::TypeNotFound("felt".to_owned()))?;
+        let const_type = self
+            .types
+            .get(
+                self.id_from_name
+                    .get("felt")
+                    .ok_or(CompilerError::TypeNotFound("felt".to_owned()))?,
+            )
+            .expect("Felt type should have been declared");
         // Save the constant in the corelib functions HashMap.
         self.libfunc_processors.insert(
             felt_const.clone(),
             Func::new(
                 parameter_types,
                 const_type.as_basic_type_enum(),
-                Box::from(LlvmMathConst { value: converted[0] }),
+                Box::from(LlvmMathConst { value: converted[0].clone() }),
             ),
         );
         Ok(felt_const)
