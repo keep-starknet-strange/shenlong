@@ -1,3 +1,3 @@
 pub mod math;
 pub mod memory;
-pub mod processor;
+pub mod structs;

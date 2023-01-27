@@ -37,6 +37,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     }
                     "revoke_ap_tracking" => (),
                     "drop" => (),
+                    "struct_construct" => self.struct_construct(libfunc_declaration),
                     _ => println!("{:} not implemented", libfunc.to_string()),
                 }
             }
