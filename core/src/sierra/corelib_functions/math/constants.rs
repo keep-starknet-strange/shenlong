@@ -1,31 +1,30 @@
-use inkwell::builder::Builder;
-use inkwell::types::StringRadix;
-use inkwell::values::{BasicValue, FunctionValue};
+use cairo_lang_sierra::program::GenericArg::Value;
+use cairo_lang_sierra::program::LibfuncDeclaration;
+use inkwell::types::{BasicType, StringRadix};
 
-use crate::sierra::corelib_functions::processor::LlvmBodyProcessor;
-use crate::sierra::errors::{CompilerError, CompilerResult};
+use crate::sierra::errors::CompilerResult;
+use crate::sierra::llvm_compiler::Compiler;
 
-/// LlvmMathConst represents a constant of a numeric type.
-pub struct LlvmMathConst {
-    /// The value of the constant.
-    pub value: String,
-}
+impl<'a, 'ctx> Compiler<'a, 'ctx> {
+    pub fn felt_const(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+        let return_type = self.get_type_from_name("felt")?;
+        let func = self.module.add_function(
+            libfunc_declaration.id.id.to_string().as_str(),
+            return_type.fn_type(&[], false),
+            None,
+        );
+        self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-/// Implementation of the LlvmBodyProcessor trait for int typed constants.
-impl<'ctx> LlvmBodyProcessor<'ctx> for LlvmMathConst {
-    fn create_body(
-        &self,
-        _builder: &Builder<'ctx>,
-        fn_value: &FunctionValue<'ctx>,
-    ) -> CompilerResult<Option<Box<dyn BasicValue<'ctx> + 'ctx>>> {
-        Ok(Some(Box::from(
-            fn_value
-                .get_type()
-                .get_return_type()
-                .ok_or(CompilerError::NoReturnType)?
+        let ret = if let Value(val) = &libfunc_declaration.long_id.generic_args[0] {
+            return_type
+                .as_basic_type_enum()
                 .into_int_type()
-                .const_int_from_string(&self.value, StringRadix::Decimal)
-                .expect("Math constant should be a decimal value"),
-        )))
+                .const_int_from_string(val.to_string().as_str(), StringRadix::Decimal)
+                .expect("Couldn't convert to string the felt constant value")
+        } else {
+            panic!("No value for felt constant")
+        };
+        self.builder.build_return(Some(&ret));
+        Ok(())
     }
 }

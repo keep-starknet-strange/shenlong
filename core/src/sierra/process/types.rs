@@ -1,4 +1,4 @@
-use inkwell::types::BasicType;
+use inkwell::types::{BasicType, BasicTypeEnum};
 use log::debug;
 
 use crate::sierra::errors::{CompilerError, CompilerResult};
@@ -37,5 +37,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
         // Move to the next state.
         self.move_to(CompilationState::TypesProcessed)
+    }
+    pub fn get_type_from_name(&self, type_name: &str) -> CompilerResult<BasicTypeEnum<'ctx>> {
+        Ok(self
+            .types
+            .get(
+                self.id_from_name
+                    .get(type_name)
+                    .ok_or(CompilerError::TypeNotFound(type_name.to_owned()))?,
+            )
+            .ok_or(CompilerError::TypeNotFound(type_name.to_owned()))?
+            .as_basic_type_enum())
     }
 }

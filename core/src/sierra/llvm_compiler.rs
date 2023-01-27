@@ -92,6 +92,8 @@ pub enum CompilationState {
     NotStarted,
     /// The types have been processed.
     TypesProcessed,
+    /// The functions have been processed.
+    FunctionsProcessed,
     /// The core library functions have been processed.
     CoreLibFunctionsProcessed,
     /// The statements have been processed.
@@ -216,8 +218,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Process the types in the Sierra program.
         compiler.process_types()?;
 
-        // Prepare the libfunc processors.
-        compiler.prepare_libfunc_processors()?;
+        // Process the functions in the Sierra program.
+        compiler.process_funcs()?;
 
         // Process the core library functions in the Sierra program.
         compiler.process_core_lib_functions()?;
@@ -317,7 +319,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
         HashMap::from([
             ((CompilationState::NotStarted, CompilationState::TypesProcessed), true),
-            ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), true),
+            ((CompilationState::TypesProcessed, CompilationState::FunctionsProcessed), true),
+            (
+                (CompilationState::FunctionsProcessed, CompilationState::CoreLibFunctionsProcessed),
+                true,
+            ),
             (
                 (
                     CompilationState::CoreLibFunctionsProcessed,
