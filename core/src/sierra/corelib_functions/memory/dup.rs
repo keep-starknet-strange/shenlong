@@ -21,9 +21,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         let arg = func.get_first_param().expect("Drop function should have an input parameter");
-        let return_type =
-            func.get_type().get_return_type().expect("Function should have a return type");
-        println!("{:?}", return_type);
         let tuple = self.builder.build_alloca(return_type, "res_ptr");
         let tuple_ptr =
             self.builder.build_struct_gep(tuple, 0, "tuple_ptr").expect("Pointer should be valid");
