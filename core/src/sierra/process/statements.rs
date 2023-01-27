@@ -64,7 +64,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         continue;
                     }
                     // Get the LLVM IR processed function.
-                    println!("{:?}", self.module.print_to_string());
+                    println!("IGNORE {:?}", self.module.print_to_string());
                     let func =
                         self.module.get_function(invocation.libfunc_id.id.to_string().as_str());
                     // Declare an empty vec for the function call arguments.
@@ -99,7 +99,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     {
                         // Create a variable for each return value (might not be needed though)
                         for result in invocation.branches[0].results.iter() {
-                            println!("{:}", result.id);
                             self.save_in_var(&result.id)?;
                         }
                     }
