@@ -32,6 +32,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     "dup" => {
                         self.dup(libfunc_declaration)?;
                     }
+                    "store_temp" => {
+                        self.store_temp(libfunc_declaration)?;
+                    }
+                    "revoke_ap_tracking" => (),
+                    "drop" => (),
                     _ => println!("{:}", libfunc.to_string()),
                 }
             }
