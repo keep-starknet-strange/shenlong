@@ -22,9 +22,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Matching on the long id because it'll always have a debug name
             match &type_declaration.long_id.generic_id.debug_name {
                 Some(type_name) => match type_name.as_str() {
-                    "felt" => self.felt(&type_declaration),
-                    "NonZero" => self.non_zero(&type_declaration),
-                    "Struct" => self.sierra_struct(&type_declaration),
+                    "felt" => self.felt(type_declaration),
+                    "NonZero" => self.non_zero(type_declaration),
+                    "Struct" => self.sierra_struct(type_declaration),
                     _ => println!("{type_name} is not a felt"),
                 },
                 _ => return Err(CompilerError::NoTypeProvided),
