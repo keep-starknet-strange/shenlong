@@ -99,6 +99,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     {
                         // Create a variable for each return value (might not be needed though)
                         for result in invocation.branches[0].results.iter() {
+                            println!("{:}", result.id);
                             self.save_in_var(&result.id)?;
                         }
                     }

@@ -1,22 +1,26 @@
-use inkwell::builder::Builder;
-use inkwell::values::{BasicValue, FunctionValue};
+use cairo_lang_sierra::program::LibfuncDeclaration;
+use inkwell::types::BasicType;
 
-use crate::sierra::corelib_functions::processor::LlvmBodyProcessor;
 use crate::sierra::errors::CompilerResult;
+use crate::sierra::llvm_compiler::Compiler;
 
-pub struct LlvmMathAdd {}
-
-/// Implementation of the LlvmBodyProcessor trait for the + function for int types.
-impl<'ctx> LlvmBodyProcessor<'ctx> for LlvmMathAdd {
-    fn create_body(
-        &self,
-        builder: &Builder<'ctx>,
-        fn_value: &FunctionValue<'ctx>,
-    ) -> CompilerResult<Option<Box<dyn BasicValue<'ctx> + 'ctx>>> {
-        Ok(Some(Box::from(builder.build_int_add(
-            fn_value.get_first_param().unwrap().into_int_value(),
-            fn_value.get_last_param().unwrap().into_int_value(),
+impl<'a, 'ctx> Compiler<'a, 'ctx> {
+    pub fn felt_add(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+        let return_type = self.get_type_from_name("felt")?;
+        let func = self.module.add_function(
+            libfunc_declaration.id.id.to_string().as_str(),
+            return_type.fn_type(
+                &[return_type.as_basic_type_enum().into(), return_type.as_basic_type_enum().into()],
+                false,
+            ),
+            None,
+        );
+        self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
+        self.builder.build_return(Some(&self.builder.build_int_add(
+            func.get_first_param().expect("felt_add should have a first arg").into_int_value(),
+            func.get_last_param().expect("felt_add should have a second arg").into_int_value(),
             "res",
-        ))))
+        )));
+        Ok(())
     }
 }
