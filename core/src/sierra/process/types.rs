@@ -1,4 +1,4 @@
-use inkwell::types::{BasicType, BasicTypeEnum};
+use inkwell::types::BasicTypeEnum;
 use log::debug;
 
 use crate::sierra::errors::{CompilerError, CompilerResult};
@@ -22,14 +22,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Matching on the long id because it'll always have a debug name
             match &type_declaration.long_id.generic_id.debug_name {
                 Some(type_name) => match type_name.as_str() {
-                    "felt" => {
-                        self.id_from_name.insert("felt".to_owned(), type_declaration.id.id);
-                        self.types.insert(
-                            type_declaration.id.id,
-                            Box::new(self.context.custom_width_int_type(252).as_basic_type_enum()),
-                        );
-                    }
-                    "NonZero" => (),
+                    "felt" => self.felt(&type_declaration),
+                    "NonZero" => self.non_zero(&type_declaration),
+                    "Struct" => self.sierra_struct(&type_declaration),
                     _ => println!("{type_name} is not a felt"),
                 },
                 _ => return Err(CompilerError::NoTypeProvided),

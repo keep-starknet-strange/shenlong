@@ -13,7 +13,6 @@ macro_rules! test_resource_file {
 #[test_case("addition")]
 fn compile_sierra_program_to_llvm(name: &str) {
     let program_path = test_resource_file!(format!("sierra/{}.sierra", name));
-    println!("{}", program_path);
     let tmp_dir = TempDir::new("tmp").unwrap();
     let output_path = tmp_dir.path().join("test.ll");
     let result = Compiler::compile_from_file(program_path.as_str(), output_path.to_str().unwrap());

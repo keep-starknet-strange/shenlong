@@ -18,7 +18,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.check_state(&CompilationState::TypesProcessed)?;
 
         for func_declaration in self.program.funcs.iter() {
-            println!("{:?}", func_declaration.params);
+            ()
         }
         // Move to the next state.
         self.move_to(CompilationState::FunctionsProcessed)

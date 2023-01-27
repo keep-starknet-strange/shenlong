@@ -37,7 +37,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     }
                     "revoke_ap_tracking" => (),
                     "drop" => (),
-                    _ => println!("{:}", libfunc.to_string()),
+                    _ => println!("{:} not implemented", libfunc.to_string()),
                 }
             }
         }
