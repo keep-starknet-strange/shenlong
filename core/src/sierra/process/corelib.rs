@@ -29,46 +29,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     "felt_sub" => {
                         self.felt_sub(libfunc_declaration)?;
                     }
+                    "dup" => {
+                        self.dup(libfunc_declaration)?;
+                    }
                     _ => println!("{:}", libfunc.to_string()),
                 }
-                // // If it's a constant process it.
-                // if libfunc.ends_with("const") {
-                //     func_name = self.process_const(libfunc_declaration)?;
-                // } else if libfunc == "dup" {
-                //     match &libfunc_declaration.long_id.generic_args[0] {
-                //         GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
-                //             let arg_type = self
-                //                 .types
-                //                 .get(id)
-                //                 .expect("Type should have been declared")
-                //                 .as_basic_type_enum();
-                //             func_name = format!("dup_{id}");
-                //             self.libfunc_processors.insert(
-                //                 func_name.clone(),
-                //                 Func::new(
-                //                     vec![arg_type.into()],
-                //                     self.context
-                //                         .struct_type(&[arg_type, arg_type], false)
-                //                         .as_basic_type_enum(),
-                //                     Box::from(LlvmDup {}),
-                //                 ),
-                //             );
-                //         }
-                //         GenericArg::UserType(_) => todo!(),
-                //         GenericArg::Value(_) => todo!(),
-                //         GenericArg::UserFunc(_) => todo!(),
-                //         GenericArg::Libfunc(_) => todo!(),
-                //     };
-                // }
-                // // If the processor is found process the function.
-                // if let Some(processor) = self.libfunc_processors.get(&func_name) {
-                //     processor.to_llvm(
-                //         &self.module,
-                //         self.context,
-                //         self.builder,
-                //         libfunc_declaration.id.id.to_string().as_str(),
-                //     )?;
-                // }
             }
         }
         // Move to the next state.
