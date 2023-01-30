@@ -9,7 +9,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let return_type = match &libfunc_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self
                 .types
-                .get(id)
+                .get(&id.to_string())
                 .expect("Type should have been defined before struct")
                 .as_basic_type_enum()
                 .into_struct_type(),
@@ -18,7 +18,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
         };
         let func = self.module.add_function(
-            libfunc_declaration.id.id.to_string().as_str(),
+            libfunc_declaration
+                .id
+                .debug_name
+                .clone()
+                .expect("This compiler only works with sierra compiled with --replace-ids")
+                .to_string()
+                .as_str(),
             return_type.fn_type(
                 &return_type
                     .get_field_types()

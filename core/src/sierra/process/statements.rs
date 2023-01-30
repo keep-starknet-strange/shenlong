@@ -1,48 +1,22 @@
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement};
+use inkwell::types::BasicTypeEnum;
 use inkwell::values::BasicValue;
 use log::debug;
 
 use crate::sierra::errors::{CompilerError, CompilerResult};
-use crate::sierra::llvm_compiler::{CompilationState, Compiler};
+use crate::sierra::llvm_compiler::Compiler;
 
 /// Implementation of the statement processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    /// Build an artificial main function to be able to run the generated LLVM IR file.
-    fn build_main(&mut self) -> CompilerResult<()> {
-        let args_type = self
-            .types
-            .get(
-                self.id_from_name
-                    .get("felt")
-                    .ok_or(CompilerError::TypeNotFound("felt".to_owned()))?,
-            )
-            .expect("felt type should have been declared");
-        let main_type = args_type.fn_type(&[], false);
-        let main_func = self.module.add_function("main", main_type, None);
-        let main_bb = self.context.append_basic_block(main_func, "entry");
-        self.builder.position_at_end(main_bb);
-
-        Ok(())
-    }
-
     /// Allocate an llvm pointer variable and save it in the hashmap.
     /// It is needed to be able to track all the variables returned.
     /// We need to track them to pass them as arguments for future function calls.
-    fn save_in_var(&mut self, id: &u64) -> CompilerResult<()> {
-        // Currently only supports felt variables.
-        let felt_type = self
-            .types
-            .get(
-                self.id_from_name
-                    .get("felt")
-                    .ok_or(CompilerError::TypeNotFound("felt".to_owned()))?,
-            )
-            .expect("felt type should have been declared");
+    #[inline(always)]
+    pub fn save_in_var(&mut self, var_id: &u64, ty: BasicTypeEnum<'ctx>) -> CompilerResult<()> {
         // Get the variable pointer.
-        let var_ptr =
-            self.builder.build_alloca(felt_type.as_basic_type_enum(), &format!("{id:}_ptr"));
-        self.variables.insert(id.to_string(), Some(var_ptr));
+        let var_ptr = self.builder.build_alloca(ty, &format!("{var_id:}_ptr"));
+        self.variables.insert(var_id.to_string(), Some(var_ptr));
         Ok(())
     }
 
@@ -51,12 +25,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    pub fn process_statements(&mut self) -> CompilerResult<()> {
+    pub fn process_statements_from_until_return(&mut self, from: usize) -> CompilerResult<()> {
         debug!("processing statements");
         // Check that the current state is valid.
-        self.check_state(&CompilationState::CoreLibFunctionsProcessed)?;
-        self.build_main()?;
-        for statement in self.program.statements.iter() {
+        for statement in &self.program.statements.clone()[from..] {
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
@@ -99,12 +71,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     {
                         // Create a variable for each return value (might not be needed though)
                         for result in invocation.branches[0].results.iter() {
-                            self.save_in_var(&result.id)?;
+                            println!("{:?}", result)
+                            // self.save_in_var(&result.id, result.id)?;
                         }
                     }
 
                     // If a LLVM IR function was created for this sierra function call it.
                     let res = if let Some(function) = func {
+                        // change to expect once we have all the corelib funcs
                         self.builder.build_call(function, &args, "").try_as_basic_value().left()
                     } else if !args.is_empty() {
                         // else just get the argument value.
@@ -142,7 +116,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
             }
         }
-        // Move to the next state.
-        self.move_to(CompilationState::StatementsProcessed)
+        Ok(())
     }
 }
