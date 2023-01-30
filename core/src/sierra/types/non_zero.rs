@@ -7,10 +7,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn non_zero(&mut self, type_declaration: &TypeDeclaration) {
         match &type_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self.types.insert(
-                type_declaration.id.id,
+                type_declaration.id.id.to_string(),
                 Box::from(
                     self.types
-                        .get(id)
+                        .get(&id.to_string())
                         .expect("store_temp type should have been declared")
                         .as_basic_type_enum(),
                 ),

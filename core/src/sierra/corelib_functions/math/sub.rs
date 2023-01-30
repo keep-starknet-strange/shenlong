@@ -8,7 +8,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn felt_sub(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
         let return_type = self.get_type_from_name("felt")?;
         let func = self.module.add_function(
-            libfunc_declaration.id.id.to_string().as_str(),
+            libfunc_declaration
+                .id
+                .debug_name
+                .clone()
+                .expect("This compiler only works with sierra compiled with --replace-ids")
+                .to_string()
+                .as_str(),
             return_type.fn_type(
                 &[return_type.as_basic_type_enum().into(), return_type.as_basic_type_enum().into()],
                 false,

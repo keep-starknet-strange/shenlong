@@ -67,9 +67,9 @@ pub struct Compiler<'a, 'ctx> {
     /// The valid state transitions.
     pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
     /// The types.
-    pub types: HashMap<u64, Box<dyn BasicType<'ctx> + 'a>>,
+    pub types: HashMap<String, Box<dyn BasicType<'ctx> + 'a>>,
     /// Mapping from type name to program id.
-    pub id_from_name: HashMap<String, u64>,
+    pub id_from_name: HashMap<String, String>,
     /// Calls in the main function.
     pub main_calls: Vec<BasicValueEnum<'ctx>>,
 }
@@ -213,14 +213,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Process the types in the Sierra program.
         compiler.process_types()?;
 
-        // Process the functions in the Sierra program.
-        compiler.process_funcs()?;
-
         // Process the core library functions in the Sierra program.
         compiler.process_core_lib_functions()?;
 
+        // Process the functions in the Sierra program.
+        compiler.process_funcs()?;
         // Process the statements in the Sierra program.
-        compiler.process_statements()?;
+        // compiler.process_statements()?;
 
         // Finalize the compilation.
         compiler.finalize_compilation()
@@ -235,7 +234,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     fn finalize_compilation(&mut self) -> CompilerResult<()> {
         debug!("finalizing compilation");
         // Check that the current state is valid.
-        self.check_state(&CompilationState::StatementsProcessed)?;
+        self.check_state(&CompilationState::FunctionsProcessed)?;
         // Ensure output path is valid and exists.
         let output_path = Path::new(self.output_path.as_str());
         // let parent =
@@ -314,19 +313,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
         HashMap::from([
             ((CompilationState::NotStarted, CompilationState::TypesProcessed), true),
-            ((CompilationState::TypesProcessed, CompilationState::FunctionsProcessed), true),
+            ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), true),
             (
-                (CompilationState::FunctionsProcessed, CompilationState::CoreLibFunctionsProcessed),
+                (CompilationState::CoreLibFunctionsProcessed, CompilationState::FunctionsProcessed),
                 true,
             ),
-            (
-                (
-                    CompilationState::CoreLibFunctionsProcessed,
-                    CompilationState::StatementsProcessed,
-                ),
-                true,
-            ),
-            ((CompilationState::StatementsProcessed, CompilationState::Finalized), true),
+            ((CompilationState::FunctionsProcessed, CompilationState::Finalized), true),
         ])
     }
 

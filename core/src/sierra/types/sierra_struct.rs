@@ -11,7 +11,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             match generic_arg {
                 GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => args.push(
                     self.types
-                        .get(id)
+                        .get(&id.to_string())
                         .expect("Type should have been defined before struct")
                         .as_basic_type_enum(),
                 ),
@@ -23,7 +23,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             };
         }
         self.types.insert(
-            type_declaration.id.id,
+            type_declaration.id.id.to_string(),
             Box::from(self.context.struct_type(&args, false).as_basic_type_enum()),
         );
     }
