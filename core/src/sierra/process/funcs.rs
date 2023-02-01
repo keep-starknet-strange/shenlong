@@ -23,15 +23,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         for func_declaration in self.program.funcs.iter() {
             let mut args = vec![];
-            for Param { id: _, ty: ConcreteTypeId { id: type_id, debug_name: _debug_name } } in
-                &func_declaration.params
+            for Param { id: _, ty: ConcreteTypeId { id: type_id, debug_name: _debug_name } } in &func_declaration.params
             {
                 // Save the arguments for the function to be able to retreive the variables in the
                 // satements and jump to statement number entrypoint.
-                let ty = self
-                    .types
-                    .get(&type_id.to_string())
-                    .expect("Function argument type should have been declared");
+                let ty =
+                    self.types.get(&type_id.to_string()).expect("Function argument type should have been declared");
                 args.push(ty);
             }
 
@@ -77,10 +74,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let var_ptr = self.builder.build_alloca(ty, &format!("{var_id:}_ptr"));
                 self.builder.build_store(
                     var_ptr,
-                    func.get_nth_param((*var_id) as u32)
-                        .expect("Function should have enough parameters"),
+                    func.get_nth_param((*var_id) as u32).expect("Function should have enough parameters"),
                 );
-                self.variables.insert(var_id.to_string(), Some(var_ptr));
+                println!("var id {:?}, var_ptr {:?}", var_id.to_string(), var_ptr);
+                self.variables.insert(var_id.to_string(), var_ptr);
             }
             // process statements until return
             self.process_statements_from_until_return(func_declaration.entry_point.0)?;

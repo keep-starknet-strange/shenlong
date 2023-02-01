@@ -6,7 +6,7 @@ use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    pub fn store_temp(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+    pub fn rename(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
         let func_type = match &libfunc_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
                 self.types.get(&id.to_string()).expect("store_temp type should have been declared").as_basic_type_enum()

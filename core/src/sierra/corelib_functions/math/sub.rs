@@ -15,10 +15,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .expect("This compiler only works with sierra compiled with --replace-ids")
                 .to_string()
                 .as_str(),
-            return_type.fn_type(
-                &[return_type.as_basic_type_enum().into(), return_type.as_basic_type_enum().into()],
-                false,
-            ),
+            return_type
+                .fn_type(&[return_type.as_basic_type_enum().into(), return_type.as_basic_type_enum().into()], false),
             None,
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
