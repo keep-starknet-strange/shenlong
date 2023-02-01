@@ -59,7 +59,7 @@ pub struct Compiler<'a, 'ctx> {
     /// The LLVM module.
     pub module: Module<'ctx>,
     /// The variables of the program.
-    pub variables: HashMap<String, Option<PointerValue<'ctx>>>,
+    pub variables: HashMap<String, PointerValue<'ctx>>,
     /// The output path.
     pub output_path: String,
     /// The current compilation state.
@@ -171,10 +171,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
     /// // Check the result.
     /// ```
-    pub fn compile_sierra_program_to_llvm(
-        program: Program,
-        output_path: &str,
-    ) -> CompilerResult<()> {
+    pub fn compile_sierra_program_to_llvm(program: Program, output_path: &str) -> CompilerResult<()> {
         // Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
         // Context is an opaque object that owns a lot of core LLVM data structures, such as the
@@ -187,7 +184,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let module = context.create_module("root");
 
         // Instantiate variables map.
-        let variables: HashMap<String, Option<PointerValue>> = HashMap::new();
+        let variables = HashMap::new();
         let types = HashMap::new();
         let id_from_name = HashMap::new();
         let main_calls = vec![];
@@ -275,10 +272,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     /// If the transition is not valid, return an error.
     pub fn move_to(&mut self, state: CompilationState) -> CompilerResult<()> {
-        Compiler::is_valid_transition(
-            (self.state().clone(), state.clone()),
-            &self.valid_state_transitions,
-        )?;
+        Compiler::is_valid_transition((self.state().clone(), state.clone()), &self.valid_state_transitions)?;
         self.state = state;
         Ok(())
     }
@@ -314,10 +308,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         HashMap::from([
             ((CompilationState::NotStarted, CompilationState::TypesProcessed), true),
             ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), true),
-            (
-                (CompilationState::CoreLibFunctionsProcessed, CompilationState::FunctionsProcessed),
-                true,
-            ),
+            ((CompilationState::CoreLibFunctionsProcessed, CompilationState::FunctionsProcessed), true),
             ((CompilationState::FunctionsProcessed, CompilationState::Finalized), true),
         ])
     }
@@ -328,9 +319,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     /// Always returns an error.
     #[inline(always)]
-    fn err_invalid_state_transition(
-        invalid_transition: CompilationStateTransition,
-    ) -> CompilerError {
+    fn err_invalid_state_transition(invalid_transition: CompilationStateTransition) -> CompilerError {
         CompilerError::InvalidStateTransition(invalid_transition.0, invalid_transition.1)
     }
 }

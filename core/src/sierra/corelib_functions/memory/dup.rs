@@ -7,11 +7,9 @@ use crate::sierra::llvm_compiler::Compiler;
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn dup(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
         let arg_type = match &libfunc_declaration.long_id.generic_args[0] {
-            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self
-                .types
-                .get(&id.to_string())
-                .expect("Dup type should have been declared")
-                .as_basic_type_enum(),
+            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
+                self.types.get(&id.to_string()).expect("Dup type should have been declared").as_basic_type_enum()
+            }
             GenericArg::UserType(_) => todo!(),
             _ => panic!("Dup only takes type or user type"),
         };
@@ -30,13 +28,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         let arg = func.get_first_param().expect("Drop function should have an input parameter");
         let tuple = self.builder.build_alloca(return_type, "res_ptr");
-        let tuple_ptr =
-            self.builder.build_struct_gep(tuple, 0, "tuple_ptr").expect("Pointer should be valid");
+        let tuple_ptr = self.builder.build_struct_gep(tuple, 0, "tuple_ptr").expect("Pointer should be valid");
         self.builder.build_store(tuple_ptr, arg);
-        let tuple_ptr_2 = self
-            .builder
-            .build_struct_gep(tuple, 1, "tuple_ptr_2")
-            .expect("Pointer2 should be valid");
+        let tuple_ptr_2 = self.builder.build_struct_gep(tuple, 1, "tuple_ptr_2").expect("Pointer2 should be valid");
         self.builder.build_store(tuple_ptr_2, arg);
         self.builder.build_return(Some(&self.builder.build_load(tuple, "res")));
         Ok(())

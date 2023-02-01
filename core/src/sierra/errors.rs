@@ -32,10 +32,7 @@ pub enum CompilerError {
     PathNotFound(#[from] std::io::Error),
     /// Invalid compiler state transition.
     #[error("invalid state transition: {0:?} -> {1:?}")]
-    InvalidStateTransition(
-        super::llvm_compiler::CompilationState,
-        super::llvm_compiler::CompilationState,
-    ),
+    InvalidStateTransition(super::llvm_compiler::CompilationState, super::llvm_compiler::CompilationState),
     /// Compiler state doesn't exist.
     #[error("Invalid state")]
     InvalidState,

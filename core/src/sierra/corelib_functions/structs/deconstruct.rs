@@ -30,8 +30,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.builder.build_return(Some(
-            &func.get_first_param().expect("This functions should take exactly 1 argument "),
-        ));
+        self.builder
+            .build_return(Some(&func.get_first_param().expect("This functions should take exactly 1 argument ")));
     }
 }

@@ -31,11 +31,9 @@ async fn main() -> Result<()> {
     println!("\n\n\n\n\n{}", SHENLONG.fg_rgb::<0x00, 0xE6, 0x76>().bold());
     // println!("\n\n{}", CAIRO_2_LLVM.fg_rgb::<0x00, 0xE6, 0x76>().bold());
 
-    let colors: [DynColors; 10] = [
-        "#B80A41", "#4E4BA8", "#6EB122", "#DAAC06", "#00938A", "#E23838", "#B80A41", "#4E4BA8",
-        "#6EB122", "#DAAC06",
-    ]
-    .map(|color| color.parse().unwrap());
+    let colors: [DynColors; 10] =
+        ["#B80A41", "#4E4BA8", "#6EB122", "#DAAC06", "#00938A", "#E23838", "#B80A41", "#4E4BA8", "#6EB122", "#DAAC06"]
+            .map(|color| color.parse().unwrap());
 
     for line in CAIRO_2_LLVM.split_inclusive('\n') {
         for (text, color) in line.split('*').zip(colors.iter().copied()) {

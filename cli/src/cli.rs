@@ -31,11 +31,8 @@ impl Command {
                 SierraSubCommands::CompileToLlvm { program_path, output_path } => {
                     // Compile the program.
                     // TODO: Handle the output path properly.
-                    llvm_compiler::Compiler::compile_from_file(
-                        &program_path,
-                        &output_path.unwrap(),
-                    )
-                    .map_err(|e| eyre!(e.to_string()))?;
+                    llvm_compiler::Compiler::compile_from_file(&program_path, &output_path.unwrap())
+                        .map_err(|e| eyre!(e.to_string()))?;
                     println!("{} Program compiled successfully.", emoji::CHECK_MARK_BUTTON);
                     Ok(())
                 }

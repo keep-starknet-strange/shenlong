@@ -39,6 +39,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     "drop" => (),
                     "struct_construct" => self.struct_construct(libfunc_declaration),
                     "struct_deconstruct" => self.struct_deconstruct(libfunc_declaration),
+                    "felt_is_zero" => println!("Treated at runtime"),
+                    "rename" => self.rename(libfunc_declaration)?,
                     _ => println!("{:} not implemented", libfunc.to_string()),
                 }
             }

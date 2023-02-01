@@ -38,9 +38,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         let struct_ptr = self.builder.build_alloca(return_type, "res_ptr");
         for i in 0..return_type.count_fields() {
-            let value = func
-                .get_nth_param(i)
-                .expect("Function should have as many arguments as struct field");
+            let value = func.get_nth_param(i).expect("Function should have as many arguments as struct field");
             let tuple_ptr = self
                 .builder
                 .build_struct_gep(struct_ptr, i, format!("field_{i}_ptr").as_str())
