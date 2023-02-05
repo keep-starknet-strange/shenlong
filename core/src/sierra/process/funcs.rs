@@ -3,7 +3,7 @@ use cairo_lang_sierra::program::Param;
 use inkwell::types::BasicMetadataTypeEnum;
 use log::debug;
 
-use crate::sierra::errors::CompilerResult;
+use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 
 /// Implementation for the type processing for the compiler.
@@ -54,13 +54,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .collect::<Vec<BasicMetadataTypeEnum>>();
 
             let func = self.module.add_function(
-                func_declaration
-                    .id
-                    .debug_name
-                    .clone()
-                    .expect("This compiler only works with sierra compiled with --replace-ids")
-                    .to_string()
-                    .as_str(),
+                func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
                 match return_type {
                     Some(ret) => ret.fn_type(args_metadata, false),
                     None => self.context.void_type().fn_type(args_metadata, false),
@@ -68,16 +62,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 None,
             );
             self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
-            for (var_id, arg) in args.iter().enumerate() {
+            for (var_id, _) in args.iter().enumerate() {
                 let var_id = &(var_id as u64);
-                let ty = arg.as_basic_type_enum();
-                let var_ptr = self.builder.build_alloca(ty, &format!("{var_id:}_ptr"));
-                self.builder.build_store(
-                    var_ptr,
+                self.variables.insert(
+                    var_id.to_string(),
                     func.get_nth_param((*var_id) as u32).expect("Function should have enough parameters"),
                 );
-                println!("var id {:?}, var_ptr {:?}", var_id.to_string(), var_ptr);
-                self.variables.insert(var_id.to_string(), var_ptr);
             }
             // process statements until return
             self.process_statements_from_until_return(func_declaration.entry_point.0)?;

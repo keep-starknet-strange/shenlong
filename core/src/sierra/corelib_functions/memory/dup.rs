@@ -1,7 +1,7 @@
 use cairo_lang_sierra::ids::ConcreteTypeId;
 use cairo_lang_sierra::program::{GenericArg, LibfuncDeclaration};
 
-use crate::sierra::errors::CompilerResult;
+use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -15,13 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         };
         let return_type = self.context.struct_type(&[arg_type, arg_type], false);
         let func = self.module.add_function(
-            libfunc_declaration
-                .id
-                .debug_name
-                .clone()
-                .expect("This compiler only works with sierra compiled with --replace-ids")
-                .to_string()
-                .as_str(),
+            libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
             return_type.fn_type(&[arg_type.into()], false),
             None,
         );

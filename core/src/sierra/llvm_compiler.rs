@@ -41,7 +41,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::types::BasicType;
-use inkwell::values::{BasicValueEnum, PointerValue};
+use inkwell::values::BasicValueEnum;
 use log::debug;
 
 use super::errors::CompilerResult;
@@ -59,7 +59,7 @@ pub struct Compiler<'a, 'ctx> {
     /// The LLVM module.
     pub module: Module<'ctx>,
     /// The variables of the program.
-    pub variables: HashMap<String, PointerValue<'ctx>>,
+    pub variables: HashMap<String, BasicValueEnum<'ctx>>,
     /// The output path.
     pub output_path: String,
     /// The current compilation state.
