@@ -38,3 +38,5 @@ pub enum CompilerError {
     InvalidState,
 }
 pub type CompilerResult<T> = Result<T, CompilerError>;
+
+pub const DEBUG_NAME_EXPECTED: &str = "This compiler only works with sierra compiled with --replace-ids";

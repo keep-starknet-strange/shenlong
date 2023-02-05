@@ -1,10 +1,10 @@
 use cairo_lang_sierra::ids::VarId;
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
-use inkwell::values::{BasicMetadataValueEnum, PointerValue};
+use inkwell::values::{BasicMetadataValueEnum, StructValue};
 use log::debug;
 
-use crate::sierra::errors::{CompilerError, CompilerResult};
+use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 use crate::sierra::llvm_compiler::Compiler;
 
 /// Implementation of the statement processing for the compiler.
@@ -26,12 +26,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
                         continue;
                     }
-                    let fn_name = invocation
-                        .libfunc_id
-                        .debug_name
-                        .clone()
-                        .expect("This compiler only works with sierra compiled with --replace-ids")
-                        .to_string();
+                    let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
 
                     if invocation.branches.len() > 1 {
                         match fn_name.as_str() {
@@ -43,51 +38,65 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         }
                     }
                     if invocation.branches.len() == 1 && invocation.branches[0].target == GenBranchTarget::Fallthrough {
-                        let function = self.module.get_function(fn_name.as_str()).unwrap();
-                        let args = self.process_args(invocation);
-                        let res = self.builder.build_call(function, &args, "call").try_as_basic_value().left();
-
-                        let ptr = if invocation.branches[0].results.len() == 1 {
-                            let id = invocation.branches[0].results[0].id.to_string();
-                            match self.variables.get(&id) {
-                                Some(pointer) => *pointer,
-                                None => {
-                                    let ptr = self.builder.build_alloca(
-                                        function
-                                            .get_type()
-                                            .get_return_type()
-                                            .expect("Function should have return type"),
-                                        id.as_str(),
-                                    );
-                                    self.variables.insert(id, ptr);
-                                    ptr
-                                }
-                            }
+                        let function = if invocation.libfunc_id.debug_name.clone().unwrap().starts_with("function_call")
+                        {
+                            self.module
+                                .get_function(
+                                    invocation
+                                        .libfunc_id
+                                        .debug_name
+                                        .clone()
+                                        .unwrap()
+                                        .strip_prefix("function_call<user@")
+                                        .unwrap()
+                                        .strip_suffix('>')
+                                        .unwrap(),
+                                )
+                                .unwrap()
                         } else {
-                            self.builder.build_alloca(
-                                function.get_type().get_return_type().expect("Function should have return type"),
-                                "res",
-                            )
+                            self.module.get_function(fn_name.as_str()).unwrap()
                         };
-                        self.builder.build_store(ptr, res.unwrap());
-                        if invocation.branches[0].results.len() > 1 {
-                            self.unpack_tuple(&invocation.branches[0].results, &ptr)
+                        let args = self.process_args(invocation);
+                        let res = self
+                            .builder
+                            .build_call(function, &args, "")
+                            .try_as_basic_value()
+                            .left()
+                            .expect("Call should have worked");
+                        if res.is_struct_value() {
+                            self.unpack_tuple(&invocation.branches[0].results, res.into_struct_value())
+                        } else {
+                            self.variables.insert(invocation.branches[0].results[0].id.to_string(), res);
                         }
                     }
                 }
                 // Return == return instruction
                 GenStatement::Return(ret) => {
-                    if ret.len() == 1 {
+                    if !ret.is_empty() {
+                        let mut types = vec![];
+                        let mut values = vec![];
+
+                        for ret_var in ret.iter() {
+                            let value = self.variables.get(&ret_var.id.to_string()).unwrap();
+                            values.push(value);
+                            types.push(value.get_type());
+                        }
+                        let return_struct_ptr =
+                            self.builder.build_alloca(self.context.struct_type(&types, false), "ret_struct_ptr");
+                        for (index, value) in values.iter().enumerate() {
+                            let tuple_ptr = self
+                                .builder
+                                .build_struct_gep(
+                                    return_struct_ptr,
+                                    index.try_into().unwrap(),
+                                    format!("field_{index}_ptr").as_str(),
+                                )
+                                .expect("Pointer should be valid");
+                            self.builder.build_store(tuple_ptr, **value);
+                        }
                         // Return the specified value.
-                        self.builder.build_return(Some(
-                            &self.builder.build_load(
-                                *self
-                                    .variables
-                                    .get(&ret[0].id.to_string())
-                                    .ok_or(CompilerError::VarNotFound(ret[0].id.to_string()))?,
-                                &ret[0].id.to_string(),
-                            ),
-                        ));
+                        self.builder
+                            .build_return(Some(&self.builder.build_load(return_struct_ptr, "return_struct_value")));
                     }
                 }
             }
@@ -97,33 +106,29 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     fn process_args(&self, invocation: &Invocation) -> Vec<BasicMetadataValueEnum<'ctx>> {
         let mut args = vec![];
         if !invocation.args.is_empty() {
-            // Gets the saved pointer from the variables HashMap.
-            // Load its value.
-            // Inject it in the function.
             for argument in invocation.args.iter() {
                 args.push(
-                    self.builder
-                        .build_load(
-                            *self.variables.get(&argument.id.to_string()).unwrap_or_else(|| {
-                                panic!("Variable {:} passed as argument should have been declared first", argument.id)
-                            }),
-                            &argument.id.to_string(),
-                        )
-                        .into(),
+                    (*self.variables.get(&argument.id.to_string()).unwrap_or_else(|| {
+                        panic!("Variable {:} passed as argument should have been declared first", argument.id)
+                    }))
+                    .into(),
                 );
             }
         }
         args
     }
 
-    fn unpack_tuple(&mut self, results: &[VarId], res_ptr: &PointerValue<'ctx>) {
+    fn unpack_tuple(&mut self, results: &[VarId], res: StructValue<'ctx>) {
+        let res_ptr = self.builder.build_alloca(res.get_type(), "res_ptr");
+        self.builder.build_store(res_ptr, res);
         for (field_index, VarId { id, debug_name: _ }) in results.iter().enumerate() {
             let id = id.to_string();
             let field_ptr = self
                 .builder
-                .build_struct_gep(*res_ptr, field_index as u32, format!("{id}_ptr").as_str())
+                .build_struct_gep(res_ptr, field_index as u32, format!("{id}_ptr").as_str())
                 .expect("Pointer should be valid");
-            self.variables.insert(id, field_ptr);
+            let field = self.builder.build_load(field_ptr, id.as_str());
+            self.variables.insert(id, field);
         }
     }
 }
