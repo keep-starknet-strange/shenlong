@@ -19,16 +19,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         // self.builder.build_conditional_branch(comparison, then_block, else_block);
         // then case
-        let func = self.module.add_function("then_block", self.context.void_type().fn_type(&[], false), None);
+        let func = self.module.get_last_function().unwrap();
         let then_bb = self.context.append_basic_block(func, "then");
         let else_bb = self.context.append_basic_block(func, "else");
         let finally_bb = self.context.append_basic_block(func, "finally");
 
         self.builder.build_conditional_branch(comparison, then_bb, else_bb);
+
         self.builder.position_at_end(then_bb);
         self.builder.build_unconditional_branch(finally_bb);
+
         self.builder.position_at_end(else_bb);
         self.builder.build_unconditional_branch(finally_bb);
+
+        self.builder.position_at_end(finally_bb);
 
         println!("{:?}", invocation.branches[0]);
         // else case
