@@ -70,7 +70,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 );
             }
             // process statements until return
-            self.process_statements_from_until_return(func_declaration.entry_point.0)?;
+            self.process_statements_from_until(func_declaration.entry_point.0, None)?;
         }
         // Move to the next state.
         self.move_to(CompilationState::FunctionsProcessed)
