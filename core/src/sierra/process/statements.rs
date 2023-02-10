@@ -23,8 +23,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
-                    println!("Invocation {:?}", invocation.libfunc_id.debug_name);
-                    self.module.print_to_file("./core/tests/test_data/llvm/test.ll")?;
                     let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
                         match fn_name.as_str() {
