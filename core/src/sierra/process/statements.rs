@@ -14,25 +14,35 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    pub fn process_statements_from_until_return(&mut self, from: usize) -> CompilerResult<()> {
+    pub fn process_statements_from_until(&mut self, from: usize, until: Option<usize>) -> CompilerResult<()> {
         debug!("processing statements");
+        let statements =
+            if let Some(end) = until { &self.program.statements[from..end] } else { &self.program.statements[from..] };
         // Check that the current state is valid.
-        for statement in &self.program.statements.clone()[from..] {
+        for (statement_id, statement) in statements.iter().enumerate() {
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
                     println!("Invocation {:?}", invocation.libfunc_id.debug_name);
                     self.module.print_to_file("./core/tests/test_data/llvm/test.ll")?;
-                    if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
-                        continue;
-                    }
                     let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
-
+                    if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
+                        match fn_name.as_str() {
+                            "jump" => {
+                                let from = match &invocation.branches[0].target {
+                                    GenBranchTarget::Statement(id) => id.0,
+                                    _ => panic!("Jump should have genbranchinfo"),
+                                };
+                                self.process_statements_from_until(from, None)?;
+                            }
+                            _ => continue,
+                        }
+                    }
                     if invocation.branches.len() > 1 {
                         match fn_name.as_str() {
                             "felt_is_zero" => {
-                                self.felt_is_zero(invocation)?;
-                                continue;
+                                self.felt_is_zero(invocation, statement_id)?;
+                                break;
                             }
                             _ => continue,
                         }

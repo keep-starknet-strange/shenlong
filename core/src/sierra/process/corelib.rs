@@ -42,6 +42,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     "felt_is_zero" => println!("Treated in the statements"),
                     "rename" => self.rename(libfunc_declaration)?,
                     "function_call" => println!("Treated in the statements"),
+                    "jump" => println!("Treated in the statements"),
                     _ => println!("{:} not implemented", libfunc.to_string()),
                 }
             }
