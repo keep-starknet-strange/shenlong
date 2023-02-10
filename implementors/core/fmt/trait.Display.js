@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"shenlong_core":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.66.1/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"enum\" href=\"shenlong_core/sierra/llvm_compiler/enum.CompilerErr.html\" title=\"enum shenlong_core::sierra::llvm_compiler::CompilerErr\">CompilerErr</a>"]]
+"shenlong_core":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.67.1/core/fmt/trait.Display.html\" title=\"trait core::fmt::Display\">Display</a> for <a class=\"enum\" href=\"shenlong_core/sierra/errors/enum.CompilerError.html\" title=\"enum shenlong_core::sierra::errors::CompilerError\">CompilerError</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
