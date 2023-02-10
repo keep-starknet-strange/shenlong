@@ -11,6 +11,7 @@ macro_rules! test_resource_file {
 }
 
 #[test_case("addition")]
+#[test_case("fib")]
 fn compile_sierra_program_to_llvm(name: &str) {
     let program_path = test_resource_file!(format!("sierra/{}.sierra", name));
     let tmp_dir = TempDir::new("tmp").unwrap();

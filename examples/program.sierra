@@ -1,17 +1,17 @@
-type [0] = felt;
+type felt = felt;
 
-libfunc [1] = felt_const<1>;
-libfunc [2] = felt_const<2>;
-libfunc [3] = store_temp<[0]>;
-libfunc [0] = felt_add;
-libfunc [4] = rename<[0]>;
+libfunc felt_const<1> = felt_const<1>;
+libfunc felt_const<2> = felt_const<2>;
+libfunc store_temp<felt> = store_temp<felt>;
+libfunc felt_add = felt_add;
+libfunc rename<felt> = rename<felt>;
 
-[1]() -> ([0]);
-[2]() -> ([1]);
-[3]([0]) -> ([0]);
-[0]([0], [1]) -> ([2]);
-[3]([2]) -> ([2]);
-[4]([2]) -> ([3]);
+felt_const<1>() -> ([0]);
+felt_const<2>() -> ([1]);
+store_temp<felt>([0]) -> ([0]);
+felt_add([0], [1]) -> ([2]);
+store_temp<felt>([2]) -> ([2]);
+rename<felt>([2]) -> ([3]);
 return([3]);
 
-[0]@0() -> ([0]);
+add::add::main@0() -> (felt);

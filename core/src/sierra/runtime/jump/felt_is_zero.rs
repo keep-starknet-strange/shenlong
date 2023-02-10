@@ -45,10 +45,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
             GenBranchTarget::Statement(StatementIdx(id)) => self.process_statements_from_until(id, None)?,
         };
-
-        println!("{:?}", invocation.branches[0]);
-        // else case
-        println!("{:?}", invocation.branches[1]);
         Ok(())
     }
 }
