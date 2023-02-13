@@ -51,6 +51,8 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
 </pre><pre class="rust"><code><span class="kw">use </span>log::debug;
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::CompilerResult;
@@ -72,7 +74,8 @@
         </span><span class="kw">for </span>libfunc_declaration <span class="kw">in </span><span class="self">self</span>.program.libfunc_declarations.iter() {
             <span class="comment">// Get the debug name of the function.
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(libfunc) = <span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_id.debug_name {
-                <span class="kw">match </span>libfunc.to_string().as_str() {
+                <span class="comment">// Each core lib function is known
+                </span><span class="kw">match </span>libfunc.to_string().as_str() {
                     <span class="string">&quot;felt_const&quot; </span>=&gt; {
                         <span class="self">self</span>.felt_const(libfunc_declaration)<span class="question-mark">?</span>;
                     }
@@ -96,6 +99,7 @@
                     <span class="string">&quot;rename&quot; </span>=&gt; <span class="self">self</span>.rename(libfunc_declaration)<span class="question-mark">?</span>,
                     <span class="string">&quot;function_call&quot; </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Treated in the statements&quot;</span>),
                     <span class="string">&quot;jump&quot; </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Treated in the statements&quot;</span>),
+                    <span class="string">&quot;branch_align&quot; </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Ignored for now&quot;</span>),
                     <span class="kw">_ </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;{:} not implemented&quot;</span>, libfunc.to_string()),
                 }
             }

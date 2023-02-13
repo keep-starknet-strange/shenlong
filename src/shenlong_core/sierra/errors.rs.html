@@ -40,6 +40,8 @@
 <a href="#40" id="40">40</a>
 <a href="#41" id="41">41</a>
 <a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
 </pre><pre class="rust"><code><span class="doccomment">/// This file contains everything error related.
 </span><span class="kw">use </span>thiserror::Error;
 <span class="doccomment">/// Compiler errors.
@@ -81,6 +83,8 @@
 }
 <span class="kw">pub type </span>CompilerResult&lt;T&gt; = <span class="prelude-ty">Result</span>&lt;T, CompilerError&gt;;
 
-<span class="kw">pub const </span>DEBUG_NAME_EXPECTED: <span class="kw-2">&amp;</span>str = <span class="string">&quot;This compiler only works with sierra compiled with --replace-ids&quot;</span>;
+<span class="comment">// We need the debug infos in order to know the original name of a function and therefore which was
+// the main.
+</span><span class="kw">pub const </span>DEBUG_NAME_EXPECTED: <span class="kw-2">&amp;</span>str = <span class="string">&quot;This compiler only works with sierra compiled with --replace-ids&quot;</span>;
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

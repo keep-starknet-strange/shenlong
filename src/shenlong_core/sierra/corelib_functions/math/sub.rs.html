@@ -22,6 +22,19 @@
 <a href="#22" id="22">22</a>
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::program::LibfuncDeclaration;
 <span class="kw">use </span>inkwell::types::BasicType;
 
@@ -29,16 +42,29 @@
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::Compiler;
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-    <span class="kw">pub fn </span>felt_sub(<span class="kw-2">&amp;mut </span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) -&gt; CompilerResult&lt;()&gt; {
-        <span class="kw">let </span>return_type = <span class="self">self</span>.get_type_from_name(<span class="string">&quot;felt&quot;</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
+    <span class="doccomment">/// Implementation of the LLVM IR conversion of a felt substraction.
+    ///
+    /// # Arguments
+    ///
+    /// * `libfunc_declaration` - The corelib function declaration of felt_sub.
+    ///
+    /// # Error
+    ///
+    /// Returns an error if the felt type has not been declared previously.
+    </span><span class="kw">pub fn </span>felt_sub(<span class="kw-2">&amp;mut </span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) -&gt; CompilerResult&lt;()&gt; {
+        <span class="comment">// We could hardcode the LLVM IR type for felt but this adds a check.
+        </span><span class="kw">let </span>felt_type = <span class="self">self</span>.get_type_from_name(<span class="string">&quot;felt&quot;</span>)<span class="question-mark">?</span>;
+        <span class="comment">// fn felt_sub(a: felt, b: felt) -&gt; felt
+        </span><span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
             libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
-            return_type
-                .fn_type(<span class="kw-2">&amp;</span>[return_type.as_basic_type_enum().into(), return_type.as_basic_type_enum().into()], <span class="bool-val">false</span>),
+            felt_type.fn_type(<span class="kw-2">&amp;</span>[felt_type.as_basic_type_enum().into(), felt_type.as_basic_type_enum().into()], <span class="bool-val">false</span>),
             <span class="prelude-val">None</span>,
         );
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
-        <span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.builder.build_int_sub(
+        <span class="comment">// Return a - b
+        // Panics if the function doesn&#39;t have enough arguments but it should happen since we just defined
+        // it above.
+        </span><span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.builder.build_int_sub(
             func.get_first_param().expect(<span class="string">&quot;felt_sub should have a first arg&quot;</span>).into_int_value(),
             func.get_last_param().expect(<span class="string">&quot;felt_sub should have a second arg&quot;</span>).into_int_value(),
             <span class="string">&quot;res&quot;</span>,

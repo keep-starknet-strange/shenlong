@@ -76,6 +76,21 @@
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
 <a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::Param;
 <span class="kw">use </span>inkwell::types::BasicMetadataTypeEnum;
@@ -97,22 +112,27 @@
         <span class="macro">debug!</span>(<span class="string">&quot;processing funcs&quot;</span>);
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::CoreLibFunctionsProcessed)<span class="question-mark">?</span>;
-        <span class="self">self</span>.variables.clear();
 
-        <span class="kw">for </span>func_declaration <span class="kw">in </span><span class="self">self</span>.program.funcs.iter() {
-            <span class="kw">let </span><span class="kw-2">mut </span>args = <span class="macro">vec!</span>[];
+        <span class="comment">// Clear the variables map in case a previous function has been processed.
+        </span><span class="self">self</span>.variables.clear();
+
+        <span class="comment">// Loop through the function declarations (last category of the sierra file).
+        </span><span class="kw">for </span>func_declaration <span class="kw">in </span><span class="self">self</span>.program.funcs.iter() {
+            <span class="comment">// Arguments of the function.
+            </span><span class="kw">let </span><span class="kw-2">mut </span>args = <span class="macro">vec!</span>[];
             <span class="kw">for </span>Param { id: <span class="kw">_</span>, ty: ConcreteTypeId { id: type_id, debug_name: _debug_name } } <span class="kw">in </span><span class="kw-2">&amp;</span>func_declaration.params
             {
-                <span class="comment">// Save the arguments for the function to be able to retreive the variables in the
-                // satements and jump to statement number entrypoint.
+                <span class="comment">// Get the type of the argument. Panics if the type is not found because it should have been
+                // declared at the begining of the sierra file.
                 </span><span class="kw">let </span>ty =
                     <span class="self">self</span>.types.get(<span class="kw-2">&amp;</span>type_id.to_string()).expect(<span class="string">&quot;Function argument type should have been declared&quot;</span>);
                 args.push(ty);
             }
-
-            <span class="kw">let </span>return_type = <span class="kw">if </span>!func_declaration.signature.ret_types.is_empty() {
+            <span class="comment">// Create return type if the function returns something.
+            </span><span class="kw">let </span>return_type = <span class="kw">if </span>!func_declaration.signature.ret_types.is_empty() {
                 <span class="kw">let </span><span class="kw-2">mut </span>ret_types = <span class="macro">vec!</span>[];
-                <span class="kw">for </span>ret_type <span class="kw">in </span><span class="kw-2">&amp;</span>func_declaration.signature.ret_types {
+                <span class="comment">// In case the function returns multiple values collect all the types.
+                </span><span class="kw">for </span>ret_type <span class="kw">in </span><span class="kw-2">&amp;</span>func_declaration.signature.ret_types {
                     ret_types.push(
                         <span class="self">self</span>.types
                             .get(<span class="kw-2">&amp;</span>ret_type.id.to_string())
@@ -125,14 +145,21 @@
                 <span class="prelude-val">None
             </span>};
 
-            <span class="kw">let </span>args_metadata = <span class="kw-2">&amp;</span>args
+            <span class="comment">// Map the arguments into the correct type to define the type of the function.
+            </span><span class="kw">let </span>args_metadata = <span class="kw-2">&amp;</span>args
                 .clone()
                 .into_iter()
                 .map(|arg_type| arg_type.as_basic_type_enum().into())
                 .collect::&lt;Vec&lt;BasicMetadataTypeEnum&gt;&gt;();
-
-            <span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
-                func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
+            <span class="comment">// Declare the function type (if it&#39;s the main function strip everything so it&#39;s recognised like the
+            // main function)
+            </span><span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
+                <span class="kw">if </span>func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().ends_with(<span class="string">&quot;::main&quot;</span>) {
+                    <span class="string">&quot;main&quot;</span>.to_owned()
+                } <span class="kw">else </span>{
+                    func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string()
+                }
+                .as_str(),
                 <span class="kw">match </span>return_type {
                     <span class="prelude-val">Some</span>(ret) =&gt; ret.fn_type(args_metadata, <span class="bool-val">false</span>),
                     <span class="prelude-val">None </span>=&gt; <span class="self">self</span>.context.void_type().fn_type(args_metadata, <span class="bool-val">false</span>),
@@ -140,14 +167,17 @@
                 <span class="prelude-val">None</span>,
             );
             <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
-            <span class="kw">for </span>(var_id, <span class="kw">_</span>) <span class="kw">in </span>args.iter().enumerate() {
-                <span class="kw">let </span>var_id = <span class="kw-2">&amp;</span>(var_id <span class="kw">as </span>u64);
-                <span class="self">self</span>.variables.insert(
+            <span class="comment">// Loop through the arguments of the function. The variable id counter always starts from zero for a
+            // function.
+            </span><span class="kw">for </span>(var_id, <span class="kw">_</span>) <span class="kw">in </span>args.iter().enumerate() {
+                <span class="comment">// Save the function arguments in the variables map to be able to use them in the function body.
+                </span><span class="self">self</span>.variables.insert(
                     var_id.to_string(),
-                    func.get_nth_param((<span class="kw-2">*</span>var_id) <span class="kw">as </span>u32).expect(<span class="string">&quot;Function should have enough parameters&quot;</span>),
+                    func.get_nth_param(var_id <span class="kw">as </span>u32).expect(<span class="string">&quot;Function should have enough parameters&quot;</span>),
                 );
             }
-            <span class="comment">// process statements until return
+            <span class="comment">// process statements from the line stated in the function definition until the return instruction.
+            // ex: fib_caller::fib_caller::main@21() -&gt; (Unit); the function main starts at the statement 21.
             </span><span class="self">self</span>.process_statements_from_until(func_declaration.entry_point.<span class="number">0</span>, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
         }
         <span class="comment">// Move to the next state.

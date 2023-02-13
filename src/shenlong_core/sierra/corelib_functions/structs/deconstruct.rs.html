@@ -29,6 +29,16 @@
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::{GenericArg, LibfuncDeclaration};
 
@@ -36,8 +46,18 @@
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::Compiler;
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-    <span class="kw">pub fn </span>struct_deconstruct(<span class="kw-2">&amp;mut </span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
-        <span class="kw">let </span>args = <span class="kw">match </span><span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_args[<span class="number">0</span>] {
+    <span class="doccomment">/// Implementation of the LLVM IR conversion of a struct deconstruction operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `libfunc_declaration` - The corelib function declaration of StructDeconstruct&lt;T&gt;.
+    ///
+    /// # Error
+    ///
+    /// Returns an error if the type T has not been declared previously.
+    </span><span class="kw">pub fn </span>struct_deconstruct(<span class="kw-2">&amp;mut </span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
+        <span class="comment">// Type of the struct that we have to deconstruct.
+        </span><span class="kw">let </span>args = <span class="kw">match </span><span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_args[<span class="number">0</span>] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: <span class="kw">_ </span>}) =&gt; <span class="self">self
                 </span>.types
                 .get(<span class="kw-2">&amp;</span>id.to_string())
@@ -48,7 +68,6 @@
                 <span class="macro">panic!</span>(<span class="string">&quot;Struct deconstruct only takes predefined structs&quot;</span>)
             }
         };
-
         <span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
             libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
             args.fn_type(<span class="kw-2">&amp;</span>[args.into()], <span class="bool-val">false</span>),
@@ -56,7 +75,8 @@
         );
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
 
-        <span class="self">self</span>.builder
+        <span class="comment">// Only returns the struct. Can be treated in the statements.
+        </span><span class="self">self</span>.builder
             .build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>func.get_first_param().expect(<span class="string">&quot;This functions should take exactly 1 argument &quot;</span>)));
     }
 }
