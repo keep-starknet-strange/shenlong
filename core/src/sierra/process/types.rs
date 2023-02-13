@@ -19,11 +19,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::NotStarted)?;
         for type_declaration in self.program.type_declarations.iter() {
-            // Matching on the long id because it'll always have a debug name
+            // All those types are known in advance. A struct is a combination of multiple "primitive" types
             match &type_declaration.long_id.generic_id.debug_name {
                 Some(type_name) => match type_name.as_str() {
+                    // Regular felt
                     "felt" => self.felt(type_declaration),
+                    // NonZero<felt> is a felt != 0
                     "NonZero" => self.non_zero(type_declaration),
+                    // Regular struct
                     "Struct" => self.sierra_struct(type_declaration),
                     _ => println!("{type_name} is not a felt"),
                 },
@@ -33,7 +36,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Move to the next state.
         self.move_to(CompilationState::TypesProcessed)
     }
+
+    /// Returns the LLVM IR type from the type name
+    ///
+    /// # Arguments
+    ///
+    /// * `type_name` - The type name (ex: "felt")
+    ///
+    /// # Returns
+    ///
+    /// The LLVM IR type.
     pub fn get_type_from_name(&self, type_name: &str) -> CompilerResult<BasicTypeEnum<'ctx>> {
+        // id_from_name : name => id
+        // variables : id => LLVM IR type
+        // ex: return variables[id_from_name["felt"]]
         Ok(self
             .types
             .get(self.id_from_name.get(type_name).ok_or(CompilerError::TypeNotFound(type_name.to_owned()))?)

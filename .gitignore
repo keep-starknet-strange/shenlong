@@ -32,3 +32,4 @@ target/
 **/flamegraph*.svg
 
 test.ll
+print.ll

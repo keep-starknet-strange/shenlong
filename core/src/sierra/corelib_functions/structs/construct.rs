@@ -6,7 +6,17 @@ use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
+    /// Implementation of the LLVM IR conversion of a struct construction operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `libfunc_declaration` - The corelib function declaration of StructConstruct<T>.
+    ///
+    /// # Error
+    ///
+    /// Returns an error if the type T has not been declared previously.
     pub fn struct_construct(&mut self, libfunc_declaration: &LibfuncDeclaration) {
+        // Type of the struct that we have to construct.
         let return_type = match &libfunc_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self
                 .types
@@ -18,6 +28,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 panic!("Struct construct only takes predefined structs")
             }
         };
+        // fn StructConstruct<T>(field_1: t1, field2: t2 ...) -> T
         let func = self.module.add_function(
             libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
             return_type.fn_type(
@@ -32,13 +43,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         let struct_ptr = self.builder.build_alloca(return_type, "res_ptr");
-        for i in 0..return_type.count_fields() {
-            let value = func.get_nth_param(i).expect("Function should have as many arguments as struct field");
+        // Store each field in the struct.
+        for (i, param) in func.get_params().iter().enumerate() {
             let tuple_ptr = self
                 .builder
-                .build_struct_gep(struct_ptr, i, format!("field_{i}_ptr").as_str())
+                .build_struct_gep(struct_ptr, i as u32, format!("field_{i}_ptr").as_str())
                 .expect("Pointer should be valid");
-            self.builder.build_store(tuple_ptr, value);
+            self.builder.build_store(tuple_ptr, *param);
         }
         self.builder.build_return(Some(&self.builder.build_load(struct_ptr, "res")));
     }

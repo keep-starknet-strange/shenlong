@@ -78,7 +78,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         }
                     }
                 }
-                // Return == return instruction
                 GenStatement::Return(ret) => {
                     if !ret.is_empty() {
                         let mut types = vec![];

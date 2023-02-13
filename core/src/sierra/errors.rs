@@ -39,4 +39,6 @@ pub enum CompilerError {
 }
 pub type CompilerResult<T> = Result<T, CompilerError>;
 
+// We need the debug infos in order to know the original name of a function and therefore which was
+// the main.
 pub const DEBUG_NAME_EXPECTED: &str = "This compiler only works with sierra compiled with --replace-ids";
