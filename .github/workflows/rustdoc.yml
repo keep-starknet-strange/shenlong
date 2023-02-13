@@ -33,7 +33,7 @@ jobs:
 
       - name: Prepare index
         run: |
-          echo '<meta http-equiv="refresh" content="0; url=shenlong/index.html" />' > target/doc/index.html
+          echo '<meta http-equiv="refresh" content="0; url=index.html" />' > target/doc/index.html
 
       - name: Deploy Documentation
         uses: peaceiris/actions-gh-pages@v3.9.0
