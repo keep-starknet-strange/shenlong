@@ -19,6 +19,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
             // Get the debug name of the function.
             if let Some(libfunc) = &libfunc_declaration.long_id.generic_id.debug_name {
+                // Each core lib function is known
                 match libfunc.to_string().as_str() {
                     "felt_const" => {
                         self.felt_const(libfunc_declaration)?;
@@ -43,6 +44,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     "rename" => self.rename(libfunc_declaration)?,
                     "function_call" => println!("Treated in the statements"),
                     "jump" => println!("Treated in the statements"),
+                    "branch_align" => println!("Ignored for now"),
                     _ => println!("{:} not implemented", libfunc.to_string()),
                 }
             }
