@@ -27,7 +27,7 @@ entry:
   ret i252 %0
 }
 
-define { i252 } @"add::add::main"() {
+define { i252 } @main() {
 entry:
   %0 = call i252 @"felt_const<1>"()
   %1 = call i252 @"felt_const<2>"()
