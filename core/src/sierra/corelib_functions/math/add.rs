@@ -24,15 +24,28 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
-        // Return a + b
-        // Panics if the function doesn't have enough arguments but it should happen since we just defined
-        // it above.
-        let add = self.builder.build_int_add(
+        // The maximum value of and addition is 2 * (prime - 1) which is 253 bits.
+        let bigger_felt = self.context.custom_width_int_type(253);
+        // Extend left hand side.
+        let lhs = self.builder.build_int_z_extend(
             func.get_first_param().expect("felt_add should have a first arg").into_int_value(),
-            func.get_last_param().expect("felt_add should have a second arg").into_int_value(),
-            "res",
+            bigger_felt,
+            "extended_a",
         );
+        // Extend right hand side.
+        let rhs = self.builder.build_int_z_extend(
+            func.get_last_param().expect("felt_add should have a second arg").into_int_value(),
+            bigger_felt,
+            "extended_b",
+        );
+        // Compute a + b.
+        let add = self.builder.build_int_add(lhs, rhs, "res");
+        // Extend it to 503 bits for the modulo operation.
         let arg = self.builder.build_int_z_extend(add, self.context.custom_width_int_type(503), "arg");
+        // Panics if the function doesn't have enough arguments but it shouldn't happen since we just
+        // defined it above.
+        // Also panics if the modulo function doesn't return a value but it shouldn't happen.
+        // return a + b % prime
         let res = self
             .builder
             .build_call(
