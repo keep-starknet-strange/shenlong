@@ -15,6 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Check that the current state is valid.
         self.check_state(&CompilationState::TypesProcessed)?;
+        self.modulo()?;
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
             // Get the debug name of the function.
