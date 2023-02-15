@@ -32,7 +32,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             func.get_last_param().expect("felt_sub should have a second arg").into_int_value(),
             "res",
         );
-        let arg = self.builder.build_int_z_extend(sub, self.context.custom_width_int_type(503), "arg");
+        let arg = self.builder.build_int_s_extend(sub, self.context.custom_width_int_type(503), "arg");
         let res = self
             .builder
             .build_call(

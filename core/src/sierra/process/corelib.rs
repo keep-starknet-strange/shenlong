@@ -31,6 +31,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     "felt_sub" => {
                         self.felt_sub(libfunc_declaration)?;
                     }
+                    "felt_mul" => {
+                        self.felt_mul(libfunc_declaration)?;
+                    }
                     "dup" => {
                         self.dup(libfunc_declaration)?;
                     }
