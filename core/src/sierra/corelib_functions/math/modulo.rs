@@ -45,7 +45,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .const_int_from_string(DEFAULT_PRIME, inkwell::types::StringRadix::Decimal)
             .expect("Should have been able to parse the default prime");
         // prime < a
-        let compare = self.builder.build_int_compare(inkwell::IntPredicate::ULT, default_prime, value, "compare");
+        let compare = self.builder.build_int_compare(inkwell::IntPredicate::SGE, value, default_prime, "compare");
         // If true jump to the body basic block else jump to the end basic block.
         self.builder.build_conditional_branch(compare, body_bb, end_bb);
         self.builder.position_at_end(body_bb);

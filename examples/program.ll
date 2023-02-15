@@ -9,7 +9,7 @@ entry:
 
 start:                                            ; preds = %body, %entry
   %val = load i503, i503* %val_ptr
-  %compare = icmp ult i503 3618502788666131213697322783095070105623107215331596699973092056135872020481, %val
+  %compare = icmp sge i503 %val, 3618502788666131213697322783095070105623107215331596699973092056135872020481
   br i1 %compare, label %body, label %end
 
 body:                                             ; preds = %start
@@ -41,8 +41,10 @@ entry:
 
 define i252 @felt_add(i252 %0, i252 %1) {
 entry:
-  %res = add i252 %0, %1
-  %arg = zext i252 %res to i503
+  %extended_a = sext i252 %0 to i253
+  %extended_b = sext i252 %1 to i253
+  %res = add i253 %extended_a, %extended_b
+  %arg = sext i253 %res to i503
   %res1 = call i252 @modulo(i503 %arg)
   ret i252 %res1
 }
