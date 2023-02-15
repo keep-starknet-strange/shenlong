@@ -66,7 +66,17 @@ entry:
   ret i252 %0
 }
 
-define { i252 } @"fib::fib::fib"(i252 %0, i252 %1, i252 %2) {
+define i252 @"felt_const<2>"() {
+entry:
+  ret i252 2
+}
+
+define i252 @"felt_const<500>"() {
+entry:
+  ret i252 500
+}
+
+define { i252 } @"fib_caller::fib_caller::fib"(i252 %0, i252 %1, i252 %2) {
 entry:
   %3 = call { i252, i252 } @"dup<felt>"(i252 %2)
   %res_ptr = alloca { i252, i252 }
@@ -100,19 +110,38 @@ else:                                             ; preds = %entry
   %9 = call i252 @felt_sub(i252 %"2", i252 %8)
   %10 = call i252 @"store_temp<felt>"(i252 %"1")
   %11 = call i252 @"store_temp<felt>"(i252 %7)
-  %12 = call i252 @"rename<felt>"(i252 %11)
-  %13 = call i252 @"store_temp<felt>"(i252 %9)
-  %14 = call i252 @"rename<felt>"(i252 %13)
-  %15 = call { i252 } @"fib::fib::fib"(i252 %10, i252 %12, i252 %14)
+  %12 = call i252 @"store_temp<felt>"(i252 %9)
+  %13 = call { i252 } @"fib_caller::fib_caller::fib"(i252 %10, i252 %11, i252 %12)
   %res_ptr2 = alloca { i252 }
-  store { i252 } %15, { i252 }* %res_ptr2
+  store { i252 } %13, { i252 }* %res_ptr2
   %"10_ptr" = getelementptr inbounds { i252 }, { i252 }* %res_ptr2, i32 0, i32 0
   %"10" = load i252, i252* %"10_ptr"
-  %16 = call i252 @"rename<felt>"(i252 %"10")
-  %17 = call i252 @"rename<felt>"(i252 %16)
+  %14 = call i252 @"rename<felt>"(i252 %"10")
+  %15 = call i252 @"rename<felt>"(i252 %14)
   %ret_struct_ptr3 = alloca { i252 }
   %field_0_ptr4 = getelementptr inbounds { i252 }, { i252 }* %ret_struct_ptr3, i32 0, i32 0
-  store i252 %17, i252* %field_0_ptr4
+  store i252 %15, i252* %field_0_ptr4
   %return_struct_value5 = load { i252 }, { i252 }* %ret_struct_ptr3
   ret { i252 } %return_struct_value5
+}
+
+define { i252 } @main() {
+entry:
+  %0 = call i252 @"felt_const<1>"()
+  %1 = call i252 @"felt_const<2>"()
+  %2 = call i252 @"felt_const<500>"()
+  %3 = call i252 @"store_temp<felt>"(i252 %0)
+  %4 = call i252 @"store_temp<felt>"(i252 %1)
+  %5 = call i252 @"store_temp<felt>"(i252 %2)
+  %6 = call { i252 } @"fib_caller::fib_caller::fib"(i252 %3, i252 %4, i252 %5)
+  %res_ptr = alloca { i252 }
+  store { i252 } %6, { i252 }* %res_ptr
+  %"3_ptr" = getelementptr inbounds { i252 }, { i252 }* %res_ptr, i32 0, i32 0
+  %"3" = load i252, i252* %"3_ptr"
+  %7 = call i252 @"rename<felt>"(i252 %"3")
+  %ret_struct_ptr = alloca { i252 }
+  %field_0_ptr = getelementptr inbounds { i252 }, { i252 }* %ret_struct_ptr, i32 0, i32 0
+  store i252 %7, i252* %field_0_ptr
+  %return_struct_value = load { i252 }, { i252 }* %ret_struct_ptr
+  ret { i252 } %return_struct_value
 }
