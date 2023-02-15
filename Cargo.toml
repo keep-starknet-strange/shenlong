@@ -17,12 +17,12 @@ license = "MIT"
 
 
 [dependencies]
-cairo-vm = "0.1.1"
 shenlong_core = { path = "./core" }
 
 [dev-dependencies]
 criterion = "0.4.0"
 tempdir = "0.3.7"
+cairo-vm = { git = "https://github.com/lambdaclass/cairo-rs/", branch = "main" }
 
 [dev-dependencies.cargo-husky]
 version = "1.5.0"
@@ -30,11 +30,10 @@ default-features = false
 features = [
     "precommit-hook",
     "run-for-all",
-    # TODO: investigate why clippy warning is blocking the commit
-    #"run-cargo-clippy",
+    "run-cargo-clippy",
     "run-cargo-fmt",
 ]
 
 [[bench]]
-name = "llvm_execution"
+name = "llvm_execution" # "llvm_execution"  "bytecode_exec"
 harness = false

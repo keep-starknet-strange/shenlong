@@ -27,11 +27,23 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Return a + b
         // Panics if the function doesn't have enough arguments but it should happen since we just defined
         // it above.
-        self.builder.build_return(Some(&self.builder.build_int_add(
+        let add = self.builder.build_int_add(
             func.get_first_param().expect("felt_add should have a first arg").into_int_value(),
             func.get_last_param().expect("felt_add should have a second arg").into_int_value(),
             "res",
-        )));
+        );
+        let arg = self.builder.build_int_z_extend(add, self.context.custom_width_int_type(503), "arg");
+        let res = self
+            .builder
+            .build_call(
+                self.module.get_function("modulo").expect("Modulo should have been defined before"),
+                &[arg.into()],
+                "res",
+            )
+            .try_as_basic_value()
+            .left()
+            .expect("Should have a left return value");
+        self.builder.build_return(Some(&res));
         Ok(())
     }
 }
