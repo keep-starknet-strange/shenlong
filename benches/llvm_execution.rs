@@ -7,7 +7,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 }
 
 fn sierra_add_test() {
-    // std::process::Command::new("sh").arg("lli").arg("test.ll").output().expect("dab");
     std::process::Command::new("sh").arg("./test");
 }
 
