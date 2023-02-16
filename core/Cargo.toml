@@ -7,7 +7,7 @@ homepage.workspace = true
 
 [dependencies]
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
-    "llvm10-0",
+    "llvm15-0",
 ] }
 cairo-lang-sierra = { git = "https://github.com/starkware-libs/cairo", branch = "main" }
 log = "0.4.17"
