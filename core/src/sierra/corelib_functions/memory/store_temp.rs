@@ -15,7 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the type T has not been declared previously.
-    pub fn store_temp(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+    pub fn store_temp(&self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
         // This function is completely irrelevant for LLVM IR but for simplicity we implement it like rename
         // for now. In cairo this function is used to store something in a tempvar.
         // Get the type that this store_temp function has to handle

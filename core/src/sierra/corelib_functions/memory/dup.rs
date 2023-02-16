@@ -14,7 +14,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the type T has not been declared previously.
-    pub fn dup(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+    pub fn dup(&self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
         // dup<T> can only duplicate the type T. If several types need the dup instruction it'll be defined
         // multiple times. Ex: dup<felt>; dup<i128>;
         // Get the type that this dup function has to handle

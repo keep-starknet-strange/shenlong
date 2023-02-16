@@ -14,7 +14,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the felt type has not been declared previously.
-    pub fn felt_add(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+    pub fn felt_add(&self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let felt_type = self.get_type_from_name("felt")?;
         // fn felt_add(a: felt, b: felt) -> felt

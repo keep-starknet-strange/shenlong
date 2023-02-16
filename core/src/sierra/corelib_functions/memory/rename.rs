@@ -15,7 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the type T has not been declared previously.
-    pub fn rename(&mut self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+    pub fn rename(&self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
         // This function just dumbly returns its input value. When it's called it just stores the value in
         // the next variable. Not sure how relevant it is in LLVM but might be useful later for branching.
         // Get the type that this rename function has to handle
