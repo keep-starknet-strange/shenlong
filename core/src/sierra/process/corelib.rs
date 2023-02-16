@@ -1,4 +1,4 @@
-use log::debug;
+use tracing::debug;
 
 use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
@@ -19,38 +19,38 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
             // Get the debug name of the function.
-            if let Some(libfunc) = &libfunc_declaration.long_id.generic_id.debug_name {
-                // Each core lib function is known
-                match libfunc.to_string().as_str() {
-                    "felt_const" => {
-                        self.felt_const(libfunc_declaration)?;
-                    }
-                    "felt_add" => {
-                        self.felt_add(libfunc_declaration)?;
-                    }
-                    "felt_sub" => {
-                        self.felt_sub(libfunc_declaration)?;
-                    }
-                    "felt_mul" => {
-                        self.felt_mul(libfunc_declaration)?;
-                    }
-                    "dup" => {
-                        self.dup(libfunc_declaration)?;
-                    }
-                    "store_temp" => {
-                        self.store_temp(libfunc_declaration)?;
-                    }
-                    "revoke_ap_tracking" => (),
-                    "drop" => (),
-                    "struct_construct" => self.struct_construct(libfunc_declaration),
-                    "struct_deconstruct" => self.struct_deconstruct(libfunc_declaration),
-                    "felt_is_zero" => println!("Treated in the statements"),
-                    "rename" => self.rename(libfunc_declaration)?,
-                    "function_call" => println!("Treated in the statements"),
-                    "jump" => println!("Treated in the statements"),
-                    "branch_align" => println!("Ignored for now"),
-                    _ => println!("{:} not implemented", libfunc.to_string()),
+            let libfunc_name = libfunc_declaration.long_id.generic_id.0.as_str();
+            debug!(libfunc_name, "processing");
+            // Each core lib function is known
+            match libfunc_name {
+                "felt_const" => {
+                    self.felt_const(libfunc_declaration)?;
                 }
+                "felt_add" => {
+                    self.felt_add(libfunc_declaration)?;
+                }
+                "felt_sub" => {
+                    self.felt_sub(libfunc_declaration)?;
+                }
+                "felt_mul" => {
+                    self.felt_mul(libfunc_declaration)?;
+                }
+                "dup" => {
+                    self.dup(libfunc_declaration)?;
+                }
+                "store_temp" => {
+                    self.store_temp(libfunc_declaration)?;
+                }
+                "revoke_ap_tracking" => (),
+                "drop" => (),
+                "struct_construct" => self.struct_construct(libfunc_declaration),
+                "struct_deconstruct" => self.struct_deconstruct(libfunc_declaration),
+                "felt_is_zero" => debug!(libfunc_name, "treated in the statements"),
+                "rename" => self.rename(libfunc_declaration)?,
+                "function_call" => debug!(libfunc_name, "treated in the statements"),
+                "jump" => debug!(libfunc_name, "treated in the statements"),
+                "branch_align" => debug!(libfunc_name, "ignored for now"),
+                _ => debug!(libfunc_name, "not implemented"),
             }
         }
         // Move to the next state.
