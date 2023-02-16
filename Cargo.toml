@@ -15,7 +15,6 @@ repository = "https://github.com/keep-starknet-strange/shenlong"
 readme = "./README.md"
 license = "MIT"
 
-
 [dependencies]
 shenlong_core = { path = "./core" }
 

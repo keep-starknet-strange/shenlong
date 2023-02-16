@@ -2,7 +2,7 @@ use cairo_lang_sierra::ids::VarId;
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
 use inkwell::values::{BasicMetadataValueEnum, StructValue};
-use log::debug;
+use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 use crate::sierra::llvm_compiler::Compiler;
@@ -62,7 +62,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 )
                                 .unwrap()
                         } else {
-                            self.module.get_function(fn_name.as_str()).unwrap()
+                            self.module
+                                .get_function(fn_name.as_str())
+                                .unwrap_or_else(|| panic!("{fn_name} function is missing"))
                         };
                         let args = self.process_args(invocation);
                         let res = self

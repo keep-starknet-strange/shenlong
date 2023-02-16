@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use eyre::{eyre, Result};
+use color_eyre::eyre::eyre;
+use color_eyre::Result;
 use shenlong_core::sierra::llvm_compiler;
 
 use crate::emoji;
@@ -31,7 +32,7 @@ impl Command {
                 SierraSubCommands::CompileToLlvm { program_path, output_path } => {
                     // Compile the program.
                     // TODO: Handle the output path properly.
-                    llvm_compiler::Compiler::compile_from_file(&program_path, &output_path.unwrap())
+                    llvm_compiler::Compiler::compile_from_file(&program_path, &output_path)
                         .map_err(|e| eyre!(e.to_string()))?;
                     println!("{} Program compiled successfully.", emoji::CHECK_MARK_BUTTON);
                     Ok(())
@@ -64,11 +65,11 @@ pub enum SierraSubCommands {
     CompileToLlvm {
         /// The path to the Sierra program to compile.
         #[arg(short, long, value_name = "PROGRAM_PATH")]
-        program_path: String,
+        program_path: PathBuf,
         /// The path to the output LLVM IR file.
         /// If not specified, the output will be printed to stdout.
         /// If specified, the output will be written to the specified file.
         #[arg(short, long, value_name = "OUTPUT_PATH")]
-        output_path: Option<String>,
+        output_path: PathBuf,
     },
 }

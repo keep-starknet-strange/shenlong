@@ -5,7 +5,7 @@ use tempdir::TempDir;
 /// Define a macro to get the path of a benchmark resource file.
 macro_rules! bench_resource_file {
     ($fname:expr) => {
-        concat!(env!("CARGO_MANIFEST_DIR"), "/resources/bench/", $fname) // assumes Linux ('/')!
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/bench/", $fname)) // assumes Linux ('/')!
     };
 }
 
@@ -19,7 +19,7 @@ fn sierra_2_llvm_simple_test() {
     let program_path = bench_resource_file!("sierra/simple_test.sierra");
     let tmp_dir = TempDir::new("tmp").unwrap();
     let output_path = tmp_dir.path().join("simple_test.ll");
-    let result = Compiler::compile_from_file(program_path, output_path.to_str().unwrap());
+    let result = Compiler::compile_from_file(program_path, &output_path);
     assert!(result.is_ok());
     tmp_dir.close().unwrap();
 }

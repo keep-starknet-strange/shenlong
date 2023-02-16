@@ -1,7 +1,7 @@
 use cairo_lang_sierra::ids::ConcreteTypeId;
 use cairo_lang_sierra::program::Param;
 use inkwell::types::BasicMetadataTypeEnum;
-use log::debug;
+use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};

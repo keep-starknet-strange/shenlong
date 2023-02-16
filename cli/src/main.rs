@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use clap::Parser;
-use eyre::Result;
+use color_eyre::Result;
 use owo_colors::{DynColors, OwoColorize};
 use shenlong_cli::cli::Command;
 use shenlong_cli::emoji;
@@ -28,6 +28,10 @@ const CAIRO_2_LLVM: &str = r#"
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    color_eyre::install()?;
+    // Initialize the logger.
+    tracing_subscriber::fmt::init();
+
     println!("\n\n\n\n\n{}", SHENLONG.fg_rgb::<0x00, 0xE6, 0x76>().bold());
     // println!("\n\n{}", CAIRO_2_LLVM.fg_rgb::<0x00, 0xE6, 0x76>().bold());
 
@@ -41,8 +45,6 @@ async fn main() -> Result<()> {
         }
     }
 
-    // Initialize the logger.
-    env_logger::init();
     // Parse the command line.
     let cli = Command::parse();
 
