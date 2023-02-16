@@ -33,7 +33,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::hash::Hash;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra::ProgramParser;
@@ -42,7 +42,7 @@ use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::types::BasicType;
 use inkwell::values::BasicValueEnum;
-use log::debug;
+use tracing::debug;
 
 use super::errors::CompilerResult;
 use crate::sierra::errors::CompilerError;
@@ -61,7 +61,7 @@ pub struct Compiler<'a, 'ctx> {
     /// The variables of the program.
     pub variables: HashMap<String, BasicValueEnum<'ctx>>,
     /// The output path.
-    pub output_path: String,
+    pub output_path: PathBuf,
     /// The current compilation state.
     pub state: CompilationState,
     /// The valid state transitions.
@@ -117,7 +117,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    pub fn compile_from_file(program_path: &str, output_path: &str) -> CompilerResult<()> {
+    pub fn compile_from_file(program_path: &Path, output_path: &Path) -> CompilerResult<()> {
         // Read the program from the file.
         let sierra_code = fs::read_to_string(program_path)?;
         Compiler::compile_from_code(&sierra_code, output_path)
@@ -131,7 +131,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    pub fn compile_from_code(sierra_code: &str, output_path: &str) -> CompilerResult<()> {
+    pub fn compile_from_code(sierra_code: &str, output_path: &Path) -> CompilerResult<()> {
         // Parse the program.
         let program = ProgramParser::new().parse(sierra_code).unwrap();
         Compiler::compile_sierra_program_to_llvm(program, output_path)
@@ -171,7 +171,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
     /// // Check the result.
     /// ```
-    pub fn compile_sierra_program_to_llvm(program: Program, output_path: &str) -> CompilerResult<()> {
+    pub fn compile_sierra_program_to_llvm(program: Program, output_path: &Path) -> CompilerResult<()> {
         // Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
         // Context is an opaque object that owns a lot of core LLVM data structures, such as the
@@ -232,14 +232,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug!("finalizing compilation");
         // Check that the current state is valid.
         self.check_state(&CompilationState::FunctionsProcessed)?;
-        // Ensure output path is valid and exists.
-        let output_path = Path::new(self.output_path.as_str());
         // let parent =
         //     output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
         // // Recursively create the output path parent directories if they don't exist.
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
-        self.module.print_to_file(output_path)?;
+        self.module.print_to_file(&self.output_path)?;
         // Ensure that the current module is valid
         self.module.verify()?;
 

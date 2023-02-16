@@ -1,5 +1,5 @@
 use inkwell::types::BasicTypeEnum;
-use log::debug;
+use tracing::debug;
 
 use crate::sierra::errors::{CompilerError, CompilerResult};
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
@@ -20,17 +20,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.check_state(&CompilationState::NotStarted)?;
         for type_declaration in self.program.type_declarations.iter() {
             // All those types are known in advance. A struct is a combination of multiple "primitive" types
-            match &type_declaration.long_id.generic_id.debug_name {
-                Some(type_name) => match type_name.as_str() {
-                    // Regular felt
-                    "felt" => self.felt(type_declaration),
-                    // NonZero<felt> is a felt != 0
-                    "NonZero" => self.non_zero(type_declaration),
-                    // Regular struct
-                    "Struct" => self.sierra_struct(type_declaration),
-                    _ => println!("{type_name} is not a felt"),
-                },
-                _ => return Err(CompilerError::NoTypeProvided),
+            let type_name = type_declaration.long_id.generic_id.0.as_str();
+            match type_name {
+                // Regular felt
+                "felt" => self.felt(type_declaration),
+                // NonZero<felt> is a felt != 0
+                "NonZero" => self.non_zero(type_declaration),
+                // Regular struct
+                "Struct" => self.sierra_struct(type_declaration),
+                _ => debug!(type_name, "unimplemented type"),
             }
         }
         // Move to the next state.
