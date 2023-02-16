@@ -1,5 +1,5 @@
 use cairo_lang_sierra::program::LibfuncDeclaration;
-use inkwell::types::{BasicType, StringRadix};
+use inkwell::types::BasicType;
 use inkwell::values::AnyValue;
 use inkwell::IntPredicate;
 
@@ -27,6 +27,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
 
+        // blocks needed
         let entry_block = self.context.append_basic_block(func, "entry");
         let while_loop = self.context.append_basic_block(func, "while");
         let body_loop = self.context.append_basic_block(func, "body");
@@ -42,48 +43,81 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .expect("Should have been able to parse the prime");
 
         // Compute felt division = a * b^-1
-
         // Calculate the multiplicative inverse of b
 
+        // allocate needed stack variables
         let t = self.builder.build_alloca(double_felt, "t");
         let new_t = self.builder.build_alloca(double_felt, "new_t");
         let r = self.builder.build_alloca(double_felt, "r");
         let new_r = self.builder.build_alloca(double_felt, "new_r");
-        let quotient = self.builder.build_alloca(double_felt, "quotient");
+        // let quotient = self.builder.build_alloca(double_felt, "quotient");
 
+        // store their initial values
         self.builder.build_store(t, double_felt.const_int(0, false));
         self.builder.build_store(new_t, double_felt.const_int(1, false));
         self.builder.build_store(r, prime);
-        self.builder
-            .build_store(new_r, func.get_last_param().expect("felt_div should have a second arg").into_int_value());
+        // extend the param to double_felt
+        let new_r_extended_value = self.builder.build_int_s_extend(
+            func.get_last_param().expect("felt_div should have a second arg").into_int_value(),
+            double_felt,
+            "new_r_extended",
+        );
+        self.builder.build_store(new_r, new_r_extended_value);
 
         self.builder.build_unconditional_branch(while_loop);
         self.builder.position_at_end(while_loop);
 
         let new_r_value = self.builder.build_load(double_felt, new_r, "new_r_value");
 
+        // while (new_r != 0)
         let is_new_t_zero = self.builder.build_int_compare(
             IntPredicate::NE,
             new_r_value.into_int_value(),
             double_felt.const_int(0, false).as_any_value_enum().into_int_value(),
             "while_compare",
         );
-
         self.builder.build_conditional_branch(is_new_t_zero, body_loop, exit_loop);
 
-        // while loop body
+        // {
         self.builder.position_at_end(body_loop);
 
+        // let quotient = r / new_r;
+        let quotient_value = self.builder.build_int_signed_div(
+            self.builder.build_load(double_felt, r, "r_value").into_int_value(),
+            self.builder.build_load(double_felt, new_r, "new_r_value").into_int_value(),
+            "new_quotient_value",
+        );
+        // self.builder.build_store(quotient, new_quotient_value);
+
+        // (t, new_t) = (new_t, t - (quotient * new_t))
+        // swap
+
+        let old_t_value = self.builder.build_load(double_felt, t, "old_t_value");
+        let new_t_value = self.builder.build_load(double_felt, new_t, "new_t_value");
+        self.builder.build_store(t, new_t_value);
+
+        let quotient_mul_new_t =
+            self.builder.build_int_mul(quotient_value, new_t_value.into_int_value(), "quotient_mul_new_t");
+        let t_minus_qmnt = self.builder.build_int_sub(old_t_value.into_int_value(), quotient_mul_new_t, "sub_t_res");
+        self.builder.build_store(new_t, t_minus_qmnt);
+
+        // (r, new_r) = (new_r, r - quotient * new_r);
+        let old_r_value = self.builder.build_load(double_felt, r, "old_r_value");
+        let new_r_value = self.builder.build_load(double_felt, new_r, "new_r_value");
+        self.builder.build_store(r, new_r_value);
+
+        let quotient_mul_new_r =
+            self.builder.build_int_mul(quotient_value, new_r_value.into_int_value(), "quotient_mul_new_r");
+        let r_minus_qmnt = self.builder.build_int_sub(old_r_value.into_int_value(), quotient_mul_new_r, "sub_r_res");
+        self.builder.build_store(new_r, r_minus_qmnt);
+
+        // body end
+        // }
         self.builder.build_unconditional_branch(while_loop);
 
-        self.builder.position_at_end(exit_loop);
+        // At this point, t holds the inverse of b.
 
-        // let const_1 = felt_type.into_int_type().const_int(1, false);
-        // let b_pow_minus_1 = self.builder.build_int_signed_div(
-        // const_1,
-        // func.get_last_param().expect("felt_div should have a second arg").into_int_value(),
-        // "b_pow_minus_1",
-        // );
+        self.builder.position_at_end(exit_loop);
 
         // Extend left hand side.
         let lhs = self.builder.build_int_s_extend(
@@ -91,18 +125,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             double_felt,
             "extended_a",
         );
-        // Extend right hand side.
-        let rhs = self.builder.build_int_s_extend(
-            func.get_last_param().expect("felt_div should have a second arg").into_int_value(),
-            double_felt,
-            "extended_b",
-        );
+
+        let rhs = self.builder.build_load(double_felt, t, "inverse").into_int_value();
 
         let mul = self.builder.build_int_mul(lhs, rhs, "res");
         // Panics if the function doesn't have enough arguments but it shouldn't happen since we just
         // defined it above.
         // Also panics if the modulo function doesn't return a value but it shouldn't happen.
-        // return a * b % prime
+        // return a * b^-1 % prime
         let res = self
             .builder
             .build_call(
