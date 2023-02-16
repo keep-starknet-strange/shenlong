@@ -41,13 +41,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Use the struct as a tuple.
         let tuple = self.builder.build_alloca(return_type, "res_ptr");
         // Get a pointer to the first field address.
-        let tuple_ptr = self.builder.build_struct_gep(tuple, 0, "tuple_ptr").expect("Pointer should be valid");
+        let tuple_ptr =
+            self.builder.build_struct_gep(return_type, tuple, 0, "tuple_ptr").expect("Pointer should be valid");
         // Store the value in the struct.
         self.builder.build_store(tuple_ptr, arg);
         // Same for second field.
-        let tuple_ptr_2 = self.builder.build_struct_gep(tuple, 1, "tuple_ptr_2").expect("Pointer2 should be valid");
+        let tuple_ptr_2 =
+            self.builder.build_struct_gep(return_type, tuple, 1, "tuple_ptr_2").expect("Pointer2 should be valid");
         self.builder.build_store(tuple_ptr_2, arg);
-        self.builder.build_return(Some(&self.builder.build_load(tuple, "res")));
+        self.builder.build_return(Some(&self.builder.build_load(return_type, tuple, "res")));
         Ok(())
     }
 }

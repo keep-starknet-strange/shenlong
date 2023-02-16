@@ -88,12 +88,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             values.push(value);
                             types.push(value.get_type());
                         }
-                        let return_struct_ptr =
-                            self.builder.build_alloca(self.context.struct_type(&types, false), "ret_struct_ptr");
+                        let return_struct_type = self.context.struct_type(&types, false);
+                        let return_struct_ptr = self.builder.build_alloca(return_struct_type, "ret_struct_ptr");
                         for (index, value) in values.iter().enumerate() {
                             let tuple_ptr = self
                                 .builder
                                 .build_struct_gep(
+                                    return_struct_type,
                                     return_struct_ptr,
                                     index.try_into().unwrap(),
                                     format!("field_{index}_ptr").as_str(),
@@ -102,8 +103,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             self.builder.build_store(tuple_ptr, **value);
                         }
                         // Return the specified value.
-                        self.builder
-                            .build_return(Some(&self.builder.build_load(return_struct_ptr, "return_struct_value")));
+                        self.builder.build_return(Some(&self.builder.build_load(
+                            return_struct_type,
+                            return_struct_ptr,
+                            "return_struct_value",
+                        )));
                     }
                     break;
                 }
@@ -127,15 +131,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     fn unpack_tuple(&mut self, results: &[VarId], res: StructValue<'ctx>) {
-        let res_ptr = self.builder.build_alloca(res.get_type(), "res_ptr");
+        let res_type = res.get_type();
+        let res_ptr = self.builder.build_alloca(res_type, "res_ptr");
         self.builder.build_store(res_ptr, res);
         for (field_index, VarId { id, debug_name: _ }) in results.iter().enumerate() {
             let id = id.to_string();
+            let field_type = res_type.get_field_type_at_index(field_index as u32).expect("Field type should exist");
             let field_ptr = self
                 .builder
-                .build_struct_gep(res_ptr, field_index as u32, format!("{id}_ptr").as_str())
+                .build_struct_gep(res_type, res_ptr, field_index as u32, format!("{id}_ptr").as_str())
                 .expect("Pointer should be valid");
-            let field = self.builder.build_load(field_ptr, id.as_str());
+            let field = self.builder.build_load(field_type, field_ptr, id.as_str());
             self.variables.insert(id, field);
         }
     }
