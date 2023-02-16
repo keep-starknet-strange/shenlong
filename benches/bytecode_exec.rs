@@ -16,7 +16,7 @@ struct BenchInputs<'a> {
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let cairo_run_config = CairoRunConfig::default();
-    let program = match Program::from_file(&Path::new("fib0.json"), Some(cairo_run_config.entrypoint)) {
+    let program = match Program::from_file(Path::new("fib0.json"), Some(cairo_run_config.entrypoint)) {
         Ok(program) => program,
         Err(_) => panic!("File not found"),
     };
@@ -28,7 +28,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-fn cairo_run_test<'a>(params: &BenchInputs) {
+fn cairo_run_test(params: &BenchInputs) {
     let mut hint_executor = BuiltinHintProcessor::new_empty();
     let secure_run = !params.cairo_run_config.proof_mode;
     let mut cairo_runner =
