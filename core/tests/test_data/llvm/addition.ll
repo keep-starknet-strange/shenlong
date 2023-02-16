@@ -38,7 +38,17 @@ entry:
   ret i252 %0
 }
 
-define { i252 } @main() {
+declare i32 @printf(ptr, ...)
+
+define i32 @print({ i252 } %0) {
+entry:
+  %prefix = alloca [2 x i8], align 1
+  store [2 x i8] c"%d", ptr %prefix, align 1
+  %worked = call i32 (ptr, ...) @printf(ptr %prefix, { i252 } %0)
+  ret i32 %worked
+}
+
+define i32 @main() {
 entry:
   %0 = call i252 @"felt_const<1>"()
   %1 = call i252 @"felt_const<2>"()
@@ -50,5 +60,6 @@ entry:
   %field_0_ptr = getelementptr inbounds { i252 }, ptr %ret_struct_ptr, i32 0, i32 0
   store i252 %5, ptr %field_0_ptr, align 4
   %return_struct_value = load { i252 }, ptr %ret_struct_ptr, align 4
-  ret { i252 } %return_struct_value
+  %worked = call i32 @print({ i252 } %return_struct_value)
+  ret i32 %worked
 }

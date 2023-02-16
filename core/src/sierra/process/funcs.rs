@@ -30,7 +30,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             for Param { id: _, ty: ConcreteTypeId { id: type_id, debug_name: _debug_name } } in &func_declaration.params
             {
                 // Get the type of the argument. Panics if the type is not found because it should have been
-                // declared at the begining of the sierra file.
+                // declared at the beginning of the sierra file.
                 let ty =
                     self.types.get(&type_id.to_string()).expect("Function argument type should have been declared");
                 args.push(ty);
@@ -58,21 +58,23 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .into_iter()
                 .map(|arg_type| arg_type.as_basic_type_enum().into())
                 .collect::<Vec<BasicMetadataTypeEnum>>();
-            // Declare the function type (if it's the main function strip everything so it's recognised like the
+            // Declare the function type (if it's the main function strip everything so it's recognized like the
             // main function)
-            let func = self.module.add_function(
-                if func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().ends_with("::main") {
-                    "main".to_owned()
-                } else {
-                    func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string()
-                }
-                .as_str(),
-                match return_type {
-                    Some(ret) => ret.fn_type(args_metadata, false),
-                    None => self.context.void_type().fn_type(args_metadata, false),
-                },
-                None,
-            );
+            let func_name = func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
+            let func = if let Some(ret_ty) = return_type && func_name.ends_with("::main"){
+                self.printf(ret_ty);
+                self.module.add_function("main", self.context.i32_type().fn_type(args_metadata, false), None)
+            } else {
+                self.module.add_function(
+                    func_name.as_str(),
+                    match return_type {
+                        Some(ret) => ret.fn_type(args_metadata, false),
+                        None => self.context.void_type().fn_type(args_metadata, false),
+                    },
+                    None,
+                )
+            };
+
             self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
             // Loop through the arguments of the function. The variable id counter always starts from zero for a
             // function.
