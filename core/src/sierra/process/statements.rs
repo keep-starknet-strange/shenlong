@@ -102,13 +102,33 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 .expect("Pointer should be valid");
                             self.builder.build_store(tuple_ptr, **value);
                         }
+                        let mut return_value =
+                            self.builder.build_load(return_struct_type, return_struct_ptr, "return_struct_value");
+                        if self
+                            .module
+                            .get_last_function()
+                            .expect("Current function should have been declared")
+                            .get_name()
+                            .to_str()
+                            .unwrap()
+                            == "main"
+                        {
+                            return_value = self
+                                .builder
+                                .build_call(
+                                    self.module
+                                        .get_function("print")
+                                        .expect("Print function should have been declared"),
+                                    &[return_value.into()],
+                                    "worked",
+                                )
+                                .try_as_basic_value()
+                                .expect_left("Call should return a value");
+                        }
                         // Return the specified value.
-                        self.builder.build_return(Some(&self.builder.build_load(
-                            return_struct_type,
-                            return_struct_ptr,
-                            "return_struct_value",
-                        )));
+                        self.builder.build_return(Some(&return_value));
                     }
+
                     break;
                 }
             }
