@@ -15,7 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the type T has not been declared previously.
-    pub fn struct_construct(&mut self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn struct_construct(&self, libfunc_declaration: &LibfuncDeclaration) {
         // Type of the struct that we have to construct.
         let return_type = match &libfunc_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self

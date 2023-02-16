@@ -135,6 +135,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
         Ok(())
     }
+
     fn process_args(&self, invocation: &Invocation) -> Vec<BasicMetadataValueEnum<'ctx>> {
         let mut args = vec![];
         if !invocation.args.is_empty() {

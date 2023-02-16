@@ -14,7 +14,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the type T has not been declared previously.
-    pub fn struct_deconstruct(&mut self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn struct_deconstruct(&self, libfunc_declaration: &LibfuncDeclaration) {
         // Type of the struct that we have to deconstruct.
         let args = match &libfunc_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self
