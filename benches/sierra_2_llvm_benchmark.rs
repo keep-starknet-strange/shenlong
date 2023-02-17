@@ -18,8 +18,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 fn sierra_2_llvm_simple_test() {
     let program_path = bench_resource_file!("sierra/simple_test.sierra");
     let tmp_dir = TempDir::new("tmp").unwrap();
-    let output_path = tmp_dir.path().join("simple_test.ll");
-    let result = Compiler::compile_from_file(program_path, &output_path);
+    let llvm_output_path = tmp_dir.path().join("simple_test.ll");
+    let bc_output_path = tmp_dir.path().join("simple_test.bc");
+    let result = Compiler::compile_from_file(program_path, &llvm_output_path, &bc_output_path);
     assert!(result.is_ok());
     tmp_dir.close().unwrap();
 }

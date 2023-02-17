@@ -39,6 +39,7 @@ use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra::ProgramParser;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
+use inkwell::execution_engine::ExecutionEngine;
 use inkwell::module::Module;
 use inkwell::types::BasicType;
 use inkwell::values::BasicValueEnum;
@@ -60,8 +61,10 @@ pub struct Compiler<'a, 'ctx> {
     pub module: Module<'ctx>,
     /// The variables of the program.
     pub variables: HashMap<String, BasicValueEnum<'ctx>>,
-    /// The output path.
-    pub output_path: PathBuf,
+    /// The LLVM IR output path.
+    pub llvm_output_path: PathBuf,
+    /// The bitcode output path.
+    pub bc_output_path: PathBuf,
     /// The current compilation state.
     pub state: CompilationState,
     /// The valid state transitions.
@@ -117,10 +120,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    pub fn compile_from_file(program_path: &Path, output_path: &Path) -> CompilerResult<()> {
+    pub fn compile_from_file(
+        program_path: &Path,
+        llvm_output_path: &Path,
+        bc_output_path: &Path,
+    ) -> CompilerResult<()> {
         // Read the program from the file.
         let sierra_code = fs::read_to_string(program_path)?;
-        Compiler::compile_from_code(&sierra_code, output_path)
+        Compiler::compile_from_code(&sierra_code, llvm_output_path, bc_output_path)
     }
 
     /// Compile a Sierra program code to LLVM IR.
@@ -131,10 +138,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// The result of the compilation.
     /// # Errors
     /// If the compilation fails.
-    pub fn compile_from_code(sierra_code: &str, output_path: &Path) -> CompilerResult<()> {
+    pub fn compile_from_code(sierra_code: &str, llvm_output_path: &Path, bc_output_path: &Path) -> CompilerResult<()> {
         // Parse the program.
         let program = ProgramParser::new().parse(sierra_code).unwrap();
-        Compiler::compile_sierra_program_to_llvm(program, output_path)
+        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, bc_output_path)
     }
 
     /// Compiles a Sierra `Program` representation to LLVM IR.
@@ -155,12 +162,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Example
     /// ```rust
     /// use std::fs;
+    /// use std::path::Path;
     ///
     /// use cairo_lang_sierra::ProgramParser;
     /// use shenlong_core::sierra::llvm_compiler::Compiler;
     ///
-    /// let sierra_program_path = "../examples/program.sierra";
-    /// let llvm_ir_path = "../examples/program.ll";
+    /// let sierra_program_path = Path::new("../examples/program.sierra");
+    /// let llvm_ir_path = Path::new("../examples/program.ll");
+    /// let bitcode_path = Path::new("../examples/program.bc");
     ///
     /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
@@ -168,10 +177,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// // Parse the program.
     /// let program = ProgramParser::new().parse(&sierra_code).unwrap();
     /// // Compile the program to LLVM IR.
-    /// let result = Compiler::compile_from_file(sierra_program_path, llvm_ir_path);
+    /// let result = Compiler::compile_from_file(&sierra_program_path, &llvm_ir_path, &bitcode_path);
     /// // Check the result.
     /// ```
-    pub fn compile_sierra_program_to_llvm(program: Program, output_path: &Path) -> CompilerResult<()> {
+    pub fn compile_sierra_program_to_llvm(
+        program: Program,
+        llvm_output_path: &Path,
+        bc_output_path: &Path,
+    ) -> CompilerResult<()> {
         // Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
         // Context is an opaque object that owns a lot of core LLVM data structures, such as the
@@ -199,7 +212,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             builder: &builder,
             module,
             variables,
-            output_path: output_path.to_owned(),
+            llvm_output_path: llvm_output_path.to_owned(),
+            bc_output_path: bc_output_path.to_owned(),
             state: CompilationState::NotStarted,
             valid_state_transitions,
             types,
@@ -221,7 +235,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Finalize the compilation.
         compiler.finalize_compilation()
     }
-
+    pub fn run_code(&self, execution_engine: ExecutionEngine) {
+        unsafe {
+            execution_engine.run_function(self.module.get_function("main").unwrap(), &[]);
+        }
+    }
     /// Finalize the compilation.
     /// This includes verifying the module and writing it to the output path.
     ///
@@ -237,7 +255,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // // Recursively create the output path parent directories if they don't exist.
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
-        self.module.print_to_file(&self.output_path)?;
+        self.module.print_to_file(&self.llvm_output_path)?;
+        self.module.write_bitcode_to_path(&self.bc_output_path);
         // Ensure that the current module is valid
         self.module.verify()?;
 
@@ -302,7 +321,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Initialize valid state transitions.
-    fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
+    pub fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
         HashMap::from([
             ((CompilationState::NotStarted, CompilationState::TypesProcessed), true),
             ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), true),
