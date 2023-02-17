@@ -16,14 +16,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-      - name: add llvm deb repository
-        uses: myci-actions/add-deb-repo@10
-        with:
-          repo: deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main
-          repo-name: llvm-repo
-          keys-asc: https://apt.llvm.org/llvm-snapshot.gpg.key
-      - name: Install LLVM
-        run: sudo apt-get install libllvm-16-ocaml-dev libllvm16 llvm-16 llvm-16-dev llvm-16-doc llvm-16-examples llvm-16-runtime clang-16 clang-tools-16 clang-16-doc libclang-common-16-dev libclang-16-dev libclang1-16 lld-16 libpolly-16-dev libclang-rt-16-dev libc++-16-dev libc++abi-16-dev
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -32,6 +24,15 @@ jobs:
           profile: minimal
           override: true
           components: rustfmt, rust-src
+          
+      - name: add llvm deb repository
+        uses: myci-actions/add-deb-repo@10
+        with:
+          repo: deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main
+          repo-name: llvm-repo
+          keys-asc: https://apt.llvm.org/llvm-snapshot.gpg.key
+      - name: Install LLVM
+        run: sudo apt-get install libllvm-16-ocaml-dev libllvm16 llvm-16 llvm-16-dev llvm-16-doc llvm-16-examples llvm-16-runtime clang-16 clang-tools-16 clang-16-doc libclang-common-16-dev libclang-16-dev libclang1-16 lld-16 libpolly-16-dev libclang-rt-16-dev libc++-16-dev libc++abi-16-dev
 
       - name: Build Documentation
         uses: actions-rs/cargo@v1
