@@ -115,17 +115,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .unwrap()
                             == "main"
                         {
-                            return_value = self
-                                .builder
-                                .build_call(
-                                    self.module
-                                        .get_function("print")
-                                        .expect("Print function should have been declared"),
-                                    &[return_value.into()],
-                                    "worked",
-                                )
-                                .try_as_basic_value()
-                                .expect_left("Call should return a value");
+                            let field_ret_type =
+                                return_value.into_struct_value().get_type().get_field_type_at_index(0).unwrap();
+
+                            if field_ret_type.is_struct_type() && field_ret_type.into_struct_type().count_fields() == 0
+                            {
+                                return_value = self.context.i32_type().const_int(0, false).into();
+                            } else {
+                                return_value = self
+                                    .builder
+                                    .build_call(
+                                        self.module
+                                            .get_function("print")
+                                            .expect("Print function should have been declared"),
+                                        &[return_value.into()],
+                                        "worked",
+                                    )
+                                    .try_as_basic_value()
+                                    .expect_left("Call should return a value");
+                            }
                         }
                         // Return the specified value.
                         self.builder.build_return(Some(&return_value));
