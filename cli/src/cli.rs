@@ -29,10 +29,10 @@ impl Command {
     pub async fn run(self) -> Result<()> {
         match self.command {
             Commands::Sierra(sierra_commands) => match sierra_commands.command {
-                SierraSubCommands::CompileToLlvm { program_path, output_path } => {
+                SierraSubCommands::CompileToLlvm { program_path, llvm_output_path, bc_output_path } => {
                     // Compile the program.
                     // TODO: Handle the output path properly.
-                    llvm_compiler::Compiler::compile_from_file(&program_path, &output_path)
+                    llvm_compiler::Compiler::compile_from_file(&program_path, &llvm_output_path, &bc_output_path)
                         .map_err(|e| eyre!(e.to_string()))?;
                     println!("{} Program compiled successfully.", emoji::CHECK_MARK_BUTTON);
                     Ok(())
@@ -69,7 +69,9 @@ pub enum SierraSubCommands {
         /// The path to the output LLVM IR file.
         /// If not specified, the output will be printed to stdout.
         /// If specified, the output will be written to the specified file.
-        #[arg(short, long, value_name = "OUTPUT_PATH")]
-        output_path: PathBuf,
+        #[arg(short, long, value_name = "LLVM_OUTPUT_PATH")]
+        llvm_output_path: PathBuf,
+        #[arg(short, long, value_name = "BC_OUTPUT_PATH")]
+        bc_output_path: PathBuf,
     },
 }
