@@ -7,5 +7,5 @@ fn fib(a: felt, b: felt, n: felt) -> felt {
 }
 
 fn main(a:felt) -> felt {
-    fib(1, 2, 150)
+    fib(1, 2, 500);
 }
