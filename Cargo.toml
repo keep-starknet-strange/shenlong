@@ -37,5 +37,5 @@ features = [
 ]
 
 [[bench]]
-name = "llvm_execution" # "llvm_execution"  "bytecode_exec"
+name = "execution"
 harness = false
