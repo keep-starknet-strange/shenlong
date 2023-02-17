@@ -39,7 +39,6 @@ use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra::ProgramParser;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::execution_engine::ExecutionEngine;
 use inkwell::module::Module;
 use inkwell::types::BasicType;
 use inkwell::values::BasicValueEnum;
@@ -235,11 +234,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Finalize the compilation.
         compiler.finalize_compilation()
     }
-    pub fn run_code(&self, execution_engine: ExecutionEngine) {
-        unsafe {
-            execution_engine.run_function(self.module.get_function("main").unwrap(), &[]);
-        }
-    }
+
     /// Finalize the compilation.
     /// This includes verifying the module and writing it to the output path.
     ///
