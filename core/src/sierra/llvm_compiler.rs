@@ -64,8 +64,6 @@ pub struct Compiler<'a, 'ctx> {
     pub variables: HashMap<String, BasicValueEnum<'ctx>>,
     /// The LLVM IR output path.
     pub llvm_output_path: PathBuf,
-    /// The bitcode output path.
-    pub bc_output_path: PathBuf,
     /// The current compilation state.
     pub state: CompilationState,
     /// The valid state transitions.
@@ -120,7 +118,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// * `program_path` - The Sierra program to compile.
     /// * `llvm_output_path` - The path to the output LLVM IR file.
-    /// * `bc_output_path` - The path to the output bitcode file.
     ///
     /// # Returns
     ///
@@ -132,12 +129,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn compile_from_file(
         program_path: &Path,
         llvm_output_path: &Path,
-        bc_output_path: &Path,
         target_triple: Option<&str>,
     ) -> CompilerResult<()> {
         // Read the program from the file.
         let sierra_code = fs::read_to_string(program_path)?;
-        Compiler::compile_from_code(&sierra_code, llvm_output_path, bc_output_path, target_triple)
+        Compiler::compile_from_code(&sierra_code, llvm_output_path, target_triple)
     }
 
     /// Compile a Sierra program code to LLVM IR.
@@ -145,7 +141,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// * `sierra_code` - The Sierra program code.
     /// * `llvm_output_path` - The path to the output LLVM IR file.
-    /// * `bc_output_path` - The path to the output bitcode file.
     ///
     /// # Returns
     ///
@@ -157,12 +152,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn compile_from_code(
         sierra_code: &str,
         llvm_output_path: &Path,
-        bc_output_path: &Path,
         target_triple: Option<&str>,
     ) -> CompilerResult<()> {
         // Parse the program.
         let program = ProgramParser::new().parse(sierra_code).unwrap();
-        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, bc_output_path, target_triple)
+        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, target_triple)
     }
 
     /// Compiles a Sierra `Program` representation to LLVM IR.
@@ -178,8 +172,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Arguments
     ///
     /// * `program` - The Sierra program to compile.
-    /// * `output_path` - The path to the output LLVM IR file.
-    /// * `bc_output_path` - The path to the output bitcode file.
+    /// * `llvm_output_path` - The path to the output LLVM IR file.
+    /// * `target_triple` - Compilation target triple.
     ///
     /// # Returns
     ///
@@ -200,7 +194,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// let sierra_program_path = Path::new("../examples/program.sierra");
     /// let llvm_ir_path = Path::new("../examples/program.ll");
-    /// let bitcode_path = Path::new("../examples/program.bc");
     ///
     /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
@@ -208,14 +201,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// // Parse the program.
     /// let program = ProgramParser::new().parse(&sierra_code).unwrap();
     /// // Compile the program to LLVM IR.
-    /// let result =
-    ///     Compiler::compile_from_file(&sierra_program_path, &llvm_ir_path, &bitcode_path, None);
+    /// let result = Compiler::compile_from_file(&sierra_program_path, &llvm_ir_path, None);
     /// // Check the result.
     /// ```
     pub fn compile_sierra_program_to_llvm(
         program: Program,
         llvm_output_path: &Path,
-        bc_output_path: &Path,
         target_triple: Option<&str>,
     ) -> CompilerResult<()> {
         // Create an LLVM context, builder and module.
@@ -253,7 +244,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             module,
             variables,
             llvm_output_path: llvm_output_path.to_owned(),
-            bc_output_path: bc_output_path.to_owned(),
             state: CompilationState::NotStarted,
             valid_state_transitions,
             types,
@@ -293,7 +283,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
         self.module.print_to_file(&self.llvm_output_path)?;
-        assert!(self.module.write_bitcode_to_path(&self.bc_output_path), "Failed to write bitcode");
         // Ensure that the current module is valid
         self.module.verify()?;
 

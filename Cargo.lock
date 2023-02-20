@@ -1896,6 +1896,7 @@ dependencies = [
 name = "shenlong"
 version = "0.1.0"
 dependencies = [
+ "cairo-lang-sierra",
  "cairo-vm",
  "cargo-husky",
  "criterion",

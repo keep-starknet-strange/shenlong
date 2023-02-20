@@ -29,13 +29,12 @@ impl Command {
     pub async fn run(self) -> Result<()> {
         match self.command {
             Commands::Sierra(sierra_commands) => match sierra_commands.command {
-                SierraSubCommands::CompileToLlvm { program_path, llvm_output_path, bc_output_path, target_triple } => {
+                SierraSubCommands::CompileToLlvm { program_path, llvm_output_path, target_triple } => {
                     // Compile the program.
                     // TODO: Handle the output path properly.
                     llvm_compiler::Compiler::compile_from_file(
                         &program_path,
                         &llvm_output_path,
-                        &bc_output_path,
                         target_triple.as_deref(),
                     )
                     .map_err(|e| eyre!(e.to_string()))?;
@@ -76,8 +75,6 @@ pub enum SierraSubCommands {
         /// If specified, the output will be written to the specified file.
         #[arg(short, long, value_name = "LLVM_OUTPUT_PATH")]
         llvm_output_path: PathBuf,
-        #[arg(short, long, value_name = "BC_OUTPUT_PATH")]
-        bc_output_path: PathBuf,
         /// The target triple, e.g x86_64-pc-linux-gnu
         #[arg(short, long)]
         target_triple: Option<String>,

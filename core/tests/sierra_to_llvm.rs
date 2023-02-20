@@ -19,15 +19,10 @@ fn compile_sierra_program_to_llvm(name: &str) {
     let program_path = test_resource_file!(format!("sierra/{}.sierra", name));
     let tmp_dir = TempDir::new("tmp").unwrap();
     let llvm_output_path = tmp_dir.path().join("test.ll");
-    let bc_output_path = tmp_dir.path().join("test.bc");
-    let result =
-        Compiler::compile_from_file(&program_path, &llvm_output_path, &bc_output_path, Some("x86_64-pc-linux-gnu"));
+    let result = Compiler::compile_from_file(&program_path, &llvm_output_path, Some("x86_64-pc-linux-gnu"));
     assert!(result.is_ok());
     let llvm_ir = std::fs::read_to_string(llvm_output_path).unwrap();
-    let bc = std::fs::read(bc_output_path).unwrap();
-    let expected_llvm_ir = std::fs::read_to_string(test_resource_file!(format!("llvm/ll/{}.ll", name))).unwrap();
-    let expected_bc = std::fs::read(test_resource_file!(format!("llvm/bc/{}.bc", name))).unwrap();
+    let expected_llvm_ir = std::fs::read_to_string(test_resource_file!(format!("llvm/{}.ll", name))).unwrap();
     pretty_assertions::assert_eq!(llvm_ir, expected_llvm_ir);
-    pretty_assertions::assert_eq!(bc, expected_bc);
     tmp_dir.close().unwrap();
 }
