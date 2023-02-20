@@ -114,12 +114,19 @@ pub type CompilationStateTransition = (CompilationState, CompilationState);
 /// Implementation of the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Compile a Sierra program file to LLVM IR.
+    ///
     /// # Arguments
+    ///
     /// * `program_path` - The Sierra program to compile.
-    /// * `output_path` - The path to the output LLVM IR file.
+    /// * `llvm_output_path` - The path to the output LLVM IR file.
+    /// * `bc_output_path` - The path to the output bitcode file.
+    ///
     /// # Returns
+    ///
     /// The result of the compilation.
+    ///
     /// # Errors
+    ///
     /// If the compilation fails.
     pub fn compile_from_file(
         program_path: &Path,
@@ -133,11 +140,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Compile a Sierra program code to LLVM IR.
     /// # Arguments
+    ///
     /// * `sierra_code` - The Sierra program code.
-    /// * `output_path` - The path to the output LLVM IR file.
+    /// * `llvm_output_path` - The path to the output LLVM IR file.
+    /// * `bc_output_path` - The path to the output bitcode file.
+    ///
     /// # Returns
+    ///
     /// The result of the compilation.
+    ///
     /// # Errors
+    ///
     /// If the compilation fails.
     pub fn compile_from_code(sierra_code: &str, llvm_output_path: &Path, bc_output_path: &Path) -> CompilerResult<()> {
         // Parse the program.
@@ -147,20 +160,30 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Compiles a Sierra `Program` representation to LLVM IR.
     /// # Process overview
+    ///
     /// 1. Create an LLVM context, builder and module.
     /// 2. Instantiate variables map.
     /// 3. Process the program type declarations.
     /// 4. Process the core library functions.
     /// 5. Process the program statements.
     /// 6. Finalize compilation and write the LLVM IR to a file.
+    ///
     /// # Arguments
+    ///
     /// * `program` - The Sierra program to compile.
     /// * `output_path` - The path to the output LLVM IR file.
+    /// * `bc_output_path` - The path to the output bitcode file.
+    ///
     /// # Returns
+    ///
     /// The result of the compilation.
+    ///
     /// # Errors
+    ///
     /// If the compilation fails.
+    ///
     /// # Example
+    ///
     /// ```rust
     /// use std::fs;
     /// use std::path::Path;
@@ -255,7 +278,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
         self.module.print_to_file(&self.llvm_output_path)?;
-        self.module.write_bitcode_to_path(&self.bc_output_path);
+        assert!(self.module.write_bitcode_to_path(&self.bc_output_path), "Failed to write bitcode");
         // Ensure that the current module is valid
         self.module.verify()?;
 
@@ -268,7 +291,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// # Arguments
     ///
-    /// *`expected_state` - State the compiler should be in.
+    /// * `expected_state` - State the compiler should be in.
     ///
     /// # Returns
     ///
@@ -294,10 +317,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Return if the state transition is valid.
+    ///
     /// # Arguments
+    ///
     /// * `transition` - The state transition.
     /// * `valid_transitions` - The valid state transitions.
+    ///
     /// # Errors
+    ///
     /// If the transition is not valid, return an error.
     #[inline]
     fn is_valid_transition(
@@ -330,9 +357,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Return an error for an invalid state transition.
+    ///
     /// # Arguments
+    ///
     /// * `invalid_transition` - The invalid state transition.
+    ///
     /// # Errors
+    ///
     /// Always returns an error.
     #[inline(always)]
     fn err_invalid_state_transition(invalid_transition: CompilationStateTransition) -> CompilerError {
