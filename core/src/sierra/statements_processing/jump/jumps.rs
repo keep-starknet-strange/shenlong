@@ -20,6 +20,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.builder.build_unconditional_branch(destination);
         self.basic_blocks.insert(dest_nb, destination);
         self.builder.position_at_end(destination);
-        self.process_statements_from_until(dest_nb, None).unwrap();
+        self.process_statements_from(dest_nb).unwrap();
     }
 }
