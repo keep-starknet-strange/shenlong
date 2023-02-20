@@ -30,6 +30,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "felt_const" => self.felt_const(libfunc_declaration),
                 "felt_is_zero" => debug!(libfunc_name, "treated in the statements"),
                 "felt_mul" => self.felt_mul(libfunc_declaration),
+                "felt_div" => self.felt_div(libfunc_declaration),
                 "felt_sub" => self.felt_sub(libfunc_declaration),
                 "function_call" => debug!(libfunc_name, "treated in the statements"),
                 "into_box" => self.into_box(libfunc_declaration),
