@@ -14,12 +14,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    pub fn process_statements_from_until(&mut self, from: usize, until: Option<usize>) -> CompilerResult<()> {
+    pub fn process_statements_from(&mut self, from: usize) -> CompilerResult<()> {
         debug!("processing statements");
-        let statements =
-            if let Some(end) = until { &self.program.statements[from..end] } else { &self.program.statements[from..] };
         // Check that the current state is valid.
-        for (mut statement_id, statement) in statements.iter().enumerate() {
+        for (mut statement_id, statement) in self.program.statements.iter().skip(from).enumerate() {
             statement_id += from;
             match statement {
                 // If the statement is a sierra function call.

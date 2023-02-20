@@ -87,7 +87,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
             // process statements from the line stated in the function definition until the return instruction.
             // ex: fib_caller::fib_caller::main@21() -> (Unit); the function main starts at the statement 21.
-            self.process_statements_from_until(func_declaration.entry_point.0, None)?;
+            self.process_statements_from(func_declaration.entry_point.0)?;
         }
         // Move to the next state.
         self.move_to(CompilationState::FunctionsProcessed)

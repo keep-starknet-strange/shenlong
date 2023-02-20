@@ -40,7 +40,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         match invocation.branches[0].target {
             // if then is fallthrough
             GenBranchTarget::Fallthrough => {
-                self.process_statements_from_until(invocation_nb + 1, None)?;
+                self.process_statements_from(invocation_nb + 1)?;
             }
             // then branch is a jump so we process from the jump until a return instruction.
             GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id),
@@ -50,7 +50,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         match invocation.branches[1].target {
             // else is fallthrough
             GenBranchTarget::Fallthrough => {
-                self.process_statements_from_until(invocation_nb + 1, None)?;
+                self.process_statements_from(invocation_nb + 1)?;
             }
             // else branch is a jump so we process from the jump until a return instruction.
             GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id),
