@@ -26,6 +26,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "felt" => self.felt(type_declaration),
                 // NonZero<felt> is a felt != 0
                 "NonZero" => self.non_zero(type_declaration),
+                // Box<T>
+                "Box" => self.sierra_box(type_declaration),
                 // Regular struct
                 "Struct" => self.sierra_struct(type_declaration),
                 _ => debug!(type_name, "unimplemented type"),

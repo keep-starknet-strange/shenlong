@@ -32,12 +32,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "felt_mul" => self.felt_mul(libfunc_declaration),
                 "felt_sub" => self.felt_sub(libfunc_declaration),
                 "function_call" => debug!(libfunc_name, "treated in the statements"),
+                "into_box" => self.into_box(libfunc_declaration),
                 "jump" => debug!(libfunc_name, "treated in the statements"),
                 "revoke_ap_tracking" => (),
                 "rename" => self.rename(libfunc_declaration),
                 "store_temp" => self.store_temp(libfunc_declaration),
                 "struct_construct" => self.struct_construct(libfunc_declaration),
                 "struct_deconstruct" => self.struct_deconstruct(libfunc_declaration),
+                "unbox" => self.unbox(libfunc_declaration),
                 _ => debug!(libfunc_name, "not implemented"),
             }
         }
