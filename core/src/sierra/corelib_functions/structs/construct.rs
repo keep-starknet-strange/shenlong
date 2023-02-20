@@ -10,7 +10,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// # Arguments
     ///
-    /// * `libfunc_declaration` - The corelib function declaration of StructConstruct<T>.
+    /// * `libfunc_declaration` - The corelib function declaration of `StructConstruct<T>`.
     ///
     /// # Error
     ///

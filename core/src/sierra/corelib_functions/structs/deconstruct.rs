@@ -9,7 +9,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// # Arguments
     ///
-    /// * `libfunc_declaration` - The corelib function declaration of StructDeconstruct<T>.
+    /// * `libfunc_declaration` - The corelib function declaration of `StructDeconstruct<T>`.
     ///
     /// # Error
     ///
