@@ -75,6 +75,14 @@
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
 <a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>clap::{Parser, Subcommand};
@@ -106,11 +114,16 @@
     </span><span class="kw">pub async fn </span>run(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span><span class="self">self</span>.command {
             Commands::Sierra(sierra_commands) =&gt; <span class="kw">match </span>sierra_commands.command {
-                SierraSubCommands::CompileToLlvm { program_path, llvm_output_path, bc_output_path } =&gt; {
+                SierraSubCommands::CompileToLlvm { program_path, llvm_output_path, bc_output_path, target_triple } =&gt; {
                     <span class="comment">// Compile the program.
                     // TODO: Handle the output path properly.
-                    </span>llvm_compiler::Compiler::compile_from_file(<span class="kw-2">&amp;</span>program_path, <span class="kw-2">&amp;</span>llvm_output_path, <span class="kw-2">&amp;</span>bc_output_path)
-                        .map_err(|e| <span class="macro">eyre!</span>(e.to_string()))<span class="question-mark">?</span>;
+                    </span>llvm_compiler::Compiler::compile_from_file(
+                        <span class="kw-2">&amp;</span>program_path,
+                        <span class="kw-2">&amp;</span>llvm_output_path,
+                        <span class="kw-2">&amp;</span>bc_output_path,
+                        target_triple.as_deref(),
+                    )
+                    .map_err(|e| <span class="macro">eyre!</span>(e.to_string()))<span class="question-mark">?</span>;
                     <span class="macro">println!</span>(<span class="string">&quot;{} Program compiled successfully.&quot;</span>, emoji::CHECK_MARK_BUTTON);
                     <span class="prelude-val">Ok</span>(())
                 }
@@ -150,6 +163,9 @@
         </span>llvm_output_path: PathBuf,
         <span class="attr">#[arg(short, long, value_name = <span class="string">&quot;BC_OUTPUT_PATH&quot;</span>)]
         </span>bc_output_path: PathBuf,
+        <span class="doccomment">/// The target triple, e.g x86_64-pc-linux-gnu
+        </span><span class="attr">#[arg(short, long)]
+        </span>target_triple: <span class="prelude-ty">Option</span>&lt;String&gt;,
     },
 }
 </code></pre></div>

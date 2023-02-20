@@ -370,6 +370,21 @@
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
 <a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
 </pre><pre class="rust"><code><span class="doccomment">//! # LLVM compiler.
 //! ## Description
 //! This module contains the compiler that compiles a Sierra program to LLVM IR.
@@ -413,9 +428,10 @@
 <span class="kw">use </span>inkwell::builder::Builder;
 <span class="kw">use </span>inkwell::context::Context;
 <span class="kw">use </span>inkwell::module::Module;
+<span class="kw">use </span>inkwell::targets::TargetTriple;
 <span class="kw">use </span>inkwell::types::BasicType;
 <span class="kw">use </span>inkwell::values::BasicValueEnum;
-<span class="kw">use </span>tracing::debug;
+<span class="kw">use </span>tracing::{debug, info};
 
 <span class="kw">use </span><span class="kw">super</span>::errors::CompilerResult;
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::CompilerError;
@@ -504,10 +520,11 @@
         program_path: <span class="kw-2">&amp;</span>Path,
         llvm_output_path: <span class="kw-2">&amp;</span>Path,
         bc_output_path: <span class="kw-2">&amp;</span>Path,
+        target_triple: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
     ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// Read the program from the file.
         </span><span class="kw">let </span>sierra_code = fs::read_to_string(program_path)<span class="question-mark">?</span>;
-        Compiler::compile_from_code(<span class="kw-2">&amp;</span>sierra_code, llvm_output_path, bc_output_path)
+        Compiler::compile_from_code(<span class="kw-2">&amp;</span>sierra_code, llvm_output_path, bc_output_path, target_triple)
     }
 
     <span class="doccomment">/// Compile a Sierra program code to LLVM IR.
@@ -524,10 +541,15 @@
     /// # Errors
     ///
     /// If the compilation fails.
-    </span><span class="kw">pub fn </span>compile_from_code(sierra_code: <span class="kw-2">&amp;</span>str, llvm_output_path: <span class="kw-2">&amp;</span>Path, bc_output_path: <span class="kw-2">&amp;</span>Path) -&gt; CompilerResult&lt;()&gt; {
+    </span><span class="kw">pub fn </span>compile_from_code(
+        sierra_code: <span class="kw-2">&amp;</span>str,
+        llvm_output_path: <span class="kw-2">&amp;</span>Path,
+        bc_output_path: <span class="kw-2">&amp;</span>Path,
+        target_triple: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
+    ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// Parse the program.
         </span><span class="kw">let </span>program = ProgramParser::new().parse(sierra_code).unwrap();
-        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, bc_output_path)
+        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, bc_output_path, target_triple)
     }
 
     <span class="doccomment">/// Compiles a Sierra `Program` representation to LLVM IR.
@@ -573,13 +595,15 @@
     /// // Parse the program.
     /// let program = ProgramParser::new().parse(&amp;sierra_code).unwrap();
     /// // Compile the program to LLVM IR.
-    /// let result = Compiler::compile_from_file(&amp;sierra_program_path, &amp;llvm_ir_path, &amp;bitcode_path);
+    /// let result =
+    ///     Compiler::compile_from_file(&amp;sierra_program_path, &amp;llvm_ir_path, &amp;bitcode_path, None);
     /// // Check the result.
     /// ```
     </span><span class="kw">pub fn </span>compile_sierra_program_to_llvm(
         program: Program,
         llvm_output_path: <span class="kw-2">&amp;</span>Path,
         bc_output_path: <span class="kw-2">&amp;</span>Path,
+        target_triple: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
     ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
@@ -591,6 +615,12 @@
         <span class="comment">// Module is an object that contains all of the functions, global variables.
         // In many ways, it is the top-level structure that the LLVM IR uses to contain code.
         </span><span class="kw">let </span>module = context.create_module(<span class="string">&quot;root&quot;</span>);
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(target_triple) = target_triple {
+            module.set_triple(<span class="kw-2">&amp;</span>TargetTriple::create(target_triple));
+        }
+
+        <span class="macro">info!</span>(<span class="string">&quot;Target triple: {}&quot;</span>, module.get_triple());
 
         <span class="comment">// Instantiate variables map.
         </span><span class="kw">let </span>variables = HashMap::new();

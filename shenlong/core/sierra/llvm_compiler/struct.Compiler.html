@@ -122,7 +122,8 @@ Panics if the sierra file doesn’t have the debug infos.</p>
 </div><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.compile_from_file" class="method"><h4 class="code-header">pub fn <a href="#method.compile_from_file" class="fn">compile_from_file</a>(
     program_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>,
     llvm_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>,
-    bc_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>
+    bc_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>,
+    target_triple: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>&gt;
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="enum" href="../errors/enum.CompilerError.html" title="enum shenlong::core::sierra::errors::CompilerError">CompilerError</a>&gt;</h4></section></summary><div class="docblock"><p>Compile a Sierra program file to LLVM IR.</p>
 <h5 id="arguments-11"><a href="#arguments-11">Arguments</a></h5>
 <ul>
@@ -137,7 +138,8 @@ Panics if the sierra file doesn’t have the debug infos.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.compile_from_code" class="method"><h4 class="code-header">pub fn <a href="#method.compile_from_code" class="fn">compile_from_code</a>(
     sierra_code: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>,
     llvm_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>,
-    bc_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>
+    bc_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>,
+    target_triple: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>&gt;
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="enum" href="../errors/enum.CompilerError.html" title="enum shenlong::core::sierra::errors::CompilerError">CompilerError</a>&gt;</h4></section></summary><div class="docblock"><p>Compile a Sierra program code to LLVM IR.</p>
 <h5 id="arguments-12"><a href="#arguments-12">Arguments</a></h5>
 <ul>
@@ -152,7 +154,8 @@ Panics if the sierra file doesn’t have the debug infos.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.compile_sierra_program_to_llvm" class="method"><h4 class="code-header">pub fn <a href="#method.compile_sierra_program_to_llvm" class="fn">compile_sierra_program_to_llvm</a>(
     program: Program,
     llvm_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>,
-    bc_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>
+    bc_output_path: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/std/path/struct.Path.html" title="struct std::path::Path">Path</a>,
+    target_triple: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>&gt;
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.unit.html">()</a>, <a class="enum" href="../errors/enum.CompilerError.html" title="enum shenlong::core::sierra::errors::CompilerError">CompilerError</a>&gt;</h4></section></summary><div class="docblock"><p>Compiles a Sierra <code>Program</code> representation to LLVM IR.</p>
 <h5 id="process-overview"><a href="#process-overview">Process overview</a></h5>
 <ol>
@@ -190,7 +193,8 @@ Panics if the sierra file doesn’t have the debug infos.</p>
 <span class="comment">// Parse the program.
 </span><span class="kw">let </span>program = ProgramParser::new().parse(<span class="kw-2">&amp;</span>sierra_code).unwrap();
 <span class="comment">// Compile the program to LLVM IR.
-</span><span class="kw">let </span>result = Compiler::compile_from_file(<span class="kw-2">&amp;</span>sierra_program_path, <span class="kw-2">&amp;</span>llvm_ir_path, <span class="kw-2">&amp;</span>bitcode_path);
+</span><span class="kw">let </span>result =
+    Compiler::compile_from_file(<span class="kw-2">&amp;</span>sierra_program_path, <span class="kw-2">&amp;</span>llvm_ir_path, <span class="kw-2">&amp;</span>bitcode_path, <span class="prelude-val">None</span>);
 <span class="comment">// Check the result.</span></code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.check_state" class="method"><h4 class="code-header">pub fn <a href="#method.check_state" class="fn">check_state</a>(
     &amp;self,
