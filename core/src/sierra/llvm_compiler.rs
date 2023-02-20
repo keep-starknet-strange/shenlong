@@ -41,9 +41,10 @@ use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
+use inkwell::targets::TargetTriple;
 use inkwell::types::BasicType;
 use inkwell::values::BasicValueEnum;
-use tracing::debug;
+use tracing::{debug, info};
 
 use super::errors::CompilerResult;
 use crate::sierra::errors::CompilerError;
@@ -132,10 +133,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         program_path: &Path,
         llvm_output_path: &Path,
         bc_output_path: &Path,
+        target_triple: Option<&str>,
     ) -> CompilerResult<()> {
         // Read the program from the file.
         let sierra_code = fs::read_to_string(program_path)?;
-        Compiler::compile_from_code(&sierra_code, llvm_output_path, bc_output_path)
+        Compiler::compile_from_code(&sierra_code, llvm_output_path, bc_output_path, target_triple)
     }
 
     /// Compile a Sierra program code to LLVM IR.
@@ -152,10 +154,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     ///
     /// If the compilation fails.
-    pub fn compile_from_code(sierra_code: &str, llvm_output_path: &Path, bc_output_path: &Path) -> CompilerResult<()> {
+    pub fn compile_from_code(
+        sierra_code: &str,
+        llvm_output_path: &Path,
+        bc_output_path: &Path,
+        target_triple: Option<&str>,
+    ) -> CompilerResult<()> {
         // Parse the program.
         let program = ProgramParser::new().parse(sierra_code).unwrap();
-        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, bc_output_path)
+        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, bc_output_path, target_triple)
     }
 
     /// Compiles a Sierra `Program` representation to LLVM IR.
@@ -201,13 +208,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// // Parse the program.
     /// let program = ProgramParser::new().parse(&sierra_code).unwrap();
     /// // Compile the program to LLVM IR.
-    /// let result = Compiler::compile_from_file(&sierra_program_path, &llvm_ir_path, &bitcode_path);
+    /// let result =
+    ///     Compiler::compile_from_file(&sierra_program_path, &llvm_ir_path, &bitcode_path, None);
     /// // Check the result.
     /// ```
     pub fn compile_sierra_program_to_llvm(
         program: Program,
         llvm_output_path: &Path,
         bc_output_path: &Path,
+        target_triple: Option<&str>,
     ) -> CompilerResult<()> {
         // Create an LLVM context, builder and module.
         // See https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl03.html#id2
@@ -219,6 +228,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Module is an object that contains all of the functions, global variables.
         // In many ways, it is the top-level structure that the LLVM IR uses to contain code.
         let module = context.create_module("root");
+
+        if let Some(target_triple) = target_triple {
+            module.set_triple(&TargetTriple::create(target_triple));
+        }
+
+        info!("Target triple: {}", module.get_triple());
 
         // Instantiate variables map.
         let variables = HashMap::new();

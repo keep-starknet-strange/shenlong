@@ -1,5 +1,6 @@
 ; ModuleID = 'root'
 source_filename = "root"
+target triple = "x86_64-pc-linux-gnu"
 
 define i252 @modulo(i503 %0) {
 entry:
