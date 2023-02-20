@@ -13,16 +13,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// # Error
     ///
-    /// Returns an error if the type T has not been declared previously.
+    /// Panics if the type T has not been declared previously as all types should be declared at the
+    /// beginning of the sierra file.
+    /// Panics if the sierra file doesn't have the debug infos.
     pub fn struct_deconstruct(&self, libfunc_declaration: &LibfuncDeclaration) {
         // Type of the struct that we have to deconstruct.
         let args = match &libfunc_declaration.long_id.generic_args[0] {
-            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self
-                .types
-                .get(&id.to_string())
-                .expect("Type should have been defined before struct")
-                .as_basic_type_enum()
-                .into_struct_type(),
+            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
+                self.types.get(&id.to_string()).unwrap().as_basic_type_enum().into_struct_type()
+            }
             _val => {
                 panic!("Struct deconstruct only takes predefined structs")
             }
@@ -35,7 +34,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
         // Only returns the struct. Can be treated in the statements.
-        self.builder
-            .build_return(Some(&func.get_first_param().expect("This functions should take exactly 1 argument ")));
+        self.builder.build_return(Some(&func.get_first_param().unwrap()));
     }
 }

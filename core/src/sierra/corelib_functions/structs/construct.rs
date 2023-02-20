@@ -14,16 +14,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// # Error
     ///
-    /// Returns an error if the type T has not been declared previously.
+    /// Panics if the type T has not been declared previously as all types should be declared at the
+    /// beginning of the sierra file.
+    /// Panics if the sierra file doesn't have the debug infos.
     pub fn struct_construct(&self, libfunc_declaration: &LibfuncDeclaration) {
         // Type of the struct that we have to construct.
         let return_type = match &libfunc_declaration.long_id.generic_args[0] {
-            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self
-                .types
-                .get(&id.to_string())
-                .expect("Type should have been defined before struct")
-                .as_basic_type_enum()
-                .into_struct_type(),
+            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
+                self.types.get(&id.to_string()).unwrap().as_basic_type_enum().into_struct_type()
+            }
             _val => {
                 panic!("Struct construct only takes predefined structs")
             }
@@ -42,6 +41,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
+        // Allocate memory for the struct.
         let struct_ptr = self.builder.build_alloca(return_type, "res_ptr");
         // Store each field in the struct.
         for (i, param) in func.get_params().iter().enumerate() {
@@ -49,7 +49,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             let tuple_ptr = self
                 .builder
                 .build_struct_gep(param_type, struct_ptr, i as u32, format!("field_{i}_ptr").as_str())
-                .expect("Pointer should be valid");
+                .unwrap();
             self.builder.build_store(tuple_ptr, *param);
         }
         self.builder.build_return(Some(&self.builder.build_load(return_type, struct_ptr, "res")));

@@ -2,7 +2,7 @@ use cairo_lang_sierra::program::GenericArg::Value;
 use cairo_lang_sierra::program::LibfuncDeclaration;
 use inkwell::types::{BasicType, StringRadix};
 
-use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
+use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -14,10 +14,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// # Error
     ///
-    /// Returns an error if the felt type has not been declared previously.
-    pub fn felt_const(&self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+    /// Panics if the felt type has not been declared previously.
+    pub fn felt_const(&self, libfunc_declaration: &LibfuncDeclaration) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
-        let return_type = self.get_type_from_name("felt")?;
+        let return_type = self.get_type_from_name("felt").expect("Can't get felt from name");
         // fn felt_const() -> felt
         let func = self.module.add_function(
             libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
@@ -39,6 +39,5 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             panic!("No value for felt constant")
         };
         self.builder.build_return(Some(&ret));
-        Ok(())
     }
 }
