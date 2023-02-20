@@ -1,4 +1,3 @@
-use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -12,7 +11,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the processing of the branches statements fails.
-    pub fn jump(&mut self, dest_nb: usize) -> CompilerResult<()> {
+    pub fn jump(&mut self, dest_nb: usize) {
         let func = self.module.get_last_function().unwrap();
         let destination = match self.basic_blocks.get(&dest_nb) {
             Some(basic_block) => *basic_block,
@@ -21,7 +20,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.builder.build_unconditional_branch(destination);
         self.basic_blocks.insert(dest_nb, destination);
         self.builder.position_at_end(destination);
-        self.process_statements_from_until(dest_nb, None)?;
-        Ok(())
+        self.process_statements_from_until(dest_nb, None).unwrap();
     }
 }

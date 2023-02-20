@@ -1,18 +1,14 @@
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement};
 
-use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
+use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
 
 /// Implementation for the type processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    /// Process types in the Sierra program.
-    /// For each type declaration in the Sierra program, create a corresponding type in the LLVM
-    /// context.
-    ///
-    /// # Errors
-    ///
-    /// If the processing of the sierra types fails.
-    pub fn collect_jumps(&mut self) -> CompilerResult<()> {
+    /// Collect all the jump destinations in the sierra program. Scans all the instructions and the
+    /// branches to determine at what statement the sierra program can jump.
+    /// The point of doing this is to have a cleaner handling of jumps.
+    pub fn collect_jumps(&mut self) {
         for statement in self.program.statements.iter() {
             match statement {
                 GenStatement::Invocation(invocation) => {
@@ -29,6 +25,5 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 _ => continue,
             }
         }
-        Ok(())
     }
 }

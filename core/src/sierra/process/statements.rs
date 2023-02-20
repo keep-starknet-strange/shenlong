@@ -19,7 +19,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let statements =
             if let Some(end) = until { &self.program.statements[from..end] } else { &self.program.statements[from..] };
         // Check that the current state is valid.
-        for (statement_id, statement) in statements.iter().enumerate() {
+        for (mut statement_id, statement) in statements.iter().enumerate() {
+            statement_id += from;
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
@@ -27,11 +28,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
                         match fn_name.as_str() {
                             "jump" => {
-                                let from = match &invocation.branches[0].target {
+                                let to = match &invocation.branches[0].target {
                                     GenBranchTarget::Statement(id) => id.0,
                                     _ => panic!("Jump should have genbranchinfo"),
                                 };
-                                self.process_statements_from_until(from, None)?;
+                                self.jump(to);
+                                break;
                             }
                             _ => continue,
                         }
@@ -77,6 +79,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             self.unpack_tuple(&invocation.branches[0].results, res.into_struct_value())
                         } else {
                             self.variables.insert(invocation.branches[0].results[0].id.to_string(), res);
+                        }
+                        if self.jump_dests.contains(&(statement_id + 1)) {
+                            let curr_func = self.module.get_last_function().unwrap();
+                            let basic_block = self.context.append_basic_block(curr_func, "dest");
+                            self.basic_blocks.insert(statement_id + 1, basic_block);
+                            self.builder.build_unconditional_branch(basic_block);
+                            self.builder.position_at_end(basic_block);
                         }
                     }
                 }

@@ -30,13 +30,14 @@
 //! The state machine is used to ensure that the compilation steps are executed in the correct
 //! order. The state machine is also used to ensure that the compilation steps are executed only
 //! once.
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
 
 use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra::ProgramParser;
+use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
@@ -73,7 +74,8 @@ pub struct Compiler<'a, 'ctx> {
     /// Mapping from type name to program id.
     pub id_from_name: HashMap<String, String>,
     /// Calls in the main function.
-    pub main_calls: Vec<BasicValueEnum<'ctx>>,
+    pub basic_blocks: HashMap<usize, BasicBlock<'ctx>>,
+    pub jump_dests: HashSet<usize>,
 }
 
 /// Compilation state.
@@ -199,7 +201,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let variables = HashMap::new();
         let types = HashMap::new();
         let id_from_name = HashMap::new();
-        let main_calls = vec![];
+        let basic_blocks = HashMap::new();
+        let jump_dests = HashSet::new();
 
         // Create a map of valid state transitions.
         let valid_state_transitions = Compiler::init_state_transitions();
@@ -217,7 +220,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             valid_state_transitions,
             types,
             id_from_name,
-            main_calls,
+            basic_blocks,
+            jump_dests,
         };
 
         // Process the types in the Sierra program.
@@ -225,7 +229,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Process the core library functions in the Sierra program.
         compiler.process_core_lib_functions()?;
-
+        compiler.collect_jumps();
         // Process the functions in the Sierra program.
         compiler.process_funcs()?;
         // Process the statements in the Sierra program.
