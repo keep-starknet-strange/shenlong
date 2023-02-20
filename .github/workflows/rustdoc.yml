@@ -12,7 +12,8 @@ jobs:
   release:
     name: GitHub Pages
     runs-on: ubuntu-latest
-
+    env:
+      LLVM_SYS_150_PREFIX: /usr/lib/llvm-16
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
