@@ -22,6 +22,7 @@ shenlong_core = { path = "./core" }
 criterion = "0.4.0"
 tempdir = "0.3.7"
 cairo-vm = { git = "https://github.com/lambdaclass/cairo-rs/", branch = "main" }
+cairo-lang-sierra = { git = "https://github.com/starkware-libs/cairo", branch = "main" }
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
     "llvm15-0",
 ] }
