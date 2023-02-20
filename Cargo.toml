@@ -35,6 +35,9 @@ features = [
     "run-cargo-clippy",
     "run-cargo-fmt",
 ]
+[lib]
+bench = false
+
 
 [[bench]]
 name = "execution"

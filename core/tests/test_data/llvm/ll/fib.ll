@@ -66,6 +66,12 @@ entry:
 
 then:                                             ; preds = %entry
   %4 = call i252 @"store_temp<felt>"(i252 %0)
+  br label %dest
+
+else:                                             ; preds = %entry
+  br label %dest1
+
+dest:                                             ; preds = %then
   %5 = call i252 @"rename<felt>"(i252 %4)
   %ret_struct_ptr = alloca { i252 }, align 8
   %field_0_ptr = getelementptr inbounds { i252 }, ptr %ret_struct_ptr, i32 0, i32 0
@@ -73,13 +79,13 @@ then:                                             ; preds = %entry
   %return_struct_value = load { i252 }, ptr %ret_struct_ptr, align 4
   ret { i252 } %return_struct_value
 
-else:                                             ; preds = %entry
+dest1:                                            ; preds = %else
   %6 = call { i252, i252 } @"dup<felt>"(i252 %1)
-  %res_ptr1 = alloca { i252, i252 }, align 8
-  store { i252, i252 } %6, ptr %res_ptr1, align 4
-  %"1_ptr" = getelementptr inbounds { i252, i252 }, ptr %res_ptr1, i32 0, i32 0
+  %res_ptr2 = alloca { i252, i252 }, align 8
+  store { i252, i252 } %6, ptr %res_ptr2, align 4
+  %"1_ptr" = getelementptr inbounds { i252, i252 }, ptr %res_ptr2, i32 0, i32 0
   %"1" = load i252, ptr %"1_ptr", align 4
-  %"7_ptr" = getelementptr inbounds { i252, i252 }, ptr %res_ptr1, i32 0, i32 1
+  %"7_ptr" = getelementptr inbounds { i252, i252 }, ptr %res_ptr2, i32 0, i32 1
   %"7" = load i252, ptr %"7_ptr", align 4
   %7 = call i252 @felt_add(i252 %0, i252 %"7")
   %8 = call i252 @"felt_const<1>"()
@@ -90,15 +96,18 @@ else:                                             ; preds = %entry
   %13 = call i252 @"store_temp<felt>"(i252 %9)
   %14 = call i252 @"rename<felt>"(i252 %13)
   %15 = call { i252 } @"fib::fib::fib"(i252 %10, i252 %12, i252 %14)
-  %res_ptr2 = alloca { i252 }, align 8
-  store { i252 } %15, ptr %res_ptr2, align 4
-  %"10_ptr" = getelementptr inbounds { i252 }, ptr %res_ptr2, i32 0, i32 0
+  %res_ptr3 = alloca { i252 }, align 8
+  store { i252 } %15, ptr %res_ptr3, align 4
+  %"10_ptr" = getelementptr inbounds { i252 }, ptr %res_ptr3, i32 0, i32 0
   %"10" = load i252, ptr %"10_ptr", align 4
   %16 = call i252 @"rename<felt>"(i252 %"10")
+  br label %dest4
+
+dest4:                                            ; preds = %dest1
   %17 = call i252 @"rename<felt>"(i252 %16)
-  %ret_struct_ptr3 = alloca { i252 }, align 8
-  %field_0_ptr4 = getelementptr inbounds { i252 }, ptr %ret_struct_ptr3, i32 0, i32 0
-  store i252 %17, ptr %field_0_ptr4, align 4
-  %return_struct_value5 = load { i252 }, ptr %ret_struct_ptr3, align 4
-  ret { i252 } %return_struct_value5
+  %ret_struct_ptr5 = alloca { i252 }, align 8
+  %field_0_ptr6 = getelementptr inbounds { i252 }, ptr %ret_struct_ptr5, i32 0, i32 0
+  store i252 %17, ptr %field_0_ptr6, align 4
+  %return_struct_value7 = load { i252 }, ptr %ret_struct_ptr5, align 4
+  ret { i252 } %return_struct_value7
 }

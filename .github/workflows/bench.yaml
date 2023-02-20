@@ -6,6 +6,8 @@ jobs:
   check:
     name: bench
     runs-on: ubuntu-latest
+    env:
+      LLVM_SYS_150_PREFIX: /usr/lib/llvm-16
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -13,6 +15,14 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
+      - name: add llvm deb repository
+        uses: myci-actions/add-deb-repo@10
+        with:
+          repo: deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main
+          repo-name: llvm-repo
+          keys-asc: https://apt.llvm.org/llvm-snapshot.gpg.key
+      - name: Install LLVM
+        run: sudo apt-get install libllvm-16-ocaml-dev libllvm16 llvm-16 llvm-16-dev llvm-16-doc llvm-16-examples llvm-16-runtime clang-16 clang-tools-16 clang-16-doc libclang-common-16-dev libclang-16-dev libclang1-16 lld-16 libpolly-16-dev libclang-rt-16-dev libc++-16-dev libc++abi-16-dev
       - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
