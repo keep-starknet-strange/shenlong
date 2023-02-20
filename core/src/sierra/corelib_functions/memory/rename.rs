@@ -10,7 +10,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// # Arguments
     ///
-    /// * `libfunc_declaration` - The corelib function declaration of rename<T>.
+    /// * `libfunc_declaration` - The corelib function declaration of `rename<T>`.
     ///
     /// # Error
     ///
