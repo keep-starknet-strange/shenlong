@@ -23,6 +23,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
                     let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
+                    debug!(fn_name, "processing statement: invocation");
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
                         match fn_name.as_str() {
                             "jump" => {
@@ -88,6 +89,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     }
                 }
                 GenStatement::Return(ret) => {
+                    debug!("processing statement: return");
                     if !ret.is_empty() {
                         let mut types = vec![];
                         let mut values = vec![];
