@@ -26,7 +26,7 @@ fn compile_sierra_program_to_llvm(name: &str) {
     let bc = std::fs::read(bc_output_path).unwrap();
     let expected_llvm_ir = std::fs::read_to_string(test_resource_file!(format!("llvm/ll/{}.ll", name))).unwrap();
     let expected_bc = std::fs::read(test_resource_file!(format!("llvm/bc/{}.bc", name))).unwrap();
-    assert_eq!(llvm_ir, expected_llvm_ir);
-    assert_eq!(bc, expected_bc);
+    pretty_assertions::assert_eq!(llvm_ir, expected_llvm_ir);
+    pretty_assertions::assert_eq!(bc, expected_bc);
     tmp_dir.close().unwrap();
 }

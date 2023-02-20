@@ -42,8 +42,8 @@ declare i32 @printf(ptr, ...)
 
 define i32 @print({ i252 } %0) {
 entry:
-  %prefix = alloca [2 x i8], align 1
-  store [2 x i8] c"%d", ptr %prefix, align 1
+  %prefix = alloca [5 x i8], align 1
+  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
   %worked = call i32 (ptr, ...) @printf(ptr %prefix, { i252 } %0)
   ret i32 %worked
 }
