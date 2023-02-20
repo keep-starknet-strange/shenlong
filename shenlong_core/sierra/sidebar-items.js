@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["errors",""],["llvm_compiler","LLVM compiler."]]};
+window.SIDEBAR_ITEMS = {"mod":["errors","llvm_compiler"]};

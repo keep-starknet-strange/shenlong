@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["cli",""],["emoji",""]]};
+window.SIDEBAR_ITEMS = {"mod":["cli","emoji"]};

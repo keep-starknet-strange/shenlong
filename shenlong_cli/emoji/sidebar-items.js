@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":[["CHECK_MARK_BUTTON",""],["SPARKLE",""]]};
+window.SIDEBAR_ITEMS = {"static":["CHECK_MARK_BUTTON","SPARKLE"]};

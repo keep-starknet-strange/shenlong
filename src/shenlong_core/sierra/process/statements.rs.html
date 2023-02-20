@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `core/src/sierra/process/statements.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>statements.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-5cf2e01a42cc9858.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../shenlong_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `core/src/sierra/process/statements.rs`."><title>statements.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-e5308b57e507db71.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-d59023bfa12059d2.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-1ca41bb1e10af075.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-18b4181a2f3fb862.css"><script src="../../../../static.files/storage-3891ce972e3a2bf8.js"></script><script defer src="../../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-98a684e84ae5b08b.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../shenlong_core/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -140,11 +140,55 @@
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::VarId;
 <span class="doccomment">/// This file contains everything related to sierra statement processing.
 </span><span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
 <span class="kw">use </span>inkwell::values::{BasicMetadataValueEnum, StructValue};
-<span class="kw">use </span>log::debug;
+<span class="kw">use </span>tracing::debug;
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::Compiler;
@@ -156,12 +200,11 @@
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    </span><span class="kw">pub fn </span>process_statements_from_until(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: usize, until: <span class="prelude-ty">Option</span>&lt;usize&gt;) -&gt; CompilerResult&lt;()&gt; {
+    </span><span class="kw">pub fn </span>process_statements_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: usize) -&gt; CompilerResult&lt;()&gt; {
         <span class="macro">debug!</span>(<span class="string">&quot;processing statements&quot;</span>);
-        <span class="kw">let </span>statements =
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(end) = until { <span class="kw-2">&amp;</span><span class="self">self</span>.program.statements[from..end] } <span class="kw">else </span>{ <span class="kw-2">&amp;</span><span class="self">self</span>.program.statements[from..] };
         <span class="comment">// Check that the current state is valid.
-        </span><span class="kw">for </span>(statement_id, statement) <span class="kw">in </span>statements.iter().enumerate() {
+        </span><span class="kw">for </span>(<span class="kw-2">mut </span>statement_id, statement) <span class="kw">in </span><span class="self">self</span>.program.statements.iter().skip(from).enumerate() {
+            statement_id += from;
             <span class="kw">match </span>statement {
                 <span class="comment">// If the statement is a sierra function call.
                 </span>GenStatement::Invocation(invocation) =&gt; {
@@ -169,11 +212,12 @@
                     <span class="kw">if </span>invocation.branches.len() == <span class="number">1 </span>&amp;&amp; invocation.branches[<span class="number">0</span>].results.is_empty() {
                         <span class="kw">match </span>fn_name.as_str() {
                             <span class="string">&quot;jump&quot; </span>=&gt; {
-                                <span class="kw">let </span>from = <span class="kw">match </span><span class="kw-2">&amp;</span>invocation.branches[<span class="number">0</span>].target {
+                                <span class="kw">let </span>to = <span class="kw">match </span><span class="kw-2">&amp;</span>invocation.branches[<span class="number">0</span>].target {
                                     GenBranchTarget::Statement(id) =&gt; id.<span class="number">0</span>,
                                     <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Jump should have genbranchinfo&quot;</span>),
                                 };
-                                <span class="self">self</span>.process_statements_from_until(from, <span class="prelude-val">None</span>)<span class="question-mark">?</span>;
+                                <span class="self">self</span>.jump(to);
+                                <span class="kw">break</span>;
                             }
                             <span class="kw">_ </span>=&gt; <span class="kw">continue</span>,
                         }
@@ -204,7 +248,9 @@
                                 )
                                 .unwrap()
                         } <span class="kw">else </span>{
-                            <span class="self">self</span>.module.get_function(fn_name.as_str()).unwrap()
+                            <span class="self">self</span>.module
+                                .get_function(fn_name.as_str())
+                                .unwrap_or_else(|| <span class="macro">panic!</span>(<span class="string">&quot;{fn_name} function is missing&quot;</span>))
                         };
                         <span class="kw">let </span>args = <span class="self">self</span>.process_args(invocation);
                         <span class="kw">let </span>res = <span class="self">self
@@ -218,6 +264,13 @@
                         } <span class="kw">else </span>{
                             <span class="self">self</span>.variables.insert(invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id.to_string(), res);
                         }
+                        <span class="kw">if </span><span class="self">self</span>.jump_dests.contains(<span class="kw-2">&amp;</span>(statement_id + <span class="number">1</span>)) {
+                            <span class="kw">let </span>curr_func = <span class="self">self</span>.module.get_last_function().unwrap();
+                            <span class="kw">let </span>basic_block = <span class="self">self</span>.context.append_basic_block(curr_func, <span class="string">&quot;dest&quot;</span>);
+                            <span class="self">self</span>.basic_blocks.insert(statement_id + <span class="number">1</span>, basic_block);
+                            <span class="self">self</span>.builder.build_unconditional_branch(basic_block);
+                            <span class="self">self</span>.builder.position_at_end(basic_block);
+                        }
                     }
                 }
                 GenStatement::Return(ret) =&gt; {
@@ -230,12 +283,13 @@
                             values.push(value);
                             types.push(value.get_type());
                         }
-                        <span class="kw">let </span>return_struct_ptr =
-                            <span class="self">self</span>.builder.build_alloca(<span class="self">self</span>.context.struct_type(<span class="kw-2">&amp;</span>types, <span class="bool-val">false</span>), <span class="string">&quot;ret_struct_ptr&quot;</span>);
+                        <span class="kw">let </span>return_struct_type = <span class="self">self</span>.context.struct_type(<span class="kw-2">&amp;</span>types, <span class="bool-val">false</span>);
+                        <span class="kw">let </span>return_struct_ptr = <span class="self">self</span>.builder.build_alloca(return_struct_type, <span class="string">&quot;ret_struct_ptr&quot;</span>);
                         <span class="kw">for </span>(index, value) <span class="kw">in </span>values.iter().enumerate() {
                             <span class="kw">let </span>tuple_ptr = <span class="self">self
                                 </span>.builder
                                 .build_struct_gep(
+                                    return_struct_type,
                                     return_struct_ptr,
                                     index.try_into().unwrap(),
                                     <span class="macro">format!</span>(<span class="string">&quot;field_{index}_ptr&quot;</span>).as_str(),
@@ -243,16 +297,48 @@
                                 .expect(<span class="string">&quot;Pointer should be valid&quot;</span>);
                             <span class="self">self</span>.builder.build_store(tuple_ptr, <span class="kw-2">**</span>value);
                         }
+                        <span class="kw">let </span><span class="kw-2">mut </span>return_value =
+                            <span class="self">self</span>.builder.build_load(return_struct_type, return_struct_ptr, <span class="string">&quot;return_struct_value&quot;</span>);
+                        <span class="kw">if </span><span class="self">self
+                            </span>.module
+                            .get_last_function()
+                            .expect(<span class="string">&quot;Current function should have been declared&quot;</span>)
+                            .get_name()
+                            .to_str()
+                            .unwrap()
+                            == <span class="string">&quot;main&quot;
+                        </span>{
+                            <span class="kw">let </span>field_ret_type =
+                                return_value.into_struct_value().get_type().get_field_type_at_index(<span class="number">0</span>).unwrap();
+
+                            <span class="kw">if </span>field_ret_type.is_struct_type() &amp;&amp; field_ret_type.into_struct_type().count_fields() == <span class="number">0
+                            </span>{
+                                return_value = <span class="self">self</span>.context.i32_type().const_int(<span class="number">0</span>, <span class="bool-val">false</span>).into();
+                            } <span class="kw">else </span>{
+                                return_value = <span class="self">self
+                                    </span>.builder
+                                    .build_call(
+                                        <span class="self">self</span>.module
+                                            .get_function(<span class="string">&quot;print&quot;</span>)
+                                            .expect(<span class="string">&quot;Print function should have been declared&quot;</span>),
+                                        <span class="kw-2">&amp;</span>[return_value.into()],
+                                        <span class="string">&quot;worked&quot;</span>,
+                                    )
+                                    .try_as_basic_value()
+                                    .expect_left(<span class="string">&quot;Call should return a value&quot;</span>);
+                            }
+                        }
                         <span class="comment">// Return the specified value.
-                        </span><span class="self">self</span>.builder
-                            .build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.builder.build_load(return_struct_ptr, <span class="string">&quot;return_struct_value&quot;</span>)));
+                        </span><span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>return_value));
                     }
+
                     <span class="kw">break</span>;
                 }
             }
         }
         <span class="prelude-val">Ok</span>(())
     }
+
     <span class="kw">fn </span>process_args(<span class="kw-2">&amp;</span><span class="self">self</span>, invocation: <span class="kw-2">&amp;</span>Invocation) -&gt; Vec&lt;BasicMetadataValueEnum&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>args = <span class="macro">vec!</span>[];
         <span class="kw">if </span>!invocation.args.is_empty() {
@@ -269,18 +355,20 @@
     }
 
     <span class="kw">fn </span>unpack_tuple(<span class="kw-2">&amp;mut </span><span class="self">self</span>, results: <span class="kw-2">&amp;</span>[VarId], res: StructValue&lt;<span class="lifetime">&#39;ctx</span>&gt;) {
-        <span class="kw">let </span>res_ptr = <span class="self">self</span>.builder.build_alloca(res.get_type(), <span class="string">&quot;res_ptr&quot;</span>);
+        <span class="kw">let </span>res_type = res.get_type();
+        <span class="kw">let </span>res_ptr = <span class="self">self</span>.builder.build_alloca(res_type, <span class="string">&quot;res_ptr&quot;</span>);
         <span class="self">self</span>.builder.build_store(res_ptr, res);
         <span class="kw">for </span>(field_index, VarId { id, debug_name: <span class="kw">_ </span>}) <span class="kw">in </span>results.iter().enumerate() {
             <span class="kw">let </span>id = id.to_string();
+            <span class="kw">let </span>field_type = res_type.get_field_type_at_index(field_index <span class="kw">as </span>u32).expect(<span class="string">&quot;Field type should exist&quot;</span>);
             <span class="kw">let </span>field_ptr = <span class="self">self
                 </span>.builder
-                .build_struct_gep(res_ptr, field_index <span class="kw">as </span>u32, <span class="macro">format!</span>(<span class="string">&quot;{id}_ptr&quot;</span>).as_str())
+                .build_struct_gep(res_type, res_ptr, field_index <span class="kw">as </span>u32, <span class="macro">format!</span>(<span class="string">&quot;{id}_ptr&quot;</span>).as_str())
                 .expect(<span class="string">&quot;Pointer should be valid&quot;</span>);
-            <span class="kw">let </span>field = <span class="self">self</span>.builder.build_load(field_ptr, id.as_str());
+            <span class="kw">let </span>field = <span class="self">self</span>.builder.build_load(field_type, field_ptr, id.as_str());
             <span class="self">self</span>.variables.insert(id, field);
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (7aa413d59 2023-02-19)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

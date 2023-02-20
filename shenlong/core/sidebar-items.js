@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["sierra","Sierra related modules."]]};
+window.SIDEBAR_ITEMS = {"mod":["sierra"]};
