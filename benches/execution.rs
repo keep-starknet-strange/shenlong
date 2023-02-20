@@ -14,7 +14,7 @@ use inkwell::OptimizationLevel;
 pub fn criterion_benchmark(c: &mut Criterion) {
     // LLVM IR execution benchmark
     let context = inkwell::context::Context::create();
-    let module = Module::parse_bitcode_from_path("core/tests/test_data/llvm/bc/fib_main.bc", &context).unwrap();
+    let module = Module::parse_bitcode_from_path("core/tests/test_data/llvm/bc/fib_bench.bc", &context).unwrap();
     let execution_engine = module.create_jit_execution_engine(OptimizationLevel::Aggressive).unwrap();
     c.bench_with_input(BenchmarkId::new("Llvm", 1), &(module, execution_engine), |b, (module, execution_engine)| {
         b.iter(|| {

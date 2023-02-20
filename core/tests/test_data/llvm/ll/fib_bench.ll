@@ -57,9 +57,21 @@ entry:
   ret i252 0
 }
 
-define i252 @"felt_const<30>"() {
+define i252 @"felt_const<500>"() {
 entry:
-  ret i252 30
+  ret i252 500
+}
+
+define {} @"struct_construct<Unit>"() {
+entry:
+  %res_ptr = alloca {}, align 8
+  %res = load {}, ptr %res_ptr, align 1
+  ret {} %res
+}
+
+define {} @"store_temp<Unit>"({} %0) {
+entry:
+  ret {} %0
 }
 
 define { i252 } @"fib_caller::fib_caller::fib"(i252 %0, i252 %1, i252 %2) {
@@ -113,11 +125,11 @@ else:                                             ; preds = %entry
 
 declare i32 @printf(ptr, ...)
 
-define i32 @print({ i252 } %0) {
+define i32 @print({ {} } %0) {
 entry:
   %prefix = alloca [2 x i8], align 1
   store [2 x i8] c"%d", ptr %prefix, align 1
-  %worked = call i32 (ptr, ...) @printf(ptr %prefix, { i252 } %0)
+  %worked = call i32 (ptr, ...) @printf(ptr %prefix, { {} } %0)
   ret i32 %worked
 }
 
@@ -125,7 +137,7 @@ define i32 @main(i252 %0) {
 entry:
   %1 = call i252 @"felt_const<0>"()
   %2 = call i252 @"felt_const<1>"()
-  %3 = call i252 @"felt_const<30>"()
+  %3 = call i252 @"felt_const<500>"()
   %4 = call i252 @"store_temp<felt>"(i252 %1)
   %5 = call i252 @"store_temp<felt>"(i252 %2)
   %6 = call i252 @"store_temp<felt>"(i252 %3)
@@ -134,11 +146,11 @@ entry:
   store { i252 } %7, ptr %res_ptr, align 4
   %"4_ptr" = getelementptr inbounds { i252 }, ptr %res_ptr, i32 0, i32 0
   %"4" = load i252, ptr %"4_ptr", align 4
-  %8 = call i252 @"rename<felt>"(i252 %"4")
-  %ret_struct_ptr = alloca { i252 }, align 8
-  %field_0_ptr = getelementptr inbounds { i252 }, ptr %ret_struct_ptr, i32 0, i32 0
-  store i252 %8, ptr %field_0_ptr, align 4
-  %return_struct_value = load { i252 }, ptr %ret_struct_ptr, align 4
-  %worked = call i32 @print({ i252 } %return_struct_value)
-  ret i32 %worked
+  %8 = call {} @"struct_construct<Unit>"()
+  %9 = call {} @"store_temp<Unit>"({} %8)
+  %ret_struct_ptr = alloca { {} }, align 8
+  %field_0_ptr = getelementptr inbounds { {} }, ptr %ret_struct_ptr, i32 0, i32 0
+  store {} %9, ptr %field_0_ptr, align 1
+  %return_struct_value = load { {} }, ptr %ret_struct_ptr, align 1
+  ret i32 0
 }
