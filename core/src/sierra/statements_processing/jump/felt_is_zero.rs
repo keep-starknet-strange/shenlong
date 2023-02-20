@@ -40,38 +40,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         match invocation.branches[0].target {
             // if then is fallthrough
             GenBranchTarget::Fallthrough => {
-                let until = match invocation.branches[1].target {
-                    // else is also fallthrough (probably should panic here as it would be weird that the 2 branches are
-                    // fallthrough)
-                    GenBranchTarget::Fallthrough => None,
-                    // else is a jump to a statement.
-                    GenBranchTarget::Statement(StatementIdx(id)) => Some(id),
-                };
-                // process the statements until the jumped line for the else branch (TODO: add check that jump is
-                // after the current statement nb)
-                self.process_statements_from_until(invocation_nb + 1, until)?;
+                self.process_statements_from_until(invocation_nb + 1, None)?;
             }
             // then branch is a jump so we process from the jump until a return instruction.
-            GenBranchTarget::Statement(StatementIdx(id)) => self.process_statements_from_until(id, None)?,
+            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id),
         };
 
         self.builder.position_at_end(else_bb);
         match invocation.branches[1].target {
             // else is fallthrough
             GenBranchTarget::Fallthrough => {
-                let until = match invocation.branches[0].target {
-                    // if is also fallthrough (probably should panic here as it would be weird that the 2 branches are
-                    // fallthrough)
-                    GenBranchTarget::Fallthrough => None,
-                    // if is a jump to a statement.
-                    GenBranchTarget::Statement(StatementIdx(id)) => Some(id),
-                };
-                // process the statements until the jumped line for the then branch (TODO: add check that jump is
-                // after the current statement nb)
-                self.process_statements_from_until(invocation_nb + 1, until)?;
+                self.process_statements_from_until(invocation_nb + 1, None)?;
             }
             // else branch is a jump so we process from the jump until a return instruction.
-            GenBranchTarget::Statement(StatementIdx(id)) => self.process_statements_from_until(id, None)?,
+            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id),
         };
         Ok(())
     }
