@@ -374,17 +374,6 @@
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
-<a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
 </pre><pre class="rust"><code><span class="doccomment">//! # LLVM compiler.
 //! ## Description
 //! This module contains the compiler that compiles a Sierra program to LLVM IR.
@@ -451,8 +440,6 @@
     </span><span class="kw">pub </span>variables: HashMap&lt;String, BasicValueEnum&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt;,
     <span class="doccomment">/// The LLVM IR output path.
     </span><span class="kw">pub </span>llvm_output_path: PathBuf,
-    <span class="doccomment">/// The bitcode output path.
-    </span><span class="kw">pub </span>bc_output_path: PathBuf,
     <span class="doccomment">/// The current compilation state.
     </span><span class="kw">pub </span>state: CompilationState,
     <span class="doccomment">/// The valid state transitions.
@@ -507,7 +494,6 @@
     ///
     /// * `program_path` - The Sierra program to compile.
     /// * `llvm_output_path` - The path to the output LLVM IR file.
-    /// * `bc_output_path` - The path to the output bitcode file.
     ///
     /// # Returns
     ///
@@ -519,12 +505,11 @@
     </span><span class="kw">pub fn </span>compile_from_file(
         program_path: <span class="kw-2">&amp;</span>Path,
         llvm_output_path: <span class="kw-2">&amp;</span>Path,
-        bc_output_path: <span class="kw-2">&amp;</span>Path,
         target_triple: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
     ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// Read the program from the file.
         </span><span class="kw">let </span>sierra_code = fs::read_to_string(program_path)<span class="question-mark">?</span>;
-        Compiler::compile_from_code(<span class="kw-2">&amp;</span>sierra_code, llvm_output_path, bc_output_path, target_triple)
+        Compiler::compile_from_code(<span class="kw-2">&amp;</span>sierra_code, llvm_output_path, target_triple)
     }
 
     <span class="doccomment">/// Compile a Sierra program code to LLVM IR.
@@ -532,7 +517,6 @@
     ///
     /// * `sierra_code` - The Sierra program code.
     /// * `llvm_output_path` - The path to the output LLVM IR file.
-    /// * `bc_output_path` - The path to the output bitcode file.
     ///
     /// # Returns
     ///
@@ -544,12 +528,11 @@
     </span><span class="kw">pub fn </span>compile_from_code(
         sierra_code: <span class="kw-2">&amp;</span>str,
         llvm_output_path: <span class="kw-2">&amp;</span>Path,
-        bc_output_path: <span class="kw-2">&amp;</span>Path,
         target_triple: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
     ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// Parse the program.
         </span><span class="kw">let </span>program = ProgramParser::new().parse(sierra_code).unwrap();
-        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, bc_output_path, target_triple)
+        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, target_triple)
     }
 
     <span class="doccomment">/// Compiles a Sierra `Program` representation to LLVM IR.
@@ -565,8 +548,8 @@
     /// # Arguments
     ///
     /// * `program` - The Sierra program to compile.
-    /// * `output_path` - The path to the output LLVM IR file.
-    /// * `bc_output_path` - The path to the output bitcode file.
+    /// * `llvm_output_path` - The path to the output LLVM IR file.
+    /// * `target_triple` - Compilation target triple.
     ///
     /// # Returns
     ///
@@ -587,7 +570,6 @@
     ///
     /// let sierra_program_path = Path::new(&quot;../examples/program.sierra&quot;);
     /// let llvm_ir_path = Path::new(&quot;../examples/program.ll&quot;);
-    /// let bitcode_path = Path::new(&quot;../examples/program.bc&quot;);
     ///
     /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
@@ -595,14 +577,12 @@
     /// // Parse the program.
     /// let program = ProgramParser::new().parse(&amp;sierra_code).unwrap();
     /// // Compile the program to LLVM IR.
-    /// let result =
-    ///     Compiler::compile_from_file(&amp;sierra_program_path, &amp;llvm_ir_path, &amp;bitcode_path, None);
+    /// let result = Compiler::compile_from_file(&amp;sierra_program_path, &amp;llvm_ir_path, None);
     /// // Check the result.
     /// ```
     </span><span class="kw">pub fn </span>compile_sierra_program_to_llvm(
         program: Program,
         llvm_output_path: <span class="kw-2">&amp;</span>Path,
-        bc_output_path: <span class="kw-2">&amp;</span>Path,
         target_triple: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,
     ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// Create an LLVM context, builder and module.
@@ -640,7 +620,6 @@
             module,
             variables,
             llvm_output_path: llvm_output_path.to_owned(),
-            bc_output_path: bc_output_path.to_owned(),
             state: CompilationState::NotStarted,
             valid_state_transitions,
             types,
@@ -680,7 +659,6 @@
         // fs::create_dir_all(parent)?;
         // // Write the module to the output path.
         </span><span class="self">self</span>.module.print_to_file(<span class="kw-2">&amp;</span><span class="self">self</span>.llvm_output_path)<span class="question-mark">?</span>;
-        <span class="macro">assert!</span>(<span class="self">self</span>.module.write_bitcode_to_path(<span class="kw-2">&amp;</span><span class="self">self</span>.bc_output_path), <span class="string">&quot;Failed to write bitcode&quot;</span>);
         <span class="comment">// Ensure that the current module is valid
         </span><span class="self">self</span>.module.verify()<span class="question-mark">?</span>;
 
