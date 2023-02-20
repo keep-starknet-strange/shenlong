@@ -15,7 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Check that the current state is valid.
         self.check_state(&CompilationState::TypesProcessed)?;
-        self.modulo()?;
+        self.modulo();
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
             // Get the debug name of the function.
@@ -23,33 +23,21 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             debug!(libfunc_name, "processing");
             // Each core lib function is known
             match libfunc_name {
-                "felt_const" => {
-                    self.felt_const(libfunc_declaration)?;
-                }
-                "felt_add" => {
-                    self.felt_add(libfunc_declaration)?;
-                }
-                "felt_sub" => {
-                    self.felt_sub(libfunc_declaration)?;
-                }
-                "felt_mul" => {
-                    self.felt_mul(libfunc_declaration)?;
-                }
-                "dup" => {
-                    self.dup(libfunc_declaration)?;
-                }
-                "store_temp" => {
-                    self.store_temp(libfunc_declaration)?;
-                }
-                "revoke_ap_tracking" => (),
+                "branch_align" => debug!(libfunc_name, "ignored for now"),
                 "drop" => (),
-                "struct_construct" => self.struct_construct(libfunc_declaration),
-                "struct_deconstruct" => self.struct_deconstruct(libfunc_declaration),
+                "dup" => self.dup(libfunc_declaration),
+                "felt_add" => self.felt_add(libfunc_declaration),
+                "felt_const" => self.felt_const(libfunc_declaration),
                 "felt_is_zero" => debug!(libfunc_name, "treated in the statements"),
-                "rename" => self.rename(libfunc_declaration)?,
+                "felt_mul" => self.felt_mul(libfunc_declaration),
+                "felt_sub" => self.felt_sub(libfunc_declaration),
                 "function_call" => debug!(libfunc_name, "treated in the statements"),
                 "jump" => debug!(libfunc_name, "treated in the statements"),
-                "branch_align" => debug!(libfunc_name, "ignored for now"),
+                "revoke_ap_tracking" => (),
+                "rename" => self.rename(libfunc_declaration),
+                "store_temp" => self.store_temp(libfunc_declaration),
+                "struct_construct" => self.struct_construct(libfunc_declaration),
+                "struct_deconstruct" => self.struct_deconstruct(libfunc_declaration),
                 _ => debug!(libfunc_name, "not implemented"),
             }
         }

@@ -1,7 +1,7 @@
 use cairo_lang_sierra::ids::ConcreteTypeId;
 use cairo_lang_sierra::program::{GenericArg, LibfuncDeclaration};
 
-use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
+use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -13,15 +13,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// # Error
     ///
-    /// Returns an error if the type T has not been declared previously.
-    pub fn dup(&self, libfunc_declaration: &LibfuncDeclaration) -> CompilerResult<()> {
+    /// Panics if the type T has not been declared previously as all types should be declared at the
+    /// beginning of the sierra file.
+    pub fn dup(&self, libfunc_declaration: &LibfuncDeclaration) {
         // dup<T> can only duplicate the type T. If several types need the dup instruction it'll be defined
         // multiple times. Ex: dup<felt>; dup<i128>;
         // Get the type that this dup function has to handle
         let arg_type = match &libfunc_declaration.long_id.generic_args[0] {
             // Panics if the type has not been declared.
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
-                self.types.get(&id.to_string()).expect("Dup type should have been declared").as_basic_type_enum()
+                self.types.get(&id.to_string()).unwrap().as_basic_type_enum()
             }
             // Not sure if dup can dup user defined types
             GenericArg::UserType(_) => todo!(),
@@ -37,19 +38,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined dup to have an input parameter so it shouldn't panic.
-        let arg = func.get_first_param().expect("Dup function should have an input parameter");
+        let arg = func.get_first_param().unwrap();
         // Use the struct as a tuple.
         let tuple = self.builder.build_alloca(return_type, "res_ptr");
         // Get a pointer to the first field address.
-        let tuple_ptr =
-            self.builder.build_struct_gep(return_type, tuple, 0, "tuple_ptr").expect("Pointer should be valid");
+        let tuple_ptr = self.builder.build_struct_gep(return_type, tuple, 0, "tuple_ptr").unwrap();
         // Store the value in the struct.
         self.builder.build_store(tuple_ptr, arg);
         // Same for second field.
-        let tuple_ptr_2 =
-            self.builder.build_struct_gep(return_type, tuple, 1, "tuple_ptr_2").expect("Pointer2 should be valid");
+        let tuple_ptr_2 = self.builder.build_struct_gep(return_type, tuple, 1, "tuple_ptr_2").unwrap();
         self.builder.build_store(tuple_ptr_2, arg);
         self.builder.build_return(Some(&self.builder.build_load(return_type, tuple, "res")));
-        Ok(())
     }
 }
