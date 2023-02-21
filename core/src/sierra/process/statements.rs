@@ -77,6 +77,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         if res.is_struct_value()
                             && res.into_struct_value().get_type().count_fields() > 0
                             && !fn_name.starts_with("store_temp")
+                            && !fn_name.starts_with("struct_construct")
                         {
                             self.unpack_tuple(&invocation.branches[0].results, res.into_struct_value())
                         } else {
