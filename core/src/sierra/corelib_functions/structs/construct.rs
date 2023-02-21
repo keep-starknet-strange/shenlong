@@ -45,10 +45,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let struct_ptr = self.builder.build_alloca(return_type, "res_ptr");
         // Store each field in the struct.
         for (i, param) in func.get_params().iter().enumerate() {
-            let param_type = param.get_type();
             let tuple_ptr = self
                 .builder
-                .build_struct_gep(param_type, struct_ptr, i as u32, format!("field_{i}_ptr").as_str())
+                .build_struct_gep(return_type, struct_ptr, i as u32, format!("field_{i}_ptr").as_str())
                 .unwrap();
             self.builder.build_store(tuple_ptr, *param);
         }
