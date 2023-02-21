@@ -36,12 +36,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "u32" => self.u32(type_declaration),
                 // RangeCheck ptr
                 "RangeCheck" => self.range_check(type_declaration),
+                // Custom Enum
+                "Enum" => self.sierra_enum(type_declaration),
+                // Frozen ref
+                "Snapshot" => self.snapshot(type_declaration),
                 _ => debug!(type_name, "unimplemented type"),
             }
         }
         self.debug.next_line();
         // Move to the next state.
-        println!("{:?}", self.types);
         self.move_to(CompilationState::TypesProcessed)
     }
 }
