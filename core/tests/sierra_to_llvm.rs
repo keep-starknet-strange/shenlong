@@ -21,7 +21,6 @@ fn compile_sierra_program_to_llvm(name: &str) {
     let tmp_dir = TempDir::new("tmp").unwrap();
     let llvm_output_path = tmp_dir.path().join("test.ll");
     let result = Compiler::compile_from_file(&program_path, &llvm_output_path, Some("x86_64-pc-linux-gnu"));
-    dbg!(&result);
     assert!(result.is_ok());
     let llvm_ir = std::fs::read_to_string(llvm_output_path).unwrap();
     let expected_llvm_ir = std::fs::read_to_string(test_resource_file!(format!("llvm/{}.ll", name))).unwrap();
