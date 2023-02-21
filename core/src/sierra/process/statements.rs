@@ -76,7 +76,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .expect("Call should have worked");
                         if res.is_struct_value()
                             && res.into_struct_value().get_type().count_fields() > 0
-                            && invocation.branches[0].results.len() > 1
+                            && !fn_name.starts_with("store_temp")
                         {
                             self.unpack_tuple(&invocation.branches[0].results, res.into_struct_value())
                         } else {
