@@ -54,7 +54,6 @@
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::{GenericArg, LibfuncDeclaration};
 <span class="kw">use </span>inkwell::types::BasicMetadataTypeEnum;
@@ -102,10 +101,9 @@
         </span><span class="kw">let </span>struct_ptr = <span class="self">self</span>.builder.build_alloca(return_type, <span class="string">&quot;res_ptr&quot;</span>);
         <span class="comment">// Store each field in the struct.
         </span><span class="kw">for </span>(i, param) <span class="kw">in </span>func.get_params().iter().enumerate() {
-            <span class="kw">let </span>param_type = param.get_type();
             <span class="kw">let </span>tuple_ptr = <span class="self">self
                 </span>.builder
-                .build_struct_gep(param_type, struct_ptr, i <span class="kw">as </span>u32, <span class="macro">format!</span>(<span class="string">&quot;field_{i}_ptr&quot;</span>).as_str())
+                .build_struct_gep(return_type, struct_ptr, i <span class="kw">as </span>u32, <span class="macro">format!</span>(<span class="string">&quot;field_{i}_ptr&quot;</span>).as_str())
                 .unwrap();
             <span class="self">self</span>.builder.build_store(tuple_ptr, <span class="kw-2">*</span>param);
         }
@@ -113,4 +111,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (7aa413d59 2023-02-19)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (5243ea5c2 2023-02-20)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

@@ -186,6 +186,10 @@
 <a href="#186" id="186">186</a>
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::VarId;
 <span class="doccomment">/// This file contains everything related to sierra statement processing.
 </span><span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
@@ -262,7 +266,11 @@
                             .try_as_basic_value()
                             .left()
                             .expect(<span class="string">&quot;Call should have worked&quot;</span>);
-                        <span class="kw">if </span>res.is_struct_value() &amp;&amp; res.into_struct_value().get_type().count_fields() &gt; <span class="number">0 </span>{
+                        <span class="kw">if </span>res.is_struct_value()
+                            &amp;&amp; res.into_struct_value().get_type().count_fields() &gt; <span class="number">0
+                            </span>&amp;&amp; !fn_name.starts_with(<span class="string">&quot;store_temp&quot;</span>)
+                            &amp;&amp; !fn_name.starts_with(<span class="string">&quot;struct_construct&quot;</span>)
+                        {
                             <span class="self">self</span>.unpack_tuple(<span class="kw-2">&amp;</span>invocation.branches[<span class="number">0</span>].results, res.into_struct_value())
                         } <span class="kw">else </span>{
                             <span class="self">self</span>.variables.insert(invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id.to_string(), res);
@@ -375,4 +383,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (7aa413d59 2023-02-19)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (5243ea5c2 2023-02-20)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
