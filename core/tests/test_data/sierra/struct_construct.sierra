@@ -1,0 +1,16 @@
+type felt = felt;
+type Tuple<felt, felt> = Struct<ut@Tuple, felt, felt>;
+
+libfunc felt_const<2> = felt_const<2>;
+libfunc felt_const<4> = felt_const<4>;
+libfunc struct_construct<Tuple<felt, felt>> = struct_construct<Tuple<felt, felt>>;
+libfunc store_temp<Tuple<felt, felt>> = store_temp<Tuple<felt, felt>>;
+
+felt_const<2>() -> ([0]);
+felt_const<4>() -> ([1]);
+struct_construct<Tuple<felt, felt>>([0], [1]) -> ([2]);
+store_temp<Tuple<felt, felt>>([2]) -> ([3]);
+return([3]);
+
+struct_construct::struct_construct::complex_type@0() -> (Tuple<felt, felt>);
+
