@@ -18,14 +18,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug!("processing statements");
         // Check that the current state is valid.
         for (mut statement_id, statement) in self.program.statements.iter().skip(from).enumerate() {
+            // Set the statement number to the absolute statement number.
             statement_id += from;
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
+                    // Get core lib function called by this instruction.
                     let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
                     debug!(fn_name, "processing statement: invocation");
+                    // Function has only one branch and doesn't return anything.
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
                         match fn_name.as_str() {
+                            // Jump needs to be treated.
                             "jump" => {
                                 let to = match &invocation.branches[0].target {
                                     GenBranchTarget::Statement(id) => id.0,
@@ -34,21 +38,34 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 self.jump(to);
                                 break;
                             }
+                            // Sierra functions have no side effect so we can ignore the function if it doesn't return
+                            // anything and it's not a jump
                             _ => continue,
                         }
                     }
+                    // Function that have multiple branches and require conditional branches.
                     if invocation.branches.len() > 1 {
                         match fn_name.as_str() {
                             "felt_is_zero" => {
                                 self.felt_is_zero(invocation, statement_id)?;
+                                // In the felt_is_zero func we process the other statements so we have to break not to
+                                // duplicate everything.
                                 break;
                             }
                             _ => continue,
                         }
                     }
+                    // The instruction has 1 branch and the branch is just the flow of the instructions.
+                    // felt_const<2>() -> ([0]);
+                    // felt_const<4>() -> ([1]);
+                    // Those 2 instructions have only 1 branch and the target is fallthrough (which means next
+                    // instruction).
                     if invocation.branches.len() == 1 && invocation.branches[0].target == GenBranchTarget::Fallthrough {
                         let function = if invocation.libfunc_id.debug_name.clone().unwrap().starts_with("function_call")
                         {
+                            // Case where the invocation is a function call (it's probably not possible to process it
+                            // before the statements because it needs the called function to
+                            // be defined to call it).
                             self.module
                                 .get_function(
                                     invocation
@@ -63,11 +80,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 )
                                 .unwrap()
                         } else {
+                            // Regular corelib called.
                             self.module
                                 .get_function(fn_name.as_str())
                                 .unwrap_or_else(|| panic!("{fn_name} function is missing"))
                         };
+                        // Get the arguments for the function call.
                         let args = self.process_args(invocation);
+                        // Call the function.
                         let res = self
                             .builder
                             .build_call(function, &args, "")
@@ -81,12 +101,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         {
                             self.unpack_tuple(&invocation.branches[0].results, res.into_struct_value())
                         } else {
+                            // Just save the result.
                             self.variables.insert(invocation.branches[0].results[0].id.to_string(), res);
                         }
+                        // If the next instruction is a destination of a jump.
                         if self.jump_dests.contains(&(statement_id + 1)) {
+                            // Get the current function.
                             let curr_func = self.module.get_last_function().unwrap();
+                            // Add a new basic block.
                             let basic_block = self.context.append_basic_block(curr_func, "dest");
+                            // Save the new basic block.
                             self.basic_blocks.insert(statement_id + 1, basic_block);
+                            // Branch unconditionally to this block (equivalent of jump)
                             self.builder.build_unconditional_branch(basic_block);
                             self.builder.position_at_end(basic_block);
                         }
@@ -94,17 +120,26 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
                 GenStatement::Return(ret) => {
                     debug!("processing statement: return");
+                    // If there is actually something to return.
                     if !ret.is_empty() {
                         let mut types = vec![];
                         let mut values = vec![];
 
+                        // Get the types and values to return.
                         for ret_var in ret.iter() {
                             let value = self.variables.get(&ret_var.id.to_string()).unwrap();
                             values.push(value);
                             types.push(value.get_type());
                         }
+                        // Create a struct to simulate a tuple.
+                        // Ex:
+                        // fn foo() -> (felt, felt, felt)
+                        // Would be translated to
+                        // define { i252, i252, i252 } @foo()
                         let return_struct_type = self.context.struct_type(&types, false);
+                        // Allocate a pointer for the return struct.
                         let return_struct_ptr = self.builder.build_alloca(return_struct_type, "ret_struct_ptr");
+                        // Save each variable to return in the struct.
                         for (index, value) in values.iter().enumerate() {
                             let tuple_ptr = self
                                 .builder
@@ -117,8 +152,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 .expect("Pointer should be valid");
                             self.builder.build_store(tuple_ptr, **value);
                         }
+                        // Load the values to return in a variable.
                         let mut return_value =
                             self.builder.build_load(return_struct_type, return_struct_ptr, "return_struct_value");
+                        // If the function is the main function.
                         if self
                             .module
                             .get_last_function()
@@ -128,13 +165,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .unwrap()
                             == "main"
                         {
+                            // Get the first field of the return type (we'll check that it's not the unit type)
                             let field_ret_type =
                                 return_value.into_struct_value().get_type().get_field_type_at_index(0).unwrap();
-
+                            // The unit type is defined like this in our case { {} } which is a struct containing an
+                            // empty struct. So above we unpacked the first layer and now we're checking the second
+                            // layer.
                             if field_ret_type.is_struct_type() && field_ret_type.into_struct_type().count_fields() == 0
                             {
+                                // There's nothing to return we'll just return 0.
                                 return_value = self.context.i32_type().const_int(0, false).into();
                             } else {
+                                // If there is something to return we print it (to keep the right main signature but
+                                // still see what happened).
                                 return_value = self
                                     .builder
                                     .build_call(
@@ -159,6 +202,19 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         Ok(())
     }
 
+    /// Collect the arguments needed to call a function.
+    ///
+    /// # Arguments
+    ///
+    /// * `invocation` - The function invocation.
+    ///
+    /// # Returns
+    ///
+    /// * `Vec<BasicMetadataValueEnum<'ctx>>` - The vector with the arguments.
+    ///
+    /// # Errors
+    ///
+    /// Panics if the argument needed is not found.
     fn process_args(&self, invocation: &Invocation) -> Vec<BasicMetadataValueEnum<'ctx>> {
         let mut args = vec![];
         if !invocation.args.is_empty() {
@@ -174,6 +230,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         args
     }
 
+    /// Unpack a struct into several values.
+    ///
+    /// # Arguments
+    ///
+    /// * `results` - The program variables that need to be unpacked.
+    /// * `res` - The struct to unpack.
+    ///
+    /// # Errors
+    ///
+    /// Panics if there is not enough fields.
+    /// Panics if the pointer to the struct field is not valid.
     fn unpack_tuple(&mut self, results: &[VarId], res: StructValue<'ctx>) {
         let res_type = res.get_type();
         let res_ptr = self.builder.build_alloca(res_type, "res_ptr");
