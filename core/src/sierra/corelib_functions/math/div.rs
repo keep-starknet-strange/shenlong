@@ -4,7 +4,7 @@ use inkwell::values::AnyValue;
 use inkwell::IntPredicate;
 
 use super::DEFAULT_PRIME;
-use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
+use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
