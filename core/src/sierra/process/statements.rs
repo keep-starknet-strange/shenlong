@@ -74,7 +74,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .try_as_basic_value()
                             .left()
                             .expect("Call should have worked");
-                        if res.is_struct_value() && res.into_struct_value().get_type().count_fields() > 0 {
+                        if res.is_struct_value()
+                            && res.into_struct_value().get_type().count_fields() > 0
+                            && invocation.branches[0].results.len() > 1
+                        {
                             self.unpack_tuple(&invocation.branches[0].results, res.into_struct_value())
                         } else {
                             self.variables.insert(invocation.branches[0].results[0].id.to_string(), res);
