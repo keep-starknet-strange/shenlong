@@ -30,11 +30,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "Box" => self.sierra_box(type_declaration),
                 // Regular struct
                 "Struct" => self.sierra_struct(type_declaration),
+                // Array<T>
+                "Array" => self.array(type_declaration),
+                // Regular u32
+                "u32" => self.u32(type_declaration),
+                // RangeCheck ptr
+                "RangeCheck" => self.range_check(type_declaration),
                 _ => debug!(type_name, "unimplemented type"),
             }
         }
         self.debug.next_line();
         // Move to the next state.
+        println!("{:?}", self.types);
         self.move_to(CompilationState::TypesProcessed)
     }
 }
