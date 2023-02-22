@@ -9,6 +9,24 @@ entry:
   ret i252 %res
 }
 
+declare i32 @printf(ptr, ...)
+
+define i32 @print_felt(i252 %0) {
+entry:
+  %prefix = alloca [5 x i8], align 1
+  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
+  %printed_characters_n = call i32 (ptr, ...) @printf(ptr %prefix, i252 %0)
+  ret i32 %printed_characters_n
+}
+
+define i32 @print_double_felt(i503 %0) {
+entry:
+  %prefix = alloca [5 x i8], align 1
+  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
+  %printed_characters_n = call i32 (ptr, ...) @printf(ptr %prefix, i503 %0)
+  ret i32 %printed_characters_n
+}
+
 define i252 @"unbox<felt>"(i252 %0) {
 entry:
   ret i252 %0
@@ -87,24 +105,6 @@ entry:
 define i252 @"felt_const<30>"() {
 entry:
   ret i252 30
-}
-
-declare i32 @printf(ptr, ...)
-
-define i32 @print_felt(i252 %0) {
-entry:
-  %prefix = alloca [5 x i8], align 1
-  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
-  %printed_characters_n = call i32 (ptr, ...) @printf(ptr %prefix, i252 %0)
-  ret i32 %printed_characters_n
-}
-
-define i32 @print_double_felt(i503 %0) {
-entry:
-  %prefix = alloca [5 x i8], align 1
-  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
-  %printed_characters_n = call i32 (ptr, ...) @printf(ptr %prefix, i503 %0)
-  ret i32 %printed_characters_n
 }
 
 define { i252 } @"fib_box::fib_box::fib"(i252 %0, i252 %1, i252 %2) {
