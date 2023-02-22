@@ -722,7 +722,7 @@
 
     <span class="doccomment">/// Get the current compilation state.
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">pub fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CompilationState {
+    </span><span class="kw">pub const fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CompilationState {
         <span class="kw-2">&amp;</span><span class="self">self</span>.state
     }
 
@@ -746,7 +746,7 @@
     ///
     /// Always returns an error.
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">fn </span>err_invalid_state_transition(invalid_transition: CompilationStateTransition) -&gt; CompilerError {
+    </span><span class="kw">const fn </span>err_invalid_state_transition(invalid_transition: CompilationStateTransition) -&gt; CompilerError {
         CompilerError::InvalidStateTransition(invalid_transition.<span class="number">0</span>, invalid_transition.<span class="number">1</span>)
     }
 }
