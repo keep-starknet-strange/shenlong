@@ -346,7 +346,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
     /// Get the current compilation state.
     #[inline(always)]
-    pub fn state(&self) -> &CompilationState {
+    pub const fn state(&self) -> &CompilationState {
         &self.state
     }
 
@@ -370,7 +370,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Always returns an error.
     #[inline(always)]
-    fn err_invalid_state_transition(invalid_transition: CompilationStateTransition) -> CompilerError {
+    const fn err_invalid_state_transition(invalid_transition: CompilationStateTransition) -> CompilerError {
         CompilerError::InvalidStateTransition(invalid_transition.0, invalid_transition.1)
     }
 }
