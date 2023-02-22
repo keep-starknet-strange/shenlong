@@ -115,11 +115,11 @@
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::CoreLibFunctionsProcessed)<span class="question-mark">?</span>;
 
-        <span class="comment">// Clear the variables map in case a previous function has been processed.
-        </span><span class="self">self</span>.variables.clear();
-
         <span class="comment">// Loop through the function declarations (last category of the sierra file).
         </span><span class="kw">for </span>func_declaration <span class="kw">in </span><span class="self">self</span>.program.funcs.iter() {
+            <span class="comment">// Clear the variables map in case a previous function has been processed.
+            </span><span class="self">self</span>.variables.clear();
+
             <span class="comment">// Arguments of the function.
             </span><span class="kw">let </span><span class="kw-2">mut </span>args = <span class="macro">vec!</span>[];
             <span class="kw">for </span>Param { id: <span class="kw">_</span>, ty: ConcreteTypeId { id: type_id, debug_name: _debug_name } } <span class="kw">in </span><span class="kw-2">&amp;</span>func_declaration.params
@@ -189,4 +189,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (5243ea5c2 2023-02-20)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (246eae2fa 2023-02-21)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
