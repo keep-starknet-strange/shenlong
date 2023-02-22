@@ -93,6 +93,19 @@
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::Param;
 <span class="kw">use </span>inkwell::types::BasicMetadataTypeEnum;
@@ -100,6 +113,10 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::{CompilationState, Compiler};
+
+<span class="kw">pub const </span>PRINT_FELT_FUNC: <span class="kw-2">&amp;</span>str = <span class="string">&quot;print_felt&quot;</span>;
+<span class="kw">pub const </span>PRINT_DOUBLE_FELT_FUNC: <span class="kw-2">&amp;</span>str = <span class="string">&quot;print_double_felt&quot;</span>;
+<span class="kw">pub const </span>PRINT_RETURN: <span class="kw-2">&amp;</span>str = <span class="string">&quot;print_return&quot;</span>;
 
 <span class="doccomment">/// Implementation for the type processing for the compiler.
 </span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
@@ -114,6 +131,14 @@
         <span class="macro">debug!</span>(<span class="string">&quot;processing funcs&quot;</span>);
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::CoreLibFunctionsProcessed)<span class="question-mark">?</span>;
+
+        <span class="comment">// Generate print functions for felts and double felts.
+        // Useful for debugging in the current early stage of development.
+        // Should probably be removed in the future.
+        </span><span class="kw">let </span>felt_type = <span class="self">self</span>.get_type_from_name(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+        <span class="self">self</span>.printf_for_type(felt_type.into(), PRINT_FELT_FUNC);
+        <span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">503</span>);
+        <span class="self">self</span>.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC);
 
         <span class="comment">// Loop through the function declarations (last category of the sierra file).
         </span><span class="kw">for </span>func_declaration <span class="kw">in </span><span class="self">self</span>.program.funcs.iter() {
@@ -156,8 +181,9 @@
             <span class="comment">// Declare the function type (if it&#39;s the main function strip everything so it&#39;s recognized like the
             // main function)
             </span><span class="kw">let </span>func_name = func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
-            <span class="kw">let </span>func = <span class="kw">if let </span><span class="prelude-val">Some</span>(ret_ty) = return_type &amp;&amp; func_name.ends_with(<span class="string">&quot;::main&quot;</span>){
-                <span class="self">self</span>.printf(ret_ty);
+            <span class="kw">let </span>func = <span class="kw">if let </span><span class="prelude-val">Some</span>(ret_ty) = return_type &amp;&amp; func_name.ends_with(<span class="string">&quot;::main&quot;</span>) {
+                <span class="comment">// Generate the print function for the return value type.
+                </span><span class="self">self</span>.printf_for_type(ret_ty.into(), PRINT_RETURN);
                 <span class="self">self</span>.module.add_function(<span class="string">&quot;main&quot;</span>, <span class="self">self</span>.context.i32_type().fn_type(args_metadata, <span class="bool-val">false</span>), <span class="prelude-val">None</span>)
             } <span class="kw">else </span>{
                 <span class="self">self</span>.module.add_function(

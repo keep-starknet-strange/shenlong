@@ -248,15 +248,6 @@
 <a href="#248" id="248">248</a>
 <a href="#249" id="249">249</a>
 <a href="#250" id="250">250</a>
-<a href="#251" id="251">251</a>
-<a href="#252" id="252">252</a>
-<a href="#253" id="253">253</a>
-<a href="#254" id="254">254</a>
-<a href="#255" id="255">255</a>
-<a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a>
-<a href="#258" id="258">258</a>
-<a href="#259" id="259">259</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::VarId;
 <span class="doccomment">/// This file contains everything related to sierra statement processing.
 </span><span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
@@ -265,6 +256,7 @@
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::Compiler;
+<span class="kw">use </span><span class="kw">crate</span>::sierra::process::funcs::PRINT_RETURN;
 
 <span class="doccomment">/// Implementation of the statement processing for the compiler.
 </span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
@@ -437,17 +429,7 @@
                             } <span class="kw">else </span>{
                                 <span class="comment">// If there is something to return we print it (to keep the right main signature but
                                 // still see what happened).
-                                </span>return_value = <span class="self">self
-                                    </span>.builder
-                                    .build_call(
-                                        <span class="self">self</span>.module
-                                            .get_function(<span class="string">&quot;print&quot;</span>)
-                                            .expect(<span class="string">&quot;Print function should have been declared&quot;</span>),
-                                        <span class="kw-2">&amp;</span>[return_value.into()],
-                                        <span class="string">&quot;worked&quot;</span>,
-                                    )
-                                    .try_as_basic_value()
-                                    .expect_left(<span class="string">&quot;Call should return a value&quot;</span>);
+                                </span>return_value = <span class="self">self</span>.call_print(PRINT_RETURN, return_value.into());
                             }
                         }
                         <span class="comment">// Return the specified value.
