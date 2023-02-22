@@ -19,14 +19,26 @@
         "0x482480017ffe8000",
         "0x1",
         "0x208b7fff7fff7ffe",
+        "0x20780017fff7ffd",
+        "0x3",
+        "0x208b7fff7fff7ffe",
+        "0x480680017fff8000",
+        "0x0",
         "0x480680017fff8000",
         "0x1",
         "0x480680017fff8000",
-        "0x2",
-        "0x480680017fff8000",
         "0x1f4",
         "0x1104800180018000",
-        "0x800000000000010ffffffffffffffffffffffffffffffffffffffffffffffeb",
+        "0x800000000000010ffffffffffffffffffffffffffffffffffffffffffffffe8",
+        "0x482680017ffd8000",
+        "0x800000000000011000000000000000000000000000000000000000000000000",
+        "0x1104800180018000",
+        "0x800000000000010fffffffffffffffffffffffffffffffffffffffffffffff4",
+        "0x208b7fff7fff7ffe",
+        "0x480680017fff8000",
+        "0x64",
+        "0x1104800180018000",
+        "0x800000000000010ffffffffffffffffffffffffffffffffffffffffffffffef",
         "0x208b7fff7fff7ffe"
     ],
     "debug_info": {
@@ -374,87 +386,20 @@
             "16": {
                 "accessible_scopes": [
                     "__main__",
-                    "__main__.main"
+                    "__main__.fib_mid"
                 ],
                 "flow_tracking_data": {
                     "ap_tracking": {
                         "group": 2,
                         "offset": 0
                     },
-                    "reference_ids": {}
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
                 },
                 "hints": [],
                 "inst": {
-                    "end_col": 10,
-                    "end_line": 10,
-                    "input_file": {
-                        "filename": "core/tests/test_data/cairo/fib0.cairo"
-                    },
-                    "start_col": 9,
-                    "start_line": 10
-                }
-            },
-            "18": {
-                "accessible_scopes": [
-                    "__main__",
-                    "__main__.main"
-                ],
-                "flow_tracking_data": {
-                    "ap_tracking": {
-                        "group": 2,
-                        "offset": 1
-                    },
-                    "reference_ids": {}
-                },
-                "hints": [],
-                "inst": {
-                    "end_col": 13,
-                    "end_line": 10,
-                    "input_file": {
-                        "filename": "core/tests/test_data/cairo/fib0.cairo"
-                    },
-                    "start_col": 12,
-                    "start_line": 10
-                }
-            },
-            "20": {
-                "accessible_scopes": [
-                    "__main__",
-                    "__main__.main"
-                ],
-                "flow_tracking_data": {
-                    "ap_tracking": {
-                        "group": 2,
-                        "offset": 2
-                    },
-                    "reference_ids": {}
-                },
-                "hints": [],
-                "inst": {
-                    "end_col": 18,
-                    "end_line": 10,
-                    "input_file": {
-                        "filename": "core/tests/test_data/cairo/fib0.cairo"
-                    },
-                    "start_col": 15,
-                    "start_line": 10
-                }
-            },
-            "22": {
-                "accessible_scopes": [
-                    "__main__",
-                    "__main__.main"
-                ],
-                "flow_tracking_data": {
-                    "ap_tracking": {
-                        "group": 2,
-                        "offset": 3
-                    },
-                    "reference_ids": {}
-                },
-                "hints": [],
-                "inst": {
-                    "end_col": 19,
+                    "end_col": 7,
                     "end_line": 10,
                     "input_file": {
                         "filename": "core/tests/test_data/cairo/fib0.cairo"
@@ -463,14 +408,260 @@
                     "start_line": 10
                 }
             },
-            "24": {
+            "18": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.fib_mid"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 2,
+                        "offset": 0
+                    },
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 19,
+                    "end_line": 11,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 9,
+                    "start_line": 11
+                }
+            },
+            "19": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.fib_mid"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 2,
+                        "offset": 0
+                    },
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 14,
+                    "end_line": 13,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 13,
+                    "start_line": 13
+                }
+            },
+            "21": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.fib_mid"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 2,
+                        "offset": 1
+                    },
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 17,
+                    "end_line": 13,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 16,
+                    "start_line": 13
+                }
+            },
+            "23": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.fib_mid"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 2,
+                        "offset": 2
+                    },
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 22,
+                    "end_line": 13,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 19,
+                    "start_line": 13
+                }
+            },
+            "25": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.fib_mid"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 2,
+                        "offset": 3
+                    },
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 23,
+                    "end_line": 13,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 9,
+                    "start_line": 13
+                }
+            },
+            "27": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.fib_mid"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 3,
+                        "offset": 0
+                    },
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 29,
+                    "end_line": 14,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 24,
+                    "start_line": 14
+                }
+            },
+            "29": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.fib_mid"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 3,
+                        "offset": 1
+                    },
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 30,
+                    "end_line": 14,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 16,
+                    "start_line": 14
+                }
+            },
+            "31": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.fib_mid"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 4,
+                        "offset": 0
+                    },
+                    "reference_ids": {
+                        "__main__.fib_mid.n": 5
+                    }
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 31,
+                    "end_line": 14,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 9,
+                    "start_line": 14
+                }
+            },
+            "32": {
                 "accessible_scopes": [
                     "__main__",
                     "__main__.main"
                 ],
                 "flow_tracking_data": {
                     "ap_tracking": {
-                        "group": 3,
+                        "group": 5,
+                        "offset": 0
+                    },
+                    "reference_ids": {}
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 16,
+                    "end_line": 18,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 13,
+                    "start_line": 18
+                }
+            },
+            "34": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.main"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 5,
+                        "offset": 1
+                    },
+                    "reference_ids": {}
+                },
+                "hints": [],
+                "inst": {
+                    "end_col": 17,
+                    "end_line": 18,
+                    "input_file": {
+                        "filename": "core/tests/test_data/cairo/fib0.cairo"
+                    },
+                    "start_col": 5,
+                    "start_line": 18
+                }
+            },
+            "36": {
+                "accessible_scopes": [
+                    "__main__",
+                    "__main__.main"
+                ],
+                "flow_tracking_data": {
+                    "ap_tracking": {
+                        "group": 6,
                         "offset": 0
                     },
                     "reference_ids": {}
@@ -478,12 +669,12 @@
                 "hints": [],
                 "inst": {
                     "end_col": 15,
-                    "end_line": 11,
+                    "end_line": 19,
                     "input_file": {
                         "filename": "core/tests/test_data/cairo/fib0.cairo"
                     },
                     "start_col": 5,
-                    "start_line": 11
+                    "start_line": 19
                 }
             }
         }
@@ -603,9 +794,54 @@
             ],
             "type": "reference"
         },
-        "__main__.main": {
+        "__main__.fib_mid": {
             "decorators": [],
             "pc": 16,
+            "type": "function"
+        },
+        "__main__.fib_mid.Args": {
+            "full_name": "__main__.fib_mid.Args",
+            "members": {
+                "n": {
+                    "cairo_type": "felt",
+                    "offset": 0
+                }
+            },
+            "size": 1,
+            "type": "struct"
+        },
+        "__main__.fib_mid.ImplicitArgs": {
+            "full_name": "__main__.fib_mid.ImplicitArgs",
+            "members": {},
+            "size": 0,
+            "type": "struct"
+        },
+        "__main__.fib_mid.Return": {
+            "cairo_type": "()",
+            "type": "type_definition"
+        },
+        "__main__.fib_mid.SIZEOF_LOCALS": {
+            "type": "const",
+            "value": 0
+        },
+        "__main__.fib_mid.n": {
+            "cairo_type": "felt",
+            "full_name": "__main__.fib_mid.n",
+            "references": [
+                {
+                    "ap_tracking_data": {
+                        "group": 2,
+                        "offset": 0
+                    },
+                    "pc": 16,
+                    "value": "[cast(fp + (-3), felt*)]"
+                }
+            ],
+            "type": "reference"
+        },
+        "__main__.main": {
+            "decorators": [],
+            "pc": 32,
             "type": "function"
         },
         "__main__.main.Args": {
@@ -672,6 +908,14 @@
                 },
                 "pc": 12,
                 "value": "[cast(ap + (-1), felt*)]"
+            },
+            {
+                "ap_tracking_data": {
+                    "group": 2,
+                    "offset": 0
+                },
+                "pc": 16,
+                "value": "[cast(fp + (-3), felt*)]"
             }
         ]
     }

@@ -6,7 +6,15 @@ func fib(a: felt, b: felt, n: felt) -> (felt, felt) {
         return (v, count + 1);
     }
 }
+func fib_mid(n: felt) -> () {
+    if (n == 0) {
+        return ();
+    } else {
+        fib(0, 1, 500);
+        return fib_mid(n - 1);
+    }
+}
 func main() {
-    fib(1, 2, 500);
+    fib_mid(100);
     return ();
 }
