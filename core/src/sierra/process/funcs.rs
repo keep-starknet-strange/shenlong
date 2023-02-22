@@ -5,10 +5,7 @@ use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
-
-pub const PRINT_FELT_FUNC: &str = "print_felt";
-pub const PRINT_DOUBLE_FELT_FUNC: &str = "print_double_felt";
-pub const PRINT_RETURN: &str = "print_return";
+use crate::sierra::process::corelib::PRINT_RETURN;
 
 /// Implementation for the type processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -23,14 +20,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug!("processing funcs");
         // Check that the current state is valid.
         self.check_state(&CompilationState::CoreLibFunctionsProcessed)?;
-
-        // Generate print functions for felts and double felts.
-        // Useful for debugging in the current early stage of development.
-        // Should probably be removed in the future.
-        let felt_type = self.get_type_from_name("felt").expect("Can't get felt from name");
-        self.printf_for_type(felt_type.into(), PRINT_FELT_FUNC);
-        let double_felt = self.context.custom_width_int_type(503);
-        self.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC);
 
         // Loop through the function declarations (last category of the sierra file).
         for func_declaration in self.program.funcs.iter() {

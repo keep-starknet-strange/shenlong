@@ -6,7 +6,7 @@ use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 use crate::sierra::llvm_compiler::Compiler;
-use crate::sierra::process::funcs::PRINT_RETURN;
+use crate::sierra::process::corelib::PRINT_RETURN;
 
 /// Implementation of the statement processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
