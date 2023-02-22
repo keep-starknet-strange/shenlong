@@ -6,6 +6,7 @@ use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
 use crate::sierra::llvm_compiler::Compiler;
+use crate::sierra::process::funcs::PRINT_RETURN;
 
 /// Implementation of the statement processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -178,17 +179,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             } else {
                                 // If there is something to return we print it (to keep the right main signature but
                                 // still see what happened).
-                                return_value = self
-                                    .builder
-                                    .build_call(
-                                        self.module
-                                            .get_function("print")
-                                            .expect("Print function should have been declared"),
-                                        &[return_value.into()],
-                                        "worked",
-                                    )
-                                    .try_as_basic_value()
-                                    .expect_left("Call should return a value");
+                                return_value = self.call_print(PRINT_RETURN, return_value.into());
                             }
                         }
                         // Return the specified value.

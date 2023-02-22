@@ -35,6 +35,24 @@ entry:
   ret { i252, i252 } %0
 }
 
+declare i32 @printf(ptr, ...)
+
+define i32 @print_felt(i252 %0) {
+entry:
+  %prefix = alloca [5 x i8], align 1
+  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
+  %printed_characters_n = call i32 (ptr, ...) @printf(ptr %prefix, i252 %0)
+  ret i32 %printed_characters_n
+}
+
+define i32 @print_double_felt(i503 %0) {
+entry:
+  %prefix = alloca [5 x i8], align 1
+  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
+  %printed_characters_n = call i32 (ptr, ...) @printf(ptr %prefix, i503 %0)
+  ret i32 %printed_characters_n
+}
+
 define { { i252, i252 } } @"struct_construct::struct_construct::complex_type"() {
 entry:
   %0 = call i252 @"felt_const<2>"()
