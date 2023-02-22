@@ -193,9 +193,9 @@ entry:
   ret i252 %0
 }
 
-define i252 @"felt_const<0>"() {
+define i252 @"felt_const<2>"() {
 entry:
-  ret i252 0
+  ret i252 2
 }
 
 define i252 @"felt_const<500>"() {
@@ -213,6 +213,11 @@ entry:
 define {} @"store_temp<Unit>"({} %0) {
 entry:
   ret {} %0
+}
+
+define i252 @"felt_const<100>"() {
+entry:
+  ret i252 100
 }
 
 define { i252 } @"fib_caller::fib_caller::fib"(i252 %0, i252 %1, i252 %2) {
@@ -273,24 +278,86 @@ dest4:                                            ; preds = %dest1
   ret { i252 } %return_struct_value7
 }
 
-define i32 @main(i252 %0) {
+define { {} } @"fib_caller::fib_caller::fib_mid"(i252 %0) {
 entry:
-  %1 = call i252 @"felt_const<0>"()
-  %2 = call i252 @"felt_const<1>"()
-  %3 = call i252 @"felt_const<500>"()
-  %4 = call i252 @"store_temp<felt>"(i252 %1)
-  %5 = call i252 @"store_temp<felt>"(i252 %2)
-  %6 = call i252 @"store_temp<felt>"(i252 %3)
-  %7 = call { i252 } @"fib_caller::fib_caller::fib"(i252 %4, i252 %5, i252 %6)
-  %res_ptr = alloca { i252 }, align 8
-  store { i252 } %7, ptr %res_ptr, align 4
-  %"4_ptr" = getelementptr inbounds { i252 }, ptr %res_ptr, i32 0, i32 0
-  %"4" = load i252, ptr %"4_ptr", align 4
-  %8 = call {} @"struct_construct<Unit>"()
-  %9 = call {} @"store_temp<Unit>"({} %8)
+  %1 = call { i252, i252 } @"dup<felt>"(i252 %0)
+  %res_ptr = alloca { i252, i252 }, align 8
+  store { i252, i252 } %1, ptr %res_ptr, align 4
+  %"0_ptr" = getelementptr inbounds { i252, i252 }, ptr %res_ptr, i32 0, i32 0
+  %"0" = load i252, ptr %"0_ptr", align 4
+  %"2_ptr" = getelementptr inbounds { i252, i252 }, ptr %res_ptr, i32 0, i32 1
+  %"2" = load i252, ptr %"2_ptr", align 4
+  %check = icmp eq i252 %"2", 0
+  br i1 %check, label %then, label %else
+
+then:                                             ; preds = %entry
+  br label %dest
+
+else:                                             ; preds = %entry
+  br label %dest1
+
+dest:                                             ; preds = %then
+  %2 = call {} @"struct_construct<Unit>"()
+  %3 = call {} @"store_temp<Unit>"({} %2)
   %ret_struct_ptr = alloca { {} }, align 8
   %field_0_ptr = getelementptr inbounds { {} }, ptr %ret_struct_ptr, i32 0, i32 0
-  store {} %9, ptr %field_0_ptr, align 1
+  store {} %3, ptr %field_0_ptr, align 1
+  %return_struct_value = load { {} }, ptr %ret_struct_ptr, align 1
+  ret { {} } %return_struct_value
+
+dest1:                                            ; preds = %else
+  %4 = call i252 @"felt_const<1>"()
+  %5 = call i252 @"felt_const<2>"()
+  %6 = call i252 @"felt_const<500>"()
+  %7 = call i252 @"store_temp<felt>"(i252 %4)
+  %8 = call i252 @"store_temp<felt>"(i252 %5)
+  %9 = call i252 @"store_temp<felt>"(i252 %6)
+  %10 = call { i252 } @"fib_caller::fib_caller::fib"(i252 %7, i252 %8, i252 %9)
+  %res_ptr2 = alloca { i252 }, align 8
+  store { i252 } %10, ptr %res_ptr2, align 4
+  %"6_ptr" = getelementptr inbounds { i252 }, ptr %res_ptr2, i32 0, i32 0
+  %"6" = load i252, ptr %"6_ptr", align 4
+  %11 = call i252 @"felt_const<1>"()
+  %12 = call i252 @felt_sub(i252 %"0", i252 %11)
+  %13 = call i252 @"store_temp<felt>"(i252 %12)
+  %14 = call { {} } @"fib_caller::fib_caller::fib_mid"(i252 %13)
+  %res_ptr3 = alloca { {} }, align 8
+  store { {} } %14, ptr %res_ptr3, align 1
+  %"12_ptr" = getelementptr inbounds { {} }, ptr %res_ptr3, i32 0, i32 0
+  %"12" = load {}, ptr %"12_ptr", align 1
+  %15 = call {} @"struct_construct<Unit>"()
+  %16 = call {} @"store_temp<Unit>"({} %15)
+  %ret_struct_ptr4 = alloca { {} }, align 8
+  %field_0_ptr5 = getelementptr inbounds { {} }, ptr %ret_struct_ptr4, i32 0, i32 0
+  store {} %16, ptr %field_0_ptr5, align 1
+  %return_struct_value6 = load { {} }, ptr %ret_struct_ptr4, align 1
+  ret { {} } %return_struct_value6
+}
+
+declare i32 @printf(ptr, ...)
+
+define i32 @print({ {} } %0) {
+entry:
+  %prefix = alloca [5 x i8], align 1
+  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
+  %worked = call i32 (ptr, ...) @printf(ptr %prefix, { {} } %0)
+  ret i32 %worked
+}
+
+define i32 @main(i252 %0) {
+entry:
+  %1 = call i252 @"felt_const<100>"()
+  %2 = call i252 @"store_temp<felt>"(i252 %1)
+  %3 = call { {} } @"fib_caller::fib_caller::fib_mid"(i252 %2)
+  %res_ptr = alloca { {} }, align 8
+  store { {} } %3, ptr %res_ptr, align 1
+  %"2_ptr" = getelementptr inbounds { {} }, ptr %res_ptr, i32 0, i32 0
+  %"2" = load {}, ptr %"2_ptr", align 1
+  %4 = call {} @"struct_construct<Unit>"()
+  %5 = call {} @"store_temp<Unit>"({} %4)
+  %ret_struct_ptr = alloca { {} }, align 8
+  %field_0_ptr = getelementptr inbounds { {} }, ptr %ret_struct_ptr, i32 0, i32 0
+  store {} %5, ptr %field_0_ptr, align 1
   %return_struct_value = load { {} }, ptr %ret_struct_ptr, align 1
   ret i32 0
 }
