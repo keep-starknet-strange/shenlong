@@ -20,11 +20,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::CoreLibFunctionsProcessed)?;
 
-        // Clear the variables map in case a previous function has been processed.
-        self.variables.clear();
-
         // Loop through the function declarations (last category of the sierra file).
         for func_declaration in self.program.funcs.iter() {
+            // Clear the variables map in case a previous function has been processed.
+            self.variables.clear();
+
             // Arguments of the function.
             let mut args = vec![];
             for Param { id: _, ty: ConcreteTypeId { id: type_id, debug_name: _debug_name } } in &func_declaration.params
