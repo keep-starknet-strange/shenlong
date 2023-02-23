@@ -179,7 +179,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             } else {
                                 // If there is something to return we print it (to keep the right main signature but
                                 // still see what happened).
-                                return_value = self.call_print(PRINT_RETURN, return_value.into());
+                                let field_value_ptr = self
+                                    .builder
+                                    .build_struct_gep(return_struct_type, return_struct_ptr, 0, "return_value_ptr")
+                                    .unwrap();
+                                let field_value =
+                                    self.builder.build_load(field_ret_type, field_value_ptr, "return_value");
+                                self.call_print(PRINT_RETURN, field_value.into());
+                                return_value = self.context.i32_type().const_int(0, false).into();
                             }
                         }
                         // Return the specified value.
