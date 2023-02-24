@@ -193,9 +193,9 @@ entry:
   ret i252 %0
 }
 
-define i252 @"felt_const<2>"() {
+define i252 @"felt_const<0>"() {
 entry:
-  ret i252 2
+  ret i252 0
 }
 
 define i252 @"felt_const<500>"() {
@@ -306,8 +306,8 @@ dest:                                             ; preds = %then
   ret { {} } %return_struct_value
 
 dest1:                                            ; preds = %else
-  %4 = call i252 @"felt_const<1>"()
-  %5 = call i252 @"felt_const<2>"()
+  %4 = call i252 @"felt_const<0>"()
+  %5 = call i252 @"felt_const<1>"()
   %6 = call i252 @"felt_const<500>"()
   %7 = call i252 @"store_temp<felt>"(i252 %4)
   %8 = call i252 @"store_temp<felt>"(i252 %5)
@@ -332,16 +332,6 @@ dest1:                                            ; preds = %else
   store {} %16, ptr %field_0_ptr5, align 1
   %return_struct_value6 = load { {} }, ptr %ret_struct_ptr4, align 1
   ret { {} } %return_struct_value6
-}
-
-declare i32 @printf(ptr, ...)
-
-define i32 @print({ {} } %0) {
-entry:
-  %prefix = alloca [5 x i8], align 1
-  store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
-  %worked = call i32 (ptr, ...) @printf(ptr %prefix, { {} } %0)
-  ret i32 %worked
 }
 
 define i32 @main(i252 %0) {

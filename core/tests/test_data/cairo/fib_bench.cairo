@@ -6,14 +6,14 @@ fn fib(a: felt, b: felt, n: felt) -> felt {
     }
 }
 fn fib_mid(n: felt) {
-match n {
-        0 => a,
+    match n {
+        0 => (),
         _ => {
-        fib(0, 1, 500);
-        fib_mid(n-1);
+            fib(0, 1, 500);
+            fib_mid(n - 1);
         },
     }
 }
-fn main(a:felt) -> felt {
+fn main(a: felt) {
     fib_mid(100);
 }
