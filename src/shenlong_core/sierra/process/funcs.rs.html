@@ -95,6 +95,23 @@
 <a href="#95" id="95">95</a>
 <a href="#96" id="96">96</a>
 <a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::Param;
 <span class="kw">use </span>inkwell::types::BasicMetadataTypeEnum;
@@ -161,7 +178,24 @@
             </span><span class="kw">let </span>func_name = func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
             <span class="kw">let </span>func = <span class="kw">if let </span><span class="prelude-val">Some</span>(ret_ty) = return_type &amp;&amp; func_name.ends_with(<span class="string">&quot;::main&quot;</span>) {
                 <span class="comment">// Generate the print function for the return value type.
-                </span><span class="self">self</span>.printf_for_type(ret_ty.into(), PRINT_RETURN);
+
+                </span><span class="kw">if </span>ret_ty.count_fields() &gt; <span class="number">0 </span>{
+                    <span class="comment">// If there is a return value, it will always be 1, (tuples are a struct, they count as one).
+                    </span><span class="kw">let </span>field = ret_ty.get_field_type_at_index(<span class="number">0</span>).unwrap();
+                    <span class="kw">if </span>field.is_int_type() {
+                        <span class="self">self</span>.printf_for_type(field.into(), PRINT_RETURN);
+                    }
+                    <span class="comment">// If its a struct, print all their values
+                    </span><span class="kw">else if </span>field.is_struct_type() {
+                        <span class="kw">let </span>field = field.into_struct_type();
+
+                        <span class="kw">for </span>f <span class="kw">in </span>field.get_field_types() {
+                            <span class="kw">if </span>f.is_int_type() {
+                                <span class="self">self</span>.printf_for_type(f.into(), PRINT_RETURN);
+                            }
+                        }
+                    }
+                }
                 <span class="self">self</span>.module.add_function(<span class="string">&quot;main&quot;</span>, <span class="self">self</span>.context.i32_type().fn_type(args_metadata, <span class="bool-val">false</span>), <span class="prelude-val">None</span>)
             } <span class="kw">else </span>{
                 <span class="self">self</span>.module.add_function(
@@ -193,4 +227,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (246eae2fa 2023-02-21)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (07c993eba 2023-02-23)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

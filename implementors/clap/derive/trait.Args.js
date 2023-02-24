@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"shenlong_cli":[["impl Args for <a class=\"struct\" href=\"shenlong_cli/cli/struct.SierraCommands.html\" title=\"struct shenlong_cli::cli::SierraCommands\">SierraCommands</a>"],["impl Args for <a class=\"struct\" href=\"shenlong_cli/cli/struct.Command.html\" title=\"struct shenlong_cli::cli::Command\">Command</a>"]]
+"shenlong_cli":[["impl Args for <a class=\"struct\" href=\"shenlong_cli/cli/struct.Command.html\" title=\"struct shenlong_cli::cli::Command\">Command</a>"],["impl Args for <a class=\"struct\" href=\"shenlong_cli/cli/struct.SierraCommands.html\" title=\"struct shenlong_cli::cli::SierraCommands\">SierraCommands</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

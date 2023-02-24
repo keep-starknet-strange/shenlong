@@ -60,7 +60,19 @@
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
 <a href="#62" id="62">62</a>
-</pre><pre class="rust"><code><span class="kw">use </span>tracing::debug;
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+</pre><pre class="rust"><code><span class="kw">use </span>inkwell::module::Linkage;
+<span class="kw">use </span>inkwell::AddressSpace;
+<span class="kw">use </span>tracing::debug;
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::CompilerResult;
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::{CompilationState, Compiler};
@@ -82,6 +94,14 @@
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::TypesProcessed)<span class="question-mark">?</span>;
         <span class="self">self</span>.modulo();
+
+        <span class="comment">// Define external printf, used in call_printf calls.
+        // i32 @printf(ptr, ...);
+        </span><span class="kw">let </span>i8_type = <span class="self">self</span>.context.i8_type();
+        <span class="kw">let </span>i32_type = <span class="self">self</span>.context.i32_type();
+        <span class="kw">let </span>str_type = i8_type.ptr_type(AddressSpace::from(<span class="number">0</span>));
+        <span class="kw">let </span>printf_type = i32_type.fn_type(<span class="kw-2">&amp;</span>[str_type.into()], <span class="bool-val">true</span>);
+        <span class="self">self</span>.module.add_function(<span class="string">&quot;printf&quot;</span>, printf_type, <span class="prelude-val">Some</span>(Linkage::External));
 
         <span class="comment">// Generate print functions for felts and double felts.
         // Useful for debugging in the current early stage of development.
@@ -123,4 +143,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (246eae2fa 2023-02-21)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (07c993eba 2023-02-23)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
