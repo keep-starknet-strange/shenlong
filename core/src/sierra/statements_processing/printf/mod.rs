@@ -60,18 +60,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// %ld.
     pub fn call_printf(&self, fmt: &str, values: &[BasicMetadataValueEnum<'ctx>]) {
         let i8_type = self.context.i8_type();
-
-        let printfunc = self.module.get_function("printf").expect("printf should be defined before");
-        let format_ptr = self.builder.build_alloca(i8_type.array_type(fmt.len() as u32), "format");
-
         let mut fmt_c = fmt.to_string();
         fmt_c.push('\0'); // c string null
-        self.builder.build_store(
-            format_ptr,
-            self.context
-                .i8_type()
-                .const_array(&fmt_c.chars().map(|c| i8_type.const_int(c.into(), false)).collect::<Vec<_>>()),
-        );
+        let to_print = fmt_c.chars().map(|c| i8_type.const_int(c.into(), false)).collect::<Vec<_>>();
+        let printfunc = self.module.get_function("printf").expect("printf should be defined before");
+        let format_ptr = self.builder.build_alloca(i8_type.array_type(to_print.len() as u32), "format");
+
+        self.builder.build_store(format_ptr, self.context.i8_type().const_array(&to_print));
 
         let mut printf_args: Vec<BasicMetadataValueEnum<'ctx>> = vec![format_ptr.into()];
         printf_args.extend(values);
