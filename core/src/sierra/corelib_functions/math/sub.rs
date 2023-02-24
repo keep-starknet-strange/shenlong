@@ -33,7 +33,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             func.get_last_param().unwrap().into_int_value(),
             "res",
         );
-        let arg = self.builder.build_int_s_extend(sub, self.context.custom_width_int_type(503), "arg");
+        let arg = self.builder.build_int_s_extend(sub, self.context.custom_width_int_type(512), "arg");
         let res = self
             .builder
             .build_call(

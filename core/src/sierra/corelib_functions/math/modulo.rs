@@ -13,7 +13,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let felt_type = self.get_type_from_name("felt").expect("Can't get felt from name");
         // Max size of felt operation (Prime - 1 ) * ( Prime - 1) = 503 bits number
-        let big_felt_type = self.context.custom_width_int_type(503);
+        let big_felt_type = self.context.custom_width_int_type(512);
         // fn felt_modulo(a: double_felt) -> felt
         let func = self.module.add_function("modulo", felt_type.fn_type(&[big_felt_type.into()], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));

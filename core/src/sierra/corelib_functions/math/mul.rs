@@ -26,7 +26,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // The maximum value of a multiplication is (prime - 1)² which is 503 bits.
-        let double_felt = self.context.custom_width_int_type(503);
+        let double_felt = self.context.custom_width_int_type(512);
         // Extend left hand side.
         // We just defined the function so it shouldn't panic
         let lhs = self.builder.build_int_s_extend(
