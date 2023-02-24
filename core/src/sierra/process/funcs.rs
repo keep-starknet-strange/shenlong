@@ -63,7 +63,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // main function)
             let func_name = func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
             let func = if let Some(ret_ty) = return_type && func_name.ends_with("::main") {
-                // Generate the print function for the return value type. (if there is 1, and its a int value type).
+                // Generate the print function for the return value type.
 
                 if ret_ty.count_fields() > 0 {
                     // If there is a return value, it will always be 1, (tuples are a struct, they count as one).
