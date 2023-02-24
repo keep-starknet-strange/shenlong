@@ -1,3 +1,5 @@
+use inkwell::module::Linkage;
+use inkwell::AddressSpace;
 use tracing::debug;
 
 use crate::sierra::errors::CompilerResult;
@@ -20,6 +22,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::TypesProcessed)?;
         self.modulo();
+
+        // Define external printf, used in call_printf calls.
+        // i32 @printf(ptr, ...);
+        let i8_type = self.context.i8_type();
+        let i32_type = self.context.i32_type();
+        let str_type = i8_type.ptr_type(AddressSpace::from(0));
+        let printf_type = i32_type.fn_type(&[str_type.into()], true);
+        self.module.add_function("printf", printf_type, Some(Linkage::External));
 
         // Generate print functions for felts and double felts.
         // Useful for debugging in the current early stage of development.

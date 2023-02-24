@@ -64,10 +64,22 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             let func_name = func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
             let func = if let Some(ret_ty) = return_type && func_name.ends_with("::main") {
                 // Generate the print function for the return value type. (if there is 1, and its a int value type).
+
                 if ret_ty.count_fields() > 0 {
+                    // If there is a return value, it will always be 1, (tuples are a struct, they count as one).
                     let field = ret_ty.get_field_type_at_index(0).unwrap();
                     if field.is_int_type() {
                         self.printf_for_type(field.into(), PRINT_RETURN);
+                    }
+                    // If its a struct, print all their values
+                    else if field.is_struct_type() {
+                        let field = field.into_struct_type();
+
+                        for f in field.get_field_types() {
+                            if f.is_int_type() {
+                                self.printf_for_type(f.into(), PRINT_RETURN);
+                            }
+                        }
                     }
                 }
                 self.module.add_function("main", self.context.i32_type().fn_type(args_metadata, false), None)

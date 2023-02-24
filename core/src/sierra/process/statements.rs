@@ -179,13 +179,46 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             } else {
                                 // If there is something to return we print it (to keep the right main signature but
                                 // still see what happened).
+                                // The return value is always { x }, we need to get x first.
                                 let field_value_ptr = self
                                     .builder
                                     .build_struct_gep(return_struct_type, return_struct_ptr, 0, "return_value_ptr")
                                     .unwrap();
                                 let field_value =
                                     self.builder.build_load(field_ret_type, field_value_ptr, "return_value");
-                                self.call_print(PRINT_RETURN, field_value.into());
+
+                                // We have a int value, directly print it.
+                                if field_value.is_int_value() {
+                                    self.call_printf("Return value: ", &[]);
+                                    self.call_print_type(PRINT_RETURN, field_value.into());
+                                }
+                                // x is { y, y1... }, print each field (if they are ints for now).
+                                else if field_value.is_struct_value() {
+                                    let field = field_value.into_struct_value();
+                                    // Allocate a pointer for the field struct.
+                                    let field_struct_ptr =
+                                        self.builder.build_alloca(field.get_type(), "field_struct_ptr");
+                                    self.builder.build_store(field_struct_ptr, field);
+
+                                    for i in 0..field.get_type().count_fields() {
+                                        let f = self
+                                            .builder
+                                            .build_struct_gep(
+                                                field.get_type(),
+                                                field_struct_ptr,
+                                                i,
+                                                &format!("field_struct_{i}_ptr"),
+                                            )
+                                            .unwrap();
+                                        let value = self.builder.build_load(
+                                            field.get_type().get_field_type_at_index(i).unwrap(),
+                                            f,
+                                            &format!("field_struct_{i}"),
+                                        );
+                                        self.call_printf(&format!("Return field {i} value: "), &[]);
+                                        self.call_print_type(PRINT_RETURN, value.into());
+                                    }
+                                }
                                 return_value = self.context.i32_type().const_int(0, false).into();
                             }
                         }
