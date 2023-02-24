@@ -8,7 +8,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.id_from_name.insert("felt".to_owned(), type_declaration.id.id.to_string());
         self.types.insert(
             type_declaration.id.id.to_string(),
-            Box::new(self.context.custom_width_int_type(252).as_basic_type_enum()),
+            Box::new(self.context.custom_width_int_type(253).as_basic_type_enum()),
         );
     }
 }

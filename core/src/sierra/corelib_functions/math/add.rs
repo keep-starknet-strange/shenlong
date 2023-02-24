@@ -26,22 +26,21 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // The maximum value of and addition is 2 * (prime - 1) which is 253 bits.
-        let bigger_felt = self.context.custom_width_int_type(253);
+        let double_felt = self.context.custom_width_int_type(512);
         // Extend left hand side.
         // We just defined the function so it shouldn't panic.
         let lhs = self.builder.build_int_s_extend(
             func.get_first_param().unwrap().into_int_value(),
-            bigger_felt,
+            double_felt,
             "extended_a",
         );
         // Extend right hand side.
         // We just defined the function so it shouldn't panic.
         let rhs =
-            self.builder.build_int_s_extend(func.get_last_param().unwrap().into_int_value(), bigger_felt, "extended_b");
+            self.builder.build_int_s_extend(func.get_last_param().unwrap().into_int_value(), double_felt, "extended_b");
         // Compute a + b.
         let add = self.builder.build_int_add(lhs, rhs, "res");
         // Extend it to 503 bits for the modulo operation.
-        let arg = self.builder.build_int_s_extend(add, self.context.custom_width_int_type(503), "arg");
         // Panics if the function doesn't have enough arguments but it shouldn't happen since we just
         // defined it above.
         // Also panics if the modulo function doesn't return a value but it shouldn't happen.
@@ -50,7 +49,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .builder
             .build_call(
                 self.module.get_function("modulo").expect("Modulo should have been defined before"),
-                &[arg.into()],
+                &[add.into()],
                 "res",
             )
             .try_as_basic_value()
