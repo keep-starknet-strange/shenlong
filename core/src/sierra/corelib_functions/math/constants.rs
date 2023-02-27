@@ -1,5 +1,6 @@
 use cairo_lang_sierra::program::GenericArg::Value;
 use cairo_lang_sierra::program::LibfuncDeclaration;
+use inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DISubprogram};
 use inkwell::types::{BasicType, StringRadix};
 
 use crate::sierra::errors::DEBUG_NAME_EXPECTED;
@@ -39,5 +40,27 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             panic!("No value for felt constant")
         };
         self.builder.build_return(Some(&ret));
+
+        if let Some(dibuilder) = &self.dibuilder {
+            let ditypes = self.ditypes.as_ref().unwrap();
+            let compile_unit = self.compile_unit.unwrap();
+            let return_type = ditypes.get(self.get_type_id_from_name("felt").unwrap()).unwrap();
+            let subroutine_type =
+                dibuilder.create_subroutine_type(compile_unit.get_file(), Some(*return_type), &[], DIFlags::PUBLIC);
+            let func_scope: DISubprogram<'_> = dibuilder.create_function(
+                compile_unit.as_debug_info_scope(),
+                libfunc_declaration.id.debug_name.clone().unwrap().as_str(),
+                None,
+                compile_unit.get_file(),
+                self.current_line_estimate, // line number
+                subroutine_type,
+                true,
+                true,
+                self.current_line_estimate, // scope line
+                DIFlags::PUBLIC,
+                false,
+            );
+            func.set_subprogram(func_scope);
+        }
     }
 }

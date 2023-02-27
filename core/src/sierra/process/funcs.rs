@@ -23,6 +23,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Loop through the function declarations (last category of the sierra file).
         for func_declaration in self.program.funcs.iter() {
+            self.current_line_estimate += 1;
+
             // Clear the variables map in case a previous function has been processed.
             self.variables.clear();
 

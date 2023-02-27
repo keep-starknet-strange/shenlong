@@ -41,6 +41,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
+            self.current_line_estimate += 1;
+
             // Get the debug name of the function.
             let libfunc_name = libfunc_declaration.long_id.generic_id.0.as_str();
             debug!(libfunc_name, "processing");
