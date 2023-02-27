@@ -2012,6 +2012,7 @@ dependencies = [
  "num-bigint",
  "pretty_assertions",
  "proptest",
+ "serde",
  "tempdir",
  "test-case",
  "thiserror",
