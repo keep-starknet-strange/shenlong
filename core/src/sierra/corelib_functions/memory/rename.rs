@@ -28,7 +28,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Not sure if rename can rename user defined types
             GenericArg::UserType(_) => todo!(),
             _val => {
-                panic!("store_temp only takes type or user type")
+                panic!("rename only takes type or user type")
             }
         };
         // fn rename<T>(a: T) -> T

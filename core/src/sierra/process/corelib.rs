@@ -46,22 +46,41 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             debug!(libfunc_name, "processing");
             // Each core lib function is known
             match libfunc_name {
+                // Align branches after a match/if else or anything that creates branches.
                 "branch_align" => debug!(libfunc_name, "ignored for now"),
+                // Drops a variables (in sierra everything has to be used exactly once so if a variable is created and
+                // then never used for anything we have to drop it to consume it).
                 "drop" => (),
+                // As everything has to be used exactly once, if we need to use twice the same value we need to
+                // duplicate it.
                 "dup" => self.dup(libfunc_declaration),
+                // Addition for felt type. `felt + felt`
                 "felt_add" => self.felt_add(libfunc_declaration),
+                // Define a constant of type felt. `const one = 1;`
                 "felt_const" => self.felt_const(libfunc_declaration),
+                // Check if a felt is zero. `felt == 0`
                 "felt_is_zero" => debug!(libfunc_name, "treated in the statements"),
+                // Multiplication for felt type. `felt * felt`
                 "felt_mul" => self.felt_mul(libfunc_declaration),
+                // Subtraction for the felt type. `felt - felt`
                 "felt_sub" => self.felt_sub(libfunc_declaration),
+                // Calls a user defined sierra function. `function_call<user@fib_caller::fib_caller::fib>`
                 "function_call" => debug!(libfunc_name, "treated in the statements"),
+                // Boxes a value of type T.
                 "into_box" => self.into_box(libfunc_declaration),
+                // Jumps to the specified sierra statement number.
                 "jump" => debug!(libfunc_name, "treated in the statements"),
+                // Revoke ap tracking.
                 "revoke_ap_tracking" => (),
+                // Renames a variable. (After branching mostly).
                 "rename" => self.rename(libfunc_declaration),
+                // Stores a value in a tempvar.
                 "store_temp" => self.store_temp(libfunc_declaration),
+                // Constructs a struct of predefined type.
                 "struct_construct" => self.struct_construct(libfunc_declaration),
+                // Deconstruct a struct. (Get each struct field in its own variable).
                 "struct_deconstruct" => self.struct_deconstruct(libfunc_declaration),
+                // Converts a `Box<T>` to `T`.
                 "unbox" => self.unbox(libfunc_declaration),
                 _ => debug!(libfunc_name, "not implemented"),
             }

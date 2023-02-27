@@ -14,10 +14,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 GenStatement::Invocation(invocation) => {
                     if invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).as_str() == "jump" && 
                     let GenBranchTarget::Statement(id) = &invocation.branches[0].target {
+                        // If it's a jump insert the destination of the jump in the map.
                         self.jump_dests.insert(id.0);
                     }
                     for branch in invocation.branches.iter() {
                         if let GenBranchTarget::Statement(id) = branch.target {
+                            // If it's a jump insert the destination of the jump in the map.
                             self.jump_dests.insert(id.0);
                         }
                     }

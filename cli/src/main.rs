@@ -3,8 +3,8 @@ use std::time::Instant;
 use clap::Parser;
 use color_eyre::Result;
 use owo_colors::{DynColors, OwoColorize};
-use shenlong_cli::cli::Command;
-use shenlong_cli::emoji;
+use shenlong::cli::Command;
+use shenlong::emoji;
 
 const SHENLONG: &str = r#"
 ███████╗██╗  ██╗███████╗███╗   ██╗██╗      ██████╗ ███╗   ██╗ ██████╗ 

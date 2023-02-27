@@ -123,9 +123,9 @@ install_shenlong_manually() {
 
     find $PROJECT_BIN ! -name "$INSTALLER" -type f -exec rm {} +
 
-    mv ./target/release/shenlong_cli $PROJECT_BIN
+    mv ./target/release/shenlong $PROJECT_BIN
 
-    shenlong_VER=$(shenlong_cli --version | awk '{print $2}')
+    shenlong_VER=$(shenlong --version | awk '{print $2}')
 
     cd $WRK_DIR
     rm -rf $PROJECT_TMP/shenlong
@@ -150,7 +150,7 @@ if [ "$1" = "dev" ] || [ $? -ne 0 ]; then
     install_shenlong_manually
 else
     # Pull latest release if there is a new version
-    CURRENT_VER=$(shenlong_cli --version | awk '{print $2}')
+    CURRENT_VER=$(shenlong --version | awk '{print $2}')
     if [ "$LATEST_TAG" = "v$CURRENT_VER" ]; then
         echo "$NAME is currently running the latest version: $LATEST_VER"
     else

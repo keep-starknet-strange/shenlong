@@ -199,7 +199,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                     let field_struct_ptr =
                                         self.builder.build_alloca(field.get_type(), "field_struct_ptr");
                                     self.builder.build_store(field_struct_ptr, field);
-
+                                    // Prints the fields of a struct.
                                     for i in 0..field.get_type().count_fields() {
                                         let f = self
                                             .builder

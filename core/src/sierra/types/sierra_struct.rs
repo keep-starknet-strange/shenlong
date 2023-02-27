@@ -5,6 +5,11 @@ use inkwell::types::BasicType;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
+    /// Declares the LLVM IR representation of a sierra struct.
+    ///
+    /// # Arguments
+    ///
+    /// * `type_declaration` - the sierra type declaration.
     pub fn sierra_struct(&mut self, type_declaration: &TypeDeclaration) {
         let mut args = vec![];
         for generic_arg in type_declaration.long_id.generic_args.iter() {
@@ -15,7 +20,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         .expect("Type should have been defined before struct")
                         .as_basic_type_enum(),
                 ),
-
+                // Ignore the user type as it is not a struct field.
                 GenericArg::UserType(_) => continue,
                 _val => {
                     panic!("store_temp only takes type or user type")

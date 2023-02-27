@@ -1,5 +1,5 @@
 [package]
-name = "shenlong"
+name = "shenlong-compiler"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,7 +8,11 @@ members = ["core", "cli"]
 
 [workspace.package]
 edition = "2021"
-authors = ["Abdelhamid Bakhta <@abdelhamidbakhta>", "Lucas Levy <@lucaslvy>"]
+authors = [
+    "Lucas Levy <@lucaslvy>",
+    "Edgar <@edg-l>",
+    "Abdelhamid Bakhta <@abdelhamidbakhta>",
+]
 description = "Shenlong is a blazingly fast ⚡ tool to generate LLVM IR from Cairo, written in Rust 🦀"
 homepage = "https://github.com/keep-starknet-strange/shenlong"
 repository = "https://github.com/keep-starknet-strange/shenlong"
@@ -16,7 +20,7 @@ readme = "./README.md"
 license = "MIT"
 
 [dependencies]
-shenlong_core = { path = "./core" }
+shenlong-core = { path = "./core" }
 
 [dev-dependencies]
 criterion = "0.4.0"

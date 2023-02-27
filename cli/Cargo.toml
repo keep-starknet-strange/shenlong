@@ -1,12 +1,12 @@
 [package]
-name = "shenlong_cli"
+name = "shenlong"
 version = "0.1.0"
 edition.workspace = true
 description.workspace = true
 homepage.workspace = true
 
 [dependencies]
-shenlong_core = { path = "../core" }
+shenlong-core = { path = "../core" }
 clap = { version = "4.1.6", features = ["derive"] }
 serde = { version = "1.0.152", features = ["derive"] }
 tokio = { version = "1.25.0", features = ["full"] }
