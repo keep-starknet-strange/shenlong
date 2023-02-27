@@ -35,6 +35,10 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
         id_from_name: HashMap::new(),
         basic_blocks: HashMap::new(),
         jump_dests: HashSet::new(),
+        dibuilder: None,
+        compile_unit: None,
+        ditypes: None,
+        current_line_estimate: 0,
     };
 
     compiler.process_types().unwrap();

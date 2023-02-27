@@ -19,6 +19,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::NotStarted)?;
         for type_declaration in self.program.type_declarations.iter() {
+            self.current_line_estimate += 1;
             // All those types are known in advance. A struct is a combination of multiple "primitive" types
             let type_name = type_declaration.long_id.generic_id.0.as_str();
             match type_name {
@@ -55,5 +56,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .get(self.id_from_name.get(type_name).ok_or(CompilerError::TypeNotFound(type_name.to_owned()))?)
             .ok_or(CompilerError::TypeNotFound(type_name.to_owned()))?
             .as_basic_type_enum())
+    }
+
+    // Returns the type id mapped from the debug name.
+    pub fn get_type_id_from_name(&self, type_name: &str) -> CompilerResult<&String> {
+        self.id_from_name.get(type_name).ok_or(CompilerError::TypeNotFound(type_name.to_owned()))
     }
 }

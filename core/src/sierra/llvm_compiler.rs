@@ -40,6 +40,7 @@ use cairo_lang_sierra::ProgramParser;
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
+use inkwell::debug_info::{DICompileUnit, DIType, DebugInfoBuilder};
 use inkwell::module::Module;
 use inkwell::targets::TargetTriple;
 use inkwell::types::BasicType;
@@ -75,6 +76,12 @@ pub struct Compiler<'a, 'ctx> {
     /// Calls in the main function.
     pub basic_blocks: HashMap<usize, BasicBlock<'ctx>>,
     pub jump_dests: HashSet<usize>,
+    // Debug info
+    pub dibuilder: Option<DebugInfoBuilder<'ctx>>,
+    pub compile_unit: Option<DICompileUnit<'ctx>>,
+    pub ditypes: Option<HashMap<String, DIType<'ctx>>>,
+    // Sierra doesn't give us spans, we have to estimate the line number.
+    pub current_line_estimate: u32,
 }
 
 /// Compilation state.
@@ -133,7 +140,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ) -> CompilerResult<()> {
         // Read the program from the file.
         let sierra_code = fs::read_to_string(program_path)?;
-        Compiler::compile_from_code(&sierra_code, llvm_output_path, target_triple)
+        Compiler::compile_from_code(&sierra_code, program_path, llvm_output_path, target_triple)
     }
 
     /// Compile a Sierra program code to LLVM IR.
@@ -151,12 +158,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// If the compilation fails.
     pub fn compile_from_code(
         sierra_code: &str,
+        program_path: &Path,
         llvm_output_path: &Path,
         target_triple: Option<&str>,
     ) -> CompilerResult<()> {
         // Parse the program.
         let program = ProgramParser::new().parse(sierra_code).unwrap();
-        Compiler::compile_sierra_program_to_llvm(program, llvm_output_path, target_triple)
+        Compiler::compile_sierra_program_to_llvm(program, program_path, llvm_output_path, target_triple)
     }
 
     /// Compiles a Sierra `Program` representation to LLVM IR.
@@ -206,6 +214,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// ```
     pub fn compile_sierra_program_to_llvm(
         program: Program,
+        program_path: &Path,
         llvm_output_path: &Path,
         target_triple: Option<&str>,
     ) -> CompilerResult<()> {
@@ -219,6 +228,35 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Module is an object that contains all of the functions, global variables.
         // In many ways, it is the top-level structure that the LLVM IR uses to contain code.
         let module = context.create_module("root");
+        let debug_metadata_version = context.i32_type().const_int(3, false);
+        module.add_basic_value_flag(
+            "Debug Info Version",
+            inkwell::module::FlagBehavior::Warning,
+            debug_metadata_version,
+        );
+
+        let mut parent = program_path.parent().unwrap().to_string_lossy();
+        if parent.is_empty() {
+            parent = ".".into();
+        }
+
+        let (dibuilder, compile_unit) = module.create_debug_info_builder(
+            true,
+            inkwell::debug_info::DWARFSourceLanguage::CPlusPlus,
+            &program_path.to_string_lossy(),
+            &parent,
+            "shenlong",
+            false,                                        // is_optimized
+            "",                                           // compiler command line flags
+            0,                                            // runtime version
+            "",                                           // split name
+            inkwell::debug_info::DWARFEmissionKind::Full, // kind
+            0,                                            // dwo_id
+            false,                                        // split_debug_inlining
+            false,                                        // debug_info_for_profiling
+            "",                                           // The Clang system root (value of -isysroot).  ?
+            "",                                           //  The SDK. On Darwin, the last component of the sysroot.  ?
+        );
 
         if let Some(target_triple) = target_triple {
             module.set_triple(&TargetTriple::create(target_triple));
@@ -250,14 +288,22 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             id_from_name,
             basic_blocks,
             jump_dests,
+            dibuilder: Some(dibuilder),
+            compile_unit: Some(compile_unit),
+            ditypes: Some(HashMap::new()),
+            current_line_estimate: 0,
         };
 
         // Process the types in the Sierra program.
         compiler.process_types()?;
+        compiler.current_line_estimate += 1; // there is usually a newline between types and libfuncs.
 
         // Process the core library functions in the Sierra program.
         compiler.process_core_lib_functions()?;
         compiler.collect_jumps();
+
+        compiler.current_line_estimate += 1; // there is usually a newline between libfuncs and statements.
+
         // Process the functions in the Sierra program.
         compiler.process_funcs()?;
         // Process the statements in the Sierra program.
@@ -277,6 +323,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug!("finalizing compilation");
         // Check that the current state is valid.
         self.check_state(&CompilationState::FunctionsProcessed)?;
+
+        if let Some(dibuilder) = &self.dibuilder {
+            dibuilder.finalize();
+        }
         // let parent =
         //     output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
         // // Recursively create the output path parent directories if they don't exist.
