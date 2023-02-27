@@ -1,4 +1,5 @@
 use cairo_lang_sierra::program::LibfuncDeclaration;
+use inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DISubprogram};
 use inkwell::types::BasicType;
 
 use crate::sierra::errors::DEBUG_NAME_EXPECTED;
@@ -18,13 +19,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn felt_add(&self, libfunc_declaration: &LibfuncDeclaration) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let felt_type = self.get_type_from_name("felt").expect("Can't get felt from name");
+        let felt_type_id = self.get_type_id_from_name("felt").unwrap();
+
         // fn felt_add(a: felt, b: felt) -> felt
+        let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
         let func = self.module.add_function(
-            libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
+            func_name,
             felt_type.fn_type(&[felt_type.as_basic_type_enum().into(), felt_type.as_basic_type_enum().into()], false),
             None,
         );
+
+        self.create_function_debug(func_name, &func, felt_type_id, &[felt_type_id.clone(), felt_type_id.clone()]);
+
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
+        self.debug_location(None);
         // The maximum value of and addition is 2 * (prime - 1) which is 253 bits.
         let double_felt = self.context.custom_width_int_type(512);
         // Extend left hand side.

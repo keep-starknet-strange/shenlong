@@ -34,9 +34,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Useful for debugging in the current early stage of development.
         // Should probably be removed in the future.
         let felt_type = self.get_type_from_name("felt").expect("Can't get felt from name");
-        self.printf_for_type(felt_type.into(), PRINT_FELT_FUNC);
+        let felt_type_id = self.get_type_id_from_name("felt_type_id").expect("Can't get felt from name").clone();
+        self.printf_for_type(felt_type.into(), PRINT_FELT_FUNC, &felt_type_id);
         let double_felt = self.context.custom_width_int_type(512);
-        self.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC);
+        self.basic_type_debug_info("double_felt", 512);
+        self.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC, "double_felt");
         self.modulo();
 
         // Iterate over the libfunc declarations in the Sierra program.
