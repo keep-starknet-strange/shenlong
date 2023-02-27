@@ -20,7 +20,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     benchmark_cairo(c, "fib0.json")
 }
 
-fn benchmark_llvm<'a, 'ctx>(c: &mut Criterion, file_path: &str) {
+fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
     let context = inkwell::context::Context::create();
     let mut compiler = Compiler {
         program: &ProgramParser::new().parse(&fs::read_to_string(file_path).unwrap()).unwrap(),
