@@ -6,7 +6,7 @@ use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    /// Implementation of the LLVM IR conversion of unbox<T>.
+    /// Implementation of the LLVM IR conversion of `unbox<T>`.
     ///
     /// # Arguments
     ///

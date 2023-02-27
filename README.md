@@ -167,7 +167,7 @@ cargo build --all --release
 ```
 
 The binaries will be located in `target/release/`.
-Specifically, the binary for the CLI is `target/release/shenlong_cli`.
+Specifically, the binary for the CLI is `target/release/shenlong`.
 
 ## Usage
 
@@ -177,7 +177,7 @@ Specifically, the binary for the CLI is `target/release/shenlong_cli`.
 Shenlong, make me a LLVM compiler!
 Shenlong is a blazingly fast ⚡ tool to generate LLVM IR from Cairo, written in Rust 🦀
 
-Usage: shenlong_cli [CONFIG] <COMMAND>
+Usage: shenlong [CONFIG] <COMMAND>
 
 Commands:
   sierra  Sierra related subcommands
@@ -194,7 +194,7 @@ Options:
 #### Compile Sierra to LLVM IR
 
 ```bash
-shenlong_cli sierra compile-to-llvm \
+shenlong sierra compile-to-llvm \
 --program-path examples/sierra/add.sierra \
 --output-path target/llvm/add.ir
 ```

@@ -4,11 +4,17 @@ use cairo_lang_sierra::program::{GenericArg, TypeDeclaration};
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
+    /// Declares `Box<T>`.
+    ///
+    /// # Arguments
+    ///
+    /// * `type_declaration` - the sierra type declaration.
     pub fn sierra_box(&mut self, type_declaration: &TypeDeclaration) {
         match &type_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => self.types.insert(
                 type_declaration.id.id.to_string(),
                 // A type can't use an undefined type so it should be declared before so it shouldn't panic.
+                // The box type is ignored in LLVM IR we just define `Box<T>` as `T`.
                 Box::from(self.types.get(&id.to_string()).unwrap().as_basic_type_enum()),
             ),
             GenericArg::UserType(_) => todo!(),
