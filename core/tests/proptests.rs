@@ -20,12 +20,6 @@ macro_rules! test_template_file {
     }};
 }
 
-struct TestCompiler<'a> {
-    context: Context,
-    compiler: Compiler<'a, 'a>,
-    execution_engine: ExecutionEngine<'a>,
-}
-
 fn compile_and_run<F>(source: &str, run: F)
 where
     F: FnOnce(&ExecutionEngine, &Compiler),
