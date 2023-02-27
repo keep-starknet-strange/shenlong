@@ -1,12 +1,9 @@
-use std::collections::{HashMap, HashSet};
-use std::path::Path;
+use std::process::{Command, Stdio};
 
-use cairo_lang_sierra::ProgramParser;
-use inkwell::context::Context;
-use inkwell::execution_engine::ExecutionEngine;
-use inkwell::OptimizationLevel;
+use num_bigint::BigInt;
+use num_traits::Num;
 use serde::Serialize;
-use shenlong_core::sierra::llvm_compiler::{CompilationState, Compiler};
+use shenlong_core::sierra::llvm_compiler::Compiler;
 use tinytemplate::TinyTemplate;
 
 macro_rules! test_template_file {
@@ -20,34 +17,6 @@ macro_rules! test_template_file {
     }};
 }
 
-fn compile_and_run<F>(source: &str, run: F)
-where
-    F: FnOnce(&ExecutionEngine, &Compiler),
-{
-    let context = inkwell::context::Context::create();
-    let mut compiler = Compiler {
-        program: &ProgramParser::new().parse(source).unwrap(),
-        context: &context,
-        builder: &context.create_builder(),
-        module: context.create_module("root"),
-        variables: HashMap::new(),
-        llvm_output_path: Path::new("").to_path_buf(),
-        state: CompilationState::NotStarted,
-        valid_state_transitions: Compiler::init_state_transitions(),
-        types: HashMap::new(),
-        id_from_name: HashMap::new(),
-        basic_blocks: HashMap::new(),
-        jump_dests: HashSet::new(),
-    };
-
-    compiler.process_types().unwrap();
-    compiler.process_core_lib_functions().unwrap();
-    compiler.collect_jumps();
-    compiler.process_funcs().unwrap();
-    let execution_engine = compiler.module.create_jit_execution_engine(OptimizationLevel::Default).unwrap();
-    run(&execution_engine, &compiler);
-}
-
 #[derive(Serialize)]
 struct BinaryContext<'a> {
     lhs: &'a str,
@@ -56,12 +25,42 @@ struct BinaryContext<'a> {
 
 #[test]
 fn simple_addition() {
-    let ctx = BinaryContext { lhs: "2", rhs: "4" };
+    use inkwell::targets::{InitializationConfig, Target};
+
+    Target::initialize_native(&InitializationConfig::default()).expect("Failed to initialize native target");
+
+    let ctx = BinaryContext { lhs: "9223372036854775807", rhs: "9223372036854775807" };
     let source = test_template_file!("addition.sierra", ctx);
 
-    compile_and_run(&source, |engine, compiler| {
-        let func = compiler.module.get_function("add::add::add").unwrap();
-        let value = unsafe { engine.run_function(func, &[]) };
-        dbg!(value);
-    });
+    let tmp = tempdir::TempDir::new("test_simple_addition").unwrap();
+    let file = tmp.into_path().join("output.ll");
+
+    Compiler::compile_from_code(&source, &file, None).unwrap();
+
+    let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to lli from llvm 15");
+
+    let cmd = Command::new(lli_path).arg(file).stdout(Stdio::piped()).spawn().unwrap();
+
+    let output = cmd.wait_with_output().unwrap();
+    let output = std::str::from_utf8(&output.stdout).unwrap().trim();
+
+    assert!(output.starts_with("Return value: "));
+    let output = &output["Return value: ".len()..];
+    assert_eq!(output, "000000000000000000000000000000000000000000000000FFFFFFFFFFFFFFFE");
+
+    let x = BigInt::from_str_radix(output, 16).unwrap();
+    dbg!(&x);
+
+    let a = BigInt::from_str_radix("9223372036854775807", 10).unwrap();
+    let b = BigInt::from_str_radix("9223372036854775807", 10).unwrap();
+    let c = &a + b;
+
+    dbg!(&a);
+    dbg!(&c);
+
+    assert_eq!(x, c);
+
+    dbg!(output);
 }
+
+// /opt/homebrew/opt/llvm@16/bin/lli

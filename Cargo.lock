@@ -2010,6 +2010,7 @@ dependencies = [
  "env_logger 0.10.0",
  "inkwell",
  "num-bigint",
+ "num-traits",
  "pretty_assertions",
  "proptest",
  "serde",
