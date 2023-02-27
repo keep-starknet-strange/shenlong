@@ -1,1 +1,1 @@
-window.ALL_CRATES = ["shenlong","shenlong_cli","shenlong_core"];
+window.ALL_CRATES = ["shenlong","shenlong_compiler","shenlong_core"];

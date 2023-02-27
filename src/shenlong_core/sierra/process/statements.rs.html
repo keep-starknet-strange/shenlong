@@ -489,8 +489,8 @@
                                     </span><span class="kw">let </span>field_struct_ptr =
                                         <span class="self">self</span>.builder.build_alloca(field.get_type(), <span class="string">&quot;field_struct_ptr&quot;</span>);
                                     <span class="self">self</span>.builder.build_store(field_struct_ptr, field);
-
-                                    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..field.get_type().count_fields() {
+                                    <span class="comment">// Prints the fields of a struct.
+                                    </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..field.get_type().count_fields() {
                                         <span class="kw">let </span>f = <span class="self">self
                                             </span>.builder
                                             .build_struct_gep(

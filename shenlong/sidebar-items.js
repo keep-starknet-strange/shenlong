@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["core"]};
+window.SIDEBAR_ITEMS = {"mod":["cli","emoji"]};

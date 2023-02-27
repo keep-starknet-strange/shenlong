@@ -28,6 +28,11 @@
 <a href="#28" id="28">28</a>
 <a href="#29" id="29">29</a>
 <a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::{GenericArg, TypeDeclaration};
 <span class="kw">use </span>inkwell::types::BasicType;
@@ -35,7 +40,12 @@
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::Compiler;
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
-    <span class="kw">pub fn </span>sierra_struct(<span class="kw-2">&amp;mut </span><span class="self">self</span>, type_declaration: <span class="kw-2">&amp;</span>TypeDeclaration) {
+    <span class="doccomment">/// Declares the LLVM IR representation of a sierra struct.
+    ///
+    /// # Arguments
+    ///
+    /// * `type_declaration` - the sierra type declaration.
+    </span><span class="kw">pub fn </span>sierra_struct(<span class="kw-2">&amp;mut </span><span class="self">self</span>, type_declaration: <span class="kw-2">&amp;</span>TypeDeclaration) {
         <span class="kw">let </span><span class="kw-2">mut </span>args = <span class="macro">vec!</span>[];
         <span class="kw">for </span>generic_arg <span class="kw">in </span>type_declaration.long_id.generic_args.iter() {
             <span class="kw">match </span>generic_arg {
@@ -45,8 +55,8 @@
                         .expect(<span class="string">&quot;Type should have been defined before struct&quot;</span>)
                         .as_basic_type_enum(),
                 ),
-
-                GenericArg::UserType(<span class="kw">_</span>) =&gt; <span class="kw">continue</span>,
+                <span class="comment">// Ignore the user type as it is not a struct field.
+                </span>GenericArg::UserType(<span class="kw">_</span>) =&gt; <span class="kw">continue</span>,
                 _val =&gt; {
                     <span class="macro">panic!</span>(<span class="string">&quot;store_temp only takes type or user type&quot;</span>)
                 }

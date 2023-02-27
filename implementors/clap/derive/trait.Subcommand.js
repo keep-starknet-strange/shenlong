@@ -1,3 +1,3 @@
 (function() {var implementors = {
-"shenlong_cli":[["impl Subcommand for <a class=\"enum\" href=\"shenlong_cli/cli/enum.Commands.html\" title=\"enum shenlong_cli::cli::Commands\">Commands</a>"],["impl Subcommand for <a class=\"enum\" href=\"shenlong_cli/cli/enum.SierraSubCommands.html\" title=\"enum shenlong_cli::cli::SierraSubCommands\">SierraSubCommands</a>"]]
+"shenlong":[["impl Subcommand for <a class=\"enum\" href=\"shenlong/cli/enum.Commands.html\" title=\"enum shenlong::cli::Commands\">Commands</a>"],["impl Subcommand for <a class=\"enum\" href=\"shenlong/cli/enum.SierraSubCommands.html\" title=\"enum shenlong::cli::SierraSubCommands\">SierraSubCommands</a>"]]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
