@@ -103,43 +103,36 @@ To request a new feature, please open an issue following
 
 #### [Rust](https://www.rust-lang.org/tools/install)
 
-The project requires nightly rustup:
-
-```bash
-rustup toolchain install nightly
-rustup default nightly
-```
+The project requires nightly, which the rust-toolchain.toml file on the repository takes care of.
 
 #### LLVM
 
-In order to build the project, you need to have LLVM installed on your system.
+In order to build the project, you need to have LLVM 16+ installed on your system.
 
-Consider using [llvmenv](https://crates.io/crates/llvmenv) to manage multiple LLVM builds.
+##### On debian/ubuntu:
 
-For example, to install LLVM 13.0.0 and use it globally:
+You can use the follow repository (make sure to install LLVM 16): <https://apt.llvm.org/>
+
+And then export the following env var:
 
 ```bash
-llvmenv build-entry 13.0.0
-llvmenv global 13.0.0
+export LLVM_SYS_150_PREFIX=/usr/lib/llvm-16
+export LLI_PATH=/usr/lib/llvm-16/bin/lli # used for testing
 ```
 
-Note on macOS: `llvmenv` will install LLVM in `$HOME/Library/Application\ Support` by default and it seems to be an issue when used with `llvm-sys`.
-To fix this you can use a custom version of `llvmenv` that will let you choose the installation directory through environment variables. See [this PR](https://github.com/llvmenv/llvmenv/pull/127) for more details.
+##### On macos:
+
+While the oficial brew repo doesn't have LLVM 16 right now, you can use this custom tap:
+
+```
+brew install edg-l/tap/llvm@16
+```
 
 Example of `.zshenv` file:
 
 ```bash
-## LLVM
-export LLVMENV_RUST_BINDING="1"
-
-# This line will automatically export a `LLVM_SYS_XXX_PREFIX` environment variable.
-# This will allow `llvm-sys` to find the LLVM installation.
-source <(llvmenv zsh)
-
-### LLVM ENV
-export LLVMENV_CONFIG_DIR="$HOME/llvmenv/config"
-export LLVMENV_CACHE_DIR="$HOME/llvmenv/cache"
-export LLVMENV_DATA_DIR="$HOME/llvmenv/data"
+export LLVM_SYS_150_PREFIX=$(/opt/homebrew/bin/brew --prefix llvm@16)
+export LLI_PATH=$(/opt/homebrew/bin/brew --prefix llvm@16)/bin/lli # used for testing
 ```
 
 ### Installation
