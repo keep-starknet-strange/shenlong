@@ -33,3 +33,7 @@ target/
 
 test.ll
 print.ll
+
+# fuzzing
+hfuzz_target/
+hfuzz_workspace/
