@@ -58,7 +58,6 @@
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
-<a href="#61" id="61">61</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::program::LibfuncDeclaration;
 <span class="kw">use </span>inkwell::types::BasicType;
 
@@ -87,23 +86,22 @@
         );
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
         <span class="comment">// The maximum value of and addition is 2 * (prime - 1) which is 253 bits.
-        </span><span class="kw">let </span>bigger_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">253</span>);
+        </span><span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">512</span>);
         <span class="comment">// Extend left hand side.
         // We just defined the function so it shouldn&#39;t panic.
         </span><span class="kw">let </span>lhs = <span class="self">self</span>.builder.build_int_s_extend(
             func.get_first_param().unwrap().into_int_value(),
-            bigger_felt,
+            double_felt,
             <span class="string">&quot;extended_a&quot;</span>,
         );
         <span class="comment">// Extend right hand side.
         // We just defined the function so it shouldn&#39;t panic.
         </span><span class="kw">let </span>rhs =
-            <span class="self">self</span>.builder.build_int_s_extend(func.get_last_param().unwrap().into_int_value(), bigger_felt, <span class="string">&quot;extended_b&quot;</span>);
+            <span class="self">self</span>.builder.build_int_s_extend(func.get_last_param().unwrap().into_int_value(), double_felt, <span class="string">&quot;extended_b&quot;</span>);
         <span class="comment">// Compute a + b.
         </span><span class="kw">let </span>add = <span class="self">self</span>.builder.build_int_add(lhs, rhs, <span class="string">&quot;res&quot;</span>);
         <span class="comment">// Extend it to 503 bits for the modulo operation.
-        </span><span class="kw">let </span>arg = <span class="self">self</span>.builder.build_int_s_extend(add, <span class="self">self</span>.context.custom_width_int_type(<span class="number">503</span>), <span class="string">&quot;arg&quot;</span>);
-        <span class="comment">// Panics if the function doesn&#39;t have enough arguments but it shouldn&#39;t happen since we just
+        // Panics if the function doesn&#39;t have enough arguments but it shouldn&#39;t happen since we just
         // defined it above.
         // Also panics if the modulo function doesn&#39;t return a value but it shouldn&#39;t happen.
         // return a + b % prime
@@ -111,7 +109,7 @@
             </span>.builder
             .build_call(
                 <span class="self">self</span>.module.get_function(<span class="string">&quot;modulo&quot;</span>).expect(<span class="string">&quot;Modulo should have been defined before&quot;</span>),
-                <span class="kw-2">&amp;</span>[arg.into()],
+                <span class="kw-2">&amp;</span>[add.into()],
                 <span class="string">&quot;res&quot;</span>,
             )
             .try_as_basic_value()
@@ -121,4 +119,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (07c993eba 2023-02-23)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (d962ea578 2023-02-26)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

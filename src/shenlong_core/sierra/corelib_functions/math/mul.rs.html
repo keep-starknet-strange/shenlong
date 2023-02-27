@@ -83,7 +83,7 @@
         );
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
         <span class="comment">// The maximum value of a multiplication is (prime - 1)² which is 503 bits.
-        </span><span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">503</span>);
+        </span><span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">512</span>);
         <span class="comment">// Extend left hand side.
         // We just defined the function so it shouldn&#39;t panic
         </span><span class="kw">let </span>lhs = <span class="self">self</span>.builder.build_int_s_extend(
@@ -113,4 +113,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (07c993eba 2023-02-23)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (d962ea578 2023-02-26)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

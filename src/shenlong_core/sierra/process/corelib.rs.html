@@ -93,7 +93,6 @@
 
         <span class="comment">// Check that the current state is valid.
         </span><span class="self">self</span>.check_state(<span class="kw-2">&amp;</span>CompilationState::TypesProcessed)<span class="question-mark">?</span>;
-        <span class="self">self</span>.modulo();
 
         <span class="comment">// Define external printf, used in call_printf calls.
         // i32 @printf(ptr, ...);
@@ -108,8 +107,9 @@
         // Should probably be removed in the future.
         </span><span class="kw">let </span>felt_type = <span class="self">self</span>.get_type_from_name(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
         <span class="self">self</span>.printf_for_type(felt_type.into(), PRINT_FELT_FUNC);
-        <span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">503</span>);
+        <span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">512</span>);
         <span class="self">self</span>.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC);
+        <span class="self">self</span>.modulo();
 
         <span class="comment">// Iterate over the libfunc declarations in the Sierra program.
         </span><span class="kw">for </span>libfunc_declaration <span class="kw">in </span><span class="self">self</span>.program.libfunc_declarations.iter() {
@@ -143,4 +143,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (07c993eba 2023-02-23)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="shenlong_core" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (d962ea578 2023-02-26)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
