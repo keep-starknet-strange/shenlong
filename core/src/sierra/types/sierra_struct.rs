@@ -17,9 +17,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let mut args_ids = vec![];
         for generic_arg in type_declaration.long_id.generic_args.iter() {
             match generic_arg {
-                GenericArg::Type(ConcreteTypeId { id, debug_name }) => {
-                    dbg!(&id);
-                    dbg!(&debug_name);
+                GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
                     args.push(
                         self.types
                             .get(&id.to_string())
@@ -56,7 +54,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
 
             for arg_id in &args_ids {
-                dbg!(arg_id);
                 let debug_type = *ditypes.get(arg_id).unwrap();
 
                 struct_elements.push(debug_type);
