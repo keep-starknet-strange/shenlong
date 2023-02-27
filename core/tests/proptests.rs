@@ -37,7 +37,7 @@ fn simple_addition() {
 
     Compiler::compile_from_code(&source, &file, None).unwrap();
 
-    let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to lli from llvm 15");
+    let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to the `lli` tool from llvm 16");
 
     let cmd = Command::new(lli_path).arg(file).stdout(Stdio::piped()).spawn().unwrap();
 
@@ -49,18 +49,10 @@ fn simple_addition() {
     assert_eq!(output, "000000000000000000000000000000000000000000000000FFFFFFFFFFFFFFFE");
 
     let x = BigInt::from_str_radix(output, 16).unwrap();
-    dbg!(&x);
 
     let a = BigInt::from_str_radix("9223372036854775807", 10).unwrap();
     let b = BigInt::from_str_radix("9223372036854775807", 10).unwrap();
     let c = &a + b;
 
-    dbg!(&a);
-    dbg!(&c);
-
     assert_eq!(x, c);
-
-    dbg!(output);
 }
-
-// /opt/homebrew/opt/llvm@16/bin/lli
