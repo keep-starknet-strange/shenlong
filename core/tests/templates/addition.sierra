@@ -14,4 +14,4 @@ store_temp<felt>([2]) -> ([2]);
 rename<felt>([2]) -> ([3]);
 return([3]);
 
-add::add::add@0() -> (felt);
+add::add::main@0() -> (felt);
