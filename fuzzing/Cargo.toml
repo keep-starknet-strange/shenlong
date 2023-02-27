@@ -1,0 +1,23 @@
+[package]
+name = "fuzzing"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = ["."]
+
+[dependencies]
+honggfuzz = "0.5"
+num-bigint = "0.4"
+cairo-lang-sierra = { git = "https://github.com/starkware-libs/cairo", branch = "main" }
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
+    "llvm15-0",
+] }
+num-traits = "0.2.15"
+serde = { version = "1.0.152", features = ["derive"] }
+tinytemplate = "1.2.1"
+tempdir = "0.3.7"
+
+[dependencies.shenlong-core]
+path = "../core"
