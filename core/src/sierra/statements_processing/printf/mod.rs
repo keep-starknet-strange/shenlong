@@ -24,7 +24,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let value = func.get_first_param().expect("Function should have exactly 1 param").into_int_value();
         // We round up the number's bit size because we're printing the number by chunks of 32 bits.
         let rounded_type = self.context.custom_width_int_type(round_up(value.get_type().get_bit_width()));
-        let value = self.builder.build_int_s_extend(value, rounded_type, "rounded_size_val");
+        let value = self.builder.build_int_z_extend(value, rounded_type, "rounded_size_val");
         let mut bit_width = value.get_type().get_bit_width();
 
         while bit_width > 0 {
