@@ -2,6 +2,7 @@ use std::process::{Command, Stdio};
 
 use num_bigint::BigInt;
 use num_traits::Num;
+use pretty_assertions::assert_eq;
 use proptest::prelude::*;
 use serde::Serialize;
 use shenlong_core::sierra::llvm_compiler::Compiler;
@@ -22,6 +23,10 @@ macro_rules! test_template_file {
 struct BinaryContext<'a> {
     lhs: &'a str,
     rhs: &'a str,
+}
+
+fn get_prime() -> BigInt {
+    BigInt::from_str_radix("3618502788666131213697322783095070105623107215331596699973092056135872020481", 10).unwrap()
 }
 
 #[test]
@@ -47,23 +52,93 @@ fn simple_addition() {
 
     let x = BigInt::from_str_radix(output, 16).unwrap();
 
+    let prime = get_prime();
+
     let a = BigInt::from_str_radix("9223372036854775807", 10).unwrap();
     let b = BigInt::from_str_radix("9223372036854775807", 10).unwrap();
-    let c = &a + b;
+    let c = a + b;
+    let expected = c % prime;
 
-    assert_eq!(x, c);
+    assert_eq!(x, expected);
+}
+
+#[test]
+fn addition_overflow() {
+    let ctx =
+        BinaryContext { lhs: "3618502788666131213697322783095070105623107215331596699973092056135872020480", rhs: "2" };
+    let source = test_template_file!("addition.sierra", ctx);
+
+    let tmp = tempdir::TempDir::new("test_simple_addition").unwrap();
+    let file = tmp.into_path().join("output.ll");
+
+    Compiler::compile_from_code(&source, &file, None).unwrap();
+
+    let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to the `lli` tool from llvm 16");
+
+    let cmd = Command::new(lli_path).arg(file).stdout(Stdio::piped()).spawn().unwrap();
+
+    let output = cmd.wait_with_output().unwrap();
+    let output = std::str::from_utf8(&output.stdout).unwrap().trim();
+
+    assert!(output.starts_with("Return value: "));
+    let output = &output["Return value: ".len()..];
+    assert_eq!(output, "0000000000000000000000000000000000000000000000000000000000000001");
+
+    let x = BigInt::from_str_radix(output, 16).unwrap();
+
+    let prime = get_prime();
+
+    let a = BigInt::from_str_radix("3618502788666131213697322783095070105623107215331596699973092056135872020480", 10)
+        .unwrap();
+    let b = BigInt::from_str_radix("2", 10).unwrap();
+    let c = a + b;
+    let expected = c % prime;
+
+    assert_eq!(x, expected);
+}
+
+#[test]
+fn substraction_negative_result() {
+    let ctx = BinaryContext { lhs: "2", rhs: "4" };
+    let source = test_template_file!("substraction.sierra", ctx);
+
+    let tmp = tempdir::TempDir::new("test_simple_addition").unwrap();
+    let file = tmp.into_path().join("output.ll");
+
+    Compiler::compile_from_code(&source, &file, None).unwrap();
+
+    let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to the `lli` tool from llvm 16");
+
+    let cmd = Command::new(lli_path).arg(file).stdout(Stdio::piped()).spawn().unwrap();
+
+    let output = cmd.wait_with_output().unwrap();
+    let output = std::str::from_utf8(&output.stdout).unwrap().trim();
+
+    assert!(output.starts_with("Return value: "));
+    let output = &output["Return value: ".len()..];
+    assert_eq!(output, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE");
+
+    let x = BigInt::from_str_radix(output, 16).unwrap();
+
+    let prime = get_prime();
+
+    let a = BigInt::from_str_radix("2", 10).unwrap();
+    let b = BigInt::from_str_radix("4", 10).unwrap();
+    let expected = a - b;
+    let expected = expected % prime;
+
+    assert_eq!(x, expected);
 }
 
 proptest! {
-
     #[test]
-    fn proptest_addition_positive(a: u64, b: u64) {
+    fn proptest_add(a: i64, b: i64) {
         let lhs = a.to_string();
         let rhs = b.to_string();
         let ctx = BinaryContext { lhs: &lhs, rhs: &rhs};
         let source = test_template_file!("addition.sierra", ctx);
 
-        let tmp = tempdir::TempDir::new("test_simple_addition").unwrap();
+        let tmp = tempdir::TempDir::new("shenlog_test_add").unwrap();
         let file = tmp.into_path().join("output.ll");
 
         Compiler::compile_from_code(&source, &file, None).unwrap();
@@ -83,6 +158,68 @@ proptest! {
         let a = BigInt::from_str_radix(&lhs, 10).unwrap();
         let b = BigInt::from_str_radix(&rhs, 10).unwrap();
         let c = a + b;
+
+        prop_assert_eq!(x, c);
+    }
+
+    #[test]
+    fn proptest_sub(a: i64, b: i64) {
+        let lhs = a.to_string();
+        let rhs = b.to_string();
+        let ctx = BinaryContext { lhs: &lhs, rhs: &rhs};
+        let source = test_template_file!("substraction.sierra", ctx);
+
+        let tmp = tempdir::TempDir::new("shenlog_test_sub").unwrap();
+        let file = tmp.into_path().join("output.ll");
+
+        Compiler::compile_from_code(&source, &file, None).unwrap();
+
+        let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to the `lli` tool from llvm 16");
+
+        let cmd = Command::new(lli_path).arg(file).stdout(Stdio::piped()).spawn().unwrap();
+
+        let output = cmd.wait_with_output().unwrap();
+        let output = std::str::from_utf8(&output.stdout).unwrap().trim();
+
+        prop_assert!(output.starts_with("Return value: "));
+        let output = &output["Return value: ".len()..];
+
+        let x = BigInt::from_str_radix(output, 16).unwrap();
+
+        let a = BigInt::from_str_radix(&lhs, 10).unwrap();
+        let b = BigInt::from_str_radix(&rhs, 10).unwrap();
+        let c = a - b;
+
+        prop_assert_eq!(x, c);
+    }
+
+    #[test]
+    fn proptest_mul(a: i64, b: i64) {
+        let lhs = a.to_string();
+        let rhs = b.to_string();
+        let ctx = BinaryContext { lhs: &lhs, rhs: &rhs};
+        let source = test_template_file!("mul.sierra", ctx);
+
+        let tmp = tempdir::TempDir::new("shenlog_test_mul").unwrap();
+        let file = tmp.into_path().join("output.ll");
+
+        Compiler::compile_from_code(&source, &file, None).unwrap();
+
+        let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to the `lli` tool from llvm 16");
+
+        let cmd = Command::new(lli_path).arg(file).stdout(Stdio::piped()).spawn().unwrap();
+
+        let output = cmd.wait_with_output().unwrap();
+        let output = std::str::from_utf8(&output.stdout).unwrap().trim();
+
+        prop_assert!(output.starts_with("Return value: "));
+        let output = &output["Return value: ".len()..];
+
+        let x = BigInt::from_str_radix(output, 16).unwrap();
+
+        let a = BigInt::from_str_radix(&lhs, 10).unwrap();
+        let b = BigInt::from_str_radix(&rhs, 10).unwrap();
+        let c = a * b;
 
         prop_assert_eq!(x, c);
     }
