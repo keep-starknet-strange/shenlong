@@ -6,7 +6,7 @@ declare i32 @printf(ptr, ...)
 
 define void @print_felt(i253 %0) {
 entry:
-  %rounded_size_val = sext i253 %0 to i256
+  %rounded_size_val = zext i253 %0 to i256
   %shifted = lshr i256 %rounded_size_val, 224
   %print_value_trunc = trunc i256 %shifted to i32
   %format = alloca [5 x i8], align 1
