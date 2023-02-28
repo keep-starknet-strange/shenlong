@@ -11,7 +11,6 @@ macro_rules! test_template_file {
     ($template_file:literal, $ctx:ident) => {{
         let template =
             std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../core/tests/templates/", $template_file));
-        println!("{:}", template.display());
         let mut tt = TinyTemplate::new();
         let template = std::fs::read_to_string(template).unwrap();
         tt.add_template("test", &template).unwrap();
@@ -29,8 +28,13 @@ fn main() {
     loop {
         fuzz!(|data: (&[u8], &[u8])| {
             use inkwell::targets::{InitializationConfig, Target};
-            let lhs = BigInt::from_bytes_be(num_bigint::Sign::NoSign, data.0);
-            let rhs = BigInt::from_bytes_be(num_bigint::Sign::NoSign, data.1);
+            let prime = BigInt::from_str_radix(
+                "3618502788666131213697322783095070105623107215331596699973092056135872020481",
+                10,
+            )
+            .unwrap();
+            let lhs = BigInt::from_bytes_be(num_bigint::Sign::Plus, data.0) % &prime;
+            let rhs = BigInt::from_bytes_be(num_bigint::Sign::Plus, data.1) % &prime;
 
             Target::initialize_native(&InitializationConfig::default()).expect("Failed to initialize native target");
 
@@ -52,12 +56,10 @@ fn main() {
 
             assert!(output.starts_with("Return value: "));
             let output = &output["Return value: ".len()..];
-
             let x = BigInt::from_str_radix(output, 16).unwrap();
 
-            let expected = lhs + rhs;
-
-            assert!(x == expected);
+            let expected = (lhs.clone() + rhs.clone()) % prime;
+            assert_eq!(x, expected);
         });
     }
 }
