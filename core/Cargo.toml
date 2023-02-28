@@ -24,3 +24,4 @@ tinytemplate = "1.2.1"
 serde = { version = "1.0.152", features = ["derive"] }
 num-bigint = "0.4.3"
 num-traits = "0.2.15"
+regex = "1.7.1"

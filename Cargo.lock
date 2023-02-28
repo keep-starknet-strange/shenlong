@@ -2013,6 +2013,7 @@ dependencies = [
  "num-traits",
  "pretty_assertions",
  "proptest",
+ "regex",
  "serde",
  "tempdir",
  "test-case",
