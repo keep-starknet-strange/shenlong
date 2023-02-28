@@ -287,11 +287,7 @@ else:                                             ; preds = %entry
 
 dest:                                             ; preds = %then
   %5 = call i253 @"rename<felt>"(i253 %4), !dbg !53
-  %ret_struct_ptr = alloca { i253 }, align 8, !dbg !53
-  %field_0_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !53
-  store i253 %5, ptr %field_0_ptr, align 4, !dbg !53
-  %return_struct_value = load { i253 }, ptr %ret_struct_ptr, align 4, !dbg !53
-  ret { i253 } %return_struct_value, !dbg !53
+  ret i253 %5, !dbg !53
 
 dest1:                                            ; preds = %else
   %6 = call { i253, i253 } @"dup<felt>"(i253 %1), !dbg !53
@@ -313,11 +309,7 @@ dest1:                                            ; preds = %else
 
 dest3:                                            ; preds = %dest1
   %15 = call i253 @"rename<felt>"(i253 %14), !dbg !53
-  %ret_struct_ptr4 = alloca { i253 }, align 8, !dbg !53
-  %field_0_ptr5 = getelementptr inbounds { i253 }, ptr %ret_struct_ptr4, i32 0, i32 0, !dbg !53
-  store i253 %15, ptr %field_0_ptr5, align 4, !dbg !53
-  %return_struct_value6 = load { i253 }, ptr %ret_struct_ptr4, align 4, !dbg !53
-  ret { i253 } %return_struct_value6, !dbg !53
+  ret i253 %15, !dbg !53
 }
 
 define {} @"fib_bench::fib_bench::fib_mid"(i253 %0) !dbg !54 {
@@ -341,11 +333,7 @@ else:                                             ; preds = %entry
 dest:                                             ; preds = %then
   %2 = call {} @"struct_construct<Unit>"(), !dbg !57
   %3 = call {} @"store_temp<Unit>"({} %2), !dbg !57
-  %ret_struct_ptr = alloca { {} }, align 8, !dbg !57
-  %field_0_ptr = getelementptr inbounds { {} }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !57
-  store {} %3, ptr %field_0_ptr, align 1, !dbg !57
-  %return_struct_value = load { {} }, ptr %ret_struct_ptr, align 1, !dbg !57
-  ret { {} } %return_struct_value, !dbg !57
+  ret {} %3, !dbg !57
 
 dest1:                                            ; preds = %else
   %4 = call i253 @"felt_const<0>"(), !dbg !57
@@ -361,11 +349,7 @@ dest1:                                            ; preds = %else
   %14 = call {} @"fib_bench::fib_bench::fib_mid"(i253 %13), !dbg !57
   %15 = call {} @"struct_construct<Unit>"(), !dbg !57
   %16 = call {} @"store_temp<Unit>"({} %15), !dbg !57
-  %ret_struct_ptr2 = alloca { {} }, align 8, !dbg !57
-  %field_0_ptr3 = getelementptr inbounds { {} }, ptr %ret_struct_ptr2, i32 0, i32 0, !dbg !57
-  store {} %16, ptr %field_0_ptr3, align 1, !dbg !57
-  %return_struct_value4 = load { {} }, ptr %ret_struct_ptr2, align 1, !dbg !57
-  ret { {} } %return_struct_value4, !dbg !57
+  ret {} %16, !dbg !57
 }
 
 define i32 @main(i253 %0) !dbg !58 {

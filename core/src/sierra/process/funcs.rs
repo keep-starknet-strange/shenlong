@@ -3,7 +3,7 @@ use cairo_lang_sierra::program::Param;
 use inkwell::types::{BasicMetadataTypeEnum, BasicType};
 use tracing::debug;
 
-use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
+use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 use crate::sierra::process::corelib::PRINT_RETURN;
 
@@ -26,6 +26,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.current_line_estimate += 1;
 
             let func_name = func_declaration.id.debug_name.as_ref().unwrap().as_str();
+            debug!("processing function declaration: {}", func_name);
 
             // Clear the variables map in case a previous function has been processed.
             self.variables.clear();
@@ -88,9 +89,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .into_iter()
                 .map(|arg_type| arg_type.as_basic_type_enum().into())
                 .collect::<Vec<BasicMetadataTypeEnum>>();
+
             // Declare the function type (if it's the main function strip everything so it's recognized like the
             // main function)
-            let func_name = func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
             let func = if let Some(ret_ty) = return_info && func_name.ends_with("::main") {
                 let ret_ty = ret_ty.0;
                 // Generate the print function for the return value type.
@@ -125,7 +126,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.module.add_function("main", self.context.i32_type().fn_type(args_metadata, false), None)
             } else {
                 self.module.add_function(
-                    func_name.as_str(),
+                    func_name,
                     match return_info {
                         Some(ret) => ret.0.fn_type(args_metadata, false),
                         None => self.context.void_type().fn_type(args_metadata, false),
@@ -136,7 +137,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-            self.create_function_debug(&func_name, &func, return_info.map(|x| x.1), &args_debug_types);
+            self.create_function_debug(func_name, &func, return_info.map(|x| x.1), &args_debug_types);
 
             // Loop through the arguments of the function. The variable id counter always starts from zero for a
             // function.

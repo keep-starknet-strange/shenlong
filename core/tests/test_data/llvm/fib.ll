@@ -212,11 +212,7 @@ else:                                             ; preds = %entry
 
 dest:                                             ; preds = %then
   %5 = call i253 @"rename<felt>"(i253 %4), !dbg !42
-  %ret_struct_ptr = alloca { i253 }, align 8, !dbg !42
-  %field_0_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !42
-  store i253 %5, ptr %field_0_ptr, align 4, !dbg !42
-  %return_struct_value = load { i253 }, ptr %ret_struct_ptr, align 4, !dbg !42
-  ret { i253 } %return_struct_value, !dbg !42
+  ret i253 %5, !dbg !42
 
 dest1:                                            ; preds = %else
   %6 = call { i253, i253 } @"dup<felt>"(i253 %1), !dbg !42
@@ -240,11 +236,7 @@ dest1:                                            ; preds = %else
 
 dest3:                                            ; preds = %dest1
   %17 = call i253 @"rename<felt>"(i253 %16), !dbg !42
-  %ret_struct_ptr4 = alloca { i253 }, align 8, !dbg !42
-  %field_0_ptr5 = getelementptr inbounds { i253 }, ptr %ret_struct_ptr4, i32 0, i32 0, !dbg !42
-  store i253 %17, ptr %field_0_ptr5, align 4, !dbg !42
-  %return_struct_value6 = load { i253 }, ptr %ret_struct_ptr4, align 4, !dbg !42
-  ret { i253 } %return_struct_value6, !dbg !42
+  ret i253 %17, !dbg !42
 }
 
 !llvm.module.flags = !{!0}
