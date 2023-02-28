@@ -180,11 +180,7 @@ entry:
   %1 = call i253 @"felt_const<4>"(), !dbg !33
   %2 = call { i253, i253 } @"struct_construct<Tuple<felt, felt>>"(i253 %0, i253 %1), !dbg !33
   %3 = call { i253, i253 } @"store_temp<Tuple<felt, felt>>"({ i253, i253 } %2), !dbg !33
-  %ret_struct_ptr = alloca { { i253, i253 } }, align 8, !dbg !33
-  %field_0_ptr = getelementptr inbounds { { i253, i253 } }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !33
-  store { i253, i253 } %3, ptr %field_0_ptr, align 4, !dbg !33
-  %return_struct_value = load { { i253, i253 } }, ptr %ret_struct_ptr, align 4, !dbg !33
-  ret { { i253, i253 } } %return_struct_value, !dbg !33
+  ret { i253, i253 } %3, !dbg !33
 }
 
 !llvm.module.flags = !{!0}

@@ -104,8 +104,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug_struct_type.as_type()
     }
 
-    // Arbitrarely decided generated struct return types have id = the function id + 100_000.
-
     /// Returns the automatically generated return struct type name.
     ///
     /// Arbitrarely decided generated struct return types have id = the function id + 100_000.

@@ -120,7 +120,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     }
                 }
                 GenStatement::Return(ret) => {
-                    debug!("processing statement: return");
+                    let func_name = self
+                        .module
+                        .get_last_function()
+                        .expect("Current function should have been declared")
+                        .get_name()
+                        .to_str()
+                        .unwrap()
+                        .to_string();
+
+                    debug!(func_name, "processing statement: return");
                     // If there is actually something to return.
                     if !ret.is_empty() {
                         let mut types = vec![];
@@ -136,36 +145,33 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         // Ex:
                         // fn foo() -> (felt, felt, felt)
                         // Would be translated to
-                        // define { i252, i252, i252 } @foo()
-                        let return_struct_type = self.context.struct_type(&types, false);
-                        // Allocate a pointer for the return struct.
-                        let return_struct_ptr = self.builder.build_alloca(return_struct_type, "ret_struct_ptr");
-                        // Save each variable to return in the struct.
-                        for (index, value) in values.iter().enumerate() {
-                            let tuple_ptr = self
-                                .builder
-                                .build_struct_gep(
-                                    return_struct_type,
-                                    return_struct_ptr,
-                                    index.try_into().unwrap(),
-                                    format!("field_{index}_ptr").as_str(),
-                                )
-                                .expect("Pointer should be valid");
-                            self.builder.build_store(tuple_ptr, **value);
-                        }
-                        // Load the values to return in a variable.
-                        let mut return_value =
-                            self.builder.build_load(return_struct_type, return_struct_ptr, "return_struct_value");
+                        // define { i253, i253, i253 } @foo()
+                        //
+                        // but fn foo() -> felt
+                        // define i253 @foo()
+
                         // If the function is the main function.
-                        if self
-                            .module
-                            .get_last_function()
-                            .expect("Current function should have been declared")
-                            .get_name()
-                            .to_str()
-                            .unwrap()
-                            == "main"
-                        {
+                        let return_value = if func_name == "main" {
+                            let return_struct_type = self.context.struct_type(&types, false);
+                            // Allocate a pointer for the return struct.
+                            let return_struct_ptr = self.builder.build_alloca(return_struct_type, "ret_struct_ptr");
+                            // Save each variable to return in the struct.
+                            for (index, value) in values.iter().enumerate() {
+                                let tuple_ptr = self
+                                    .builder
+                                    .build_struct_gep(
+                                        return_struct_type,
+                                        return_struct_ptr,
+                                        index.try_into().unwrap(),
+                                        format!("field_{index}_ptr").as_str(),
+                                    )
+                                    .expect("Pointer should be valid");
+                                self.builder.build_store(tuple_ptr, **value);
+                            }
+                            // Load the values to return in a variable.
+                            let mut return_value =
+                                self.builder.build_load(return_struct_type, return_struct_ptr, "return_struct_value");
+
                             // Get the first field of the return type (we'll check that it's not the unit type)
                             let field_ret_type =
                                 return_value.into_struct_value().get_type().get_field_type_at_index(0).unwrap();
@@ -221,7 +227,33 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 }
                                 return_value = self.context.i32_type().const_int(0, false).into();
                             }
+                            return_value
                         }
+                        // if its not main, return the value directly if its only 1, otherwise create a struct.
+                        else if values.len() == 1 {
+                            *values[0]
+                        } else {
+                            let return_struct_type = self.context.struct_type(&types, false);
+                            // Allocate a pointer for the return struct.
+                            let return_struct_ptr = self.builder.build_alloca(return_struct_type, "ret_struct_ptr");
+                            // Save each variable to return in the struct.
+                            for (index, value) in values.iter().enumerate() {
+                                let tuple_ptr = self
+                                    .builder
+                                    .build_struct_gep(
+                                        return_struct_type,
+                                        return_struct_ptr,
+                                        index.try_into().unwrap(),
+                                        format!("field_{index}_ptr").as_str(),
+                                    )
+                                    .expect("Pointer should be valid");
+                                self.builder.build_store(tuple_ptr, **value);
+                            }
+                            // Load the values to return in a variable.
+                            let return_value =
+                                self.builder.build_load(return_struct_type, return_struct_ptr, "return_struct_value");
+                            return_value
+                        };
                         // Return the specified value.
                         self.builder.build_return(Some(&return_value));
                     }
