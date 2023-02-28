@@ -33,8 +33,15 @@ fn main() {
                 10,
             )
             .unwrap();
-            let lhs = BigInt::from_bytes_be(num_bigint::Sign::Plus, data.0) % &prime;
-            let rhs = BigInt::from_bytes_be(num_bigint::Sign::Plus, data.1) % &prime;
+
+            let lhs = BigInt::from_bytes_be(
+                if data.0.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+                data.0,
+            ) % &prime;
+            let rhs = BigInt::from_bytes_be(
+                if data.0.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+                data.1,
+            ) % &prime;
 
             Target::initialize_native(&InitializationConfig::default()).expect("Failed to initialize native target");
 
