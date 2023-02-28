@@ -1,4 +1,5 @@
 use std::process::{Command, Stdio};
+use std::str::FromStr;
 
 use honggfuzz::fuzz;
 use num_bigint::BigInt;
@@ -39,10 +40,11 @@ fn main() {
                 data.0,
             ) % &prime;
             let rhs = BigInt::from_bytes_be(
-                if data.0.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+                if data.1.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
                 data.1,
             ) % &prime;
-
+            // let lhs = BigInt::from(-1);
+            // let rhs = BigInt::from(0);
             Target::initialize_native(&InitializationConfig::default()).expect("Failed to initialize native target");
 
             let ctx = BinaryContext { lhs: lhs.to_string(), rhs: rhs.to_string() };
@@ -65,7 +67,10 @@ fn main() {
             let output = &output["Return value: ".len()..];
             let x = BigInt::from_str_radix(output, 16).unwrap();
 
-            let expected = (lhs.clone() + rhs.clone()) % prime;
+            let mut expected = (&lhs + &rhs) % prime;
+            let zero = BigInt::from(0);
+            let two = BigInt::from(2).pow(x.bits() as u32);
+            expected += if expected < zero { two } else { zero };
             assert_eq!(x, expected);
         });
     }
