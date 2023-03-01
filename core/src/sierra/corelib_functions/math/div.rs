@@ -5,6 +5,7 @@ use inkwell::IntPredicate;
 use super::DEFAULT_PRIME;
 use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
+use crate::sierra::process::funcs::PRINT_DOUBLE_FELT_FUNC;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Implementation of the LLVM IR conversion of a felt division.
@@ -75,6 +76,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let r_val = self.builder.build_load(double_felt, r, "r").into_int_value();
         let s_val = self.builder.build_load(double_felt, s, "s").into_int_value();
         let q = self.builder.build_int_signed_div(r_val, s_val, "q");
+        self.call_print(PRINT_DOUBLE_FELT_FUNC, q.into());
         let q_mul_s = self.builder.build_int_signed_rem(
             self.builder.build_int_mul(q, s_val, "q_mul_s"),
             prime_val,
