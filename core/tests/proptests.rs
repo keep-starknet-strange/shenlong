@@ -87,23 +87,48 @@ fn substraction_negative_result() {
 
 proptest! {
     #[test]
-    fn proptest_add(a: i64, b: i64) {
-        let lhs = a.to_string();
-        let rhs = b.to_string();
-        test_binary_op("addition.sierra", &lhs, &rhs, BigInt::add)?;
+    fn proptest_add(a: Vec<u8>, b: Vec<u8>) {
+        let prime = get_prime();
+
+        let lhs = BigInt::from_bytes_be(
+            if a.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+            &a,
+        ) % &prime;
+        let rhs = BigInt::from_bytes_be(
+            if b.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+            &b,
+        ) % &prime;
+
+        test_binary_op("addition.sierra", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::add)?;
     }
 
     #[test]
-    fn proptest_sub(a: i64, b: i64) {
-        let lhs = a.to_string();
-        let rhs = b.to_string();
-        test_binary_op("substraction.sierra", &lhs, &rhs, BigInt::sub)?;
+    fn proptest_sub(a: Vec<u8>, b: Vec<u8>) {
+        let prime = get_prime();
+
+        let lhs = BigInt::from_bytes_be(
+            if a.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+            &a,
+        ) % &prime;
+        let rhs = BigInt::from_bytes_be(
+            if b.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+            &b,
+        ) % &prime;
+        test_binary_op("substraction.sierra", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::sub)?;
     }
 
     #[test]
-    fn proptest_mul(a: i64, b: i64) {
-        let lhs = a.to_string();
-        let rhs = b.to_string();
-        test_binary_op("mul.sierra", &lhs, &rhs, BigInt::mul)?;
+    fn proptest_mul(a: Vec<u8>, b: Vec<u8>) {
+        let prime = get_prime();
+
+        let lhs = BigInt::from_bytes_be(
+            if a.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+            &a,
+        ) % &prime;
+        let rhs = BigInt::from_bytes_be(
+            if b.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+            &b,
+        ) % &prime;
+        test_binary_op("mul.sierra", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::mul)?;
     }
 }
