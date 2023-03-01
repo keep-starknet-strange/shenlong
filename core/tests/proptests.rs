@@ -2,7 +2,7 @@ use std::ops::*;
 use std::process::{Command, Stdio};
 
 use num_bigint::BigInt;
-use num_traits::{Num, Zero};
+use num_traits::Num;
 use proptest::prelude::*;
 use serde::Serialize;
 use shenlong_core::sierra::llvm_compiler::Compiler;
