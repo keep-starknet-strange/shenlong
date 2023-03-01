@@ -39,7 +39,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // declared at the beginning of the sierra file.
                 let ty = *self.types_by_id.get(type_id).expect("Function argument type should have been declared");
                 args.push(ty);
-                let debug_type = self.debug_types_by_id.get(type_id).unwrap();
+                let debug_type = self.debug.types_by_id.get(type_id).unwrap();
                 args_debug_types.push(*debug_type);
             }
 
@@ -49,7 +49,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // If the function returns a single value, return it directly.
                 if func_declaration.signature.ret_types.len() == 1 {
                     let ty = *self.types_by_id.get(&func_declaration.signature.ret_types[0].id).unwrap();
-                    let debug_ty = *self.debug_types_by_id.get(&func_declaration.signature.ret_types[0].id).unwrap();
+                    let debug_ty = *self.debug.types_by_id.get(&func_declaration.signature.ret_types[0].id).unwrap();
                     Some((ty, debug_ty))
                 } else {
                     // In case the function returns multiple values collect all the types into a struct.
@@ -63,15 +63,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                 .get(&ret_type.id)
                                 .expect("Type should have been declared before function"),
                         );
-                        ret_debug_types.push(*self.debug_types_by_id.get(&ret_type.id).unwrap());
+                        ret_debug_types.push(*self.debug.types_by_id.get(&ret_type.id).unwrap());
                     }
                     let generated_return_struct_type = self.context.struct_type(&ret_types, false);
                     // Arbitrarely decided generated struct return types have id = the function id + 100_000.
                     // Arbitrarely decided generated struct return types have name = "return_type_{}" where {} is the
                     // function name.
-                    let debug_type = self.create_debug_type_struct(
-                        Self::get_debug_function_return_struct_type_id(func_declaration.id.id),
-                        &Self::get_debug_function_return_struct_type_name(func_name),
+                    let debug_type = self.debug.create_debug_type_struct(
+                        self.debug.get_debug_function_return_struct_type_id(func_declaration.id.id),
+                        &self.debug.get_debug_function_return_struct_type_name(func_name),
                         &generated_return_struct_type,
                         &ret_debug_types,
                     );
@@ -135,7 +135,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-            self.create_function_debug(func_name, &func, return_info.map(|x| x.1), &args_debug_types);
+            let scope = self.debug.create_function_debug(func_name, &func, return_info.map(|x| x.1), &args_debug_types);
 
             // Loop through the arguments of the function. The variable id counter always starts from zero for a
             // function.
@@ -146,10 +146,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     func.get_nth_param(var_id as u32).expect("Function should have enough parameters"),
                 );
             }
+
             // process statements from the line stated in the function definition until the return instruction.
             // ex: fib_caller::fib_caller::main@21() -> (Unit); the function main starts at the statement 21.
-            self.process_statements_from(func_declaration.entry_point.0)?;
-            self.current_line_estimate += 1;
+            self.process_statements_from(func_declaration.entry_point.0, scope)?;
+            self.debug.next_line();
         }
         // Move to the next state.
         self.move_to(CompilationState::FunctionsProcessed)

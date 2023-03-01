@@ -23,7 +23,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .expect("Type should have been defined before struct")
                             .as_basic_type_enum(),
                     );
-                    debug_args.push(*self.debug_types_by_id.get(id).unwrap());
+                    debug_args.push(*self.debug.types_by_id.get(id).unwrap());
                 }
                 // Ignore the user type as it is not a struct field.
                 GenericArg::UserType(_) => continue,
@@ -39,6 +39,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.types_by_id.insert(type_declaration.id.id, struct_type.as_basic_type_enum());
         self.types_by_name.insert(debug_name.to_string(), struct_type.as_basic_type_enum());
 
-        self.create_debug_type_struct(type_declaration.id.id, debug_name, &struct_type, &debug_args);
+        self.debug.create_debug_type_struct(type_declaration.id.id, debug_name, &struct_type, &debug_args);
     }
 }

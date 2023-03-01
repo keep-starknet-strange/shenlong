@@ -32,7 +32,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Panics if the type has not been declared.
         let func_and_arg_type = self.types_by_id.get(&type_id).unwrap().as_basic_type_enum();
-        let debug_func_and_arg_type = *self.debug_types_by_id.get(&type_id).unwrap();
+        let debug_func_and_arg_type = *self.debug.types_by_id.get(&type_id).unwrap();
 
         let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
 
@@ -43,7 +43,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
 
-        self.create_function_debug(func_name, &func, Some(debug_func_and_arg_type), &[debug_func_and_arg_type]);
+        self.debug.create_function_debug(func_name, &func, Some(debug_func_and_arg_type), &[debug_func_and_arg_type]);
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined into_box to have an input parameter so it shouldn't panic.

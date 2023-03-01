@@ -1,6 +1,7 @@
 use cairo_lang_sierra::ids::VarId;
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
+use inkwell::debug_info::DIScope;
 use inkwell::values::{BasicMetadataValueEnum, StructValue};
 use tracing::debug;
 
@@ -15,18 +16,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    pub fn process_statements_from(&mut self, from: usize) -> CompilerResult<()> {
+    pub fn process_statements_from(&mut self, from: usize, scope: DIScope<'ctx>) -> CompilerResult<()> {
         // Check that the current state is valid.
         for (mut statement_id, statement) in self.program.statements.iter().skip(from).enumerate() {
             // Set the statement number to the absolute statement number.
             statement_id += from;
-            let current_line_estimate = self.current_line_estimate + statement_id as u32;
+            self.debug.set_statement_line(statement_id);
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
                     // Get core lib function called by this instruction.
                     let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
-                    debug!(fn_name, current_line_estimate, "processing statement: invocation");
+                    debug!(fn_name, self.debug.current_statement_line, "processing statement: invocation");
                     // Function has only one branch and doesn't return anything.
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
                         match fn_name.as_str() {
@@ -36,7 +37,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                     GenBranchTarget::Statement(id) => id.0,
                                     _ => panic!("Jump should have genbranchinfo"),
                                 };
-                                self.jump(to);
+                                self.jump(to, scope);
                                 break;
                             }
                             // Sierra functions have no side effect so we can ignore the function if it doesn't return
@@ -48,7 +49,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     if invocation.branches.len() > 1 {
                         match fn_name.as_str() {
                             "felt_is_zero" => {
-                                self.felt_is_zero(invocation, statement_id)?;
+                                self.felt_is_zero(invocation, statement_id, scope)?;
                                 // In the felt_is_zero func we process the other statements so we have to break not to
                                 // duplicate everything.
                                 break;
@@ -129,7 +130,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         .unwrap()
                         .to_string();
 
-                    debug!(func_name, current_line_estimate, "processing statement: return");
+                    debug!(func_name, self.debug.current_statement_line, "processing statement: return");
                     // If there is actually something to return.
                     if !ret.is_empty() {
                         let mut types = vec![];

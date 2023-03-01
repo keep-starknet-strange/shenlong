@@ -11,9 +11,8 @@ use cairo_vm::vm::runners::cairo_runner::CairoRunner;
 use cairo_vm::vm::vm_core::VirtualMachine;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use inkwell::execution_engine::ExecutionEngine;
-use inkwell::module::Module;
 use inkwell::OptimizationLevel;
-use shenlong_core::sierra::llvm_compiler::{CompilationState, Compiler};
+use shenlong_core::sierra::llvm_compiler::{CompilationState, Compiler, DebugCompiler};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     benchmark_llvm(c, "core/tests/test_data/sierra/fib_bench.sierra");
@@ -24,6 +23,7 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
     let context = inkwell::context::Context::create();
 
     let module = context.create_module("root");
+    let builder = context.create_builder();
 
     let mut parent = Path::new(file_path).parent().unwrap().to_string_lossy();
     if parent.is_empty() {
@@ -48,10 +48,12 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
         "",                                           //  The SDK. On Darwin, the last component of the sysroot.  ?
     );
 
+    let debug = DebugCompiler::new(dibuilder, &builder, compile_unit, &context);
+
     let mut compiler = Compiler {
         program: &ProgramParser::new().parse(&fs::read_to_string(file_path).unwrap()).unwrap(),
         context: &context,
-        builder: &context.create_builder(),
+        builder: &builder,
         module,
         variables: HashMap::new(),
         llvm_output_path: Path::new("").to_path_buf(),
@@ -59,13 +61,9 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
         valid_state_transitions: Compiler::init_state_transitions(),
         types_by_id: HashMap::new(),
         types_by_name: HashMap::new(),
-        debug_types_by_name: HashMap::new(),
         basic_blocks: HashMap::new(),
         jump_dests: HashSet::new(),
-        dibuilder,
-        compile_unit,
-        debug_types_by_id: HashMap::new(),
-        current_line_estimate: 0,
+        debug,
     };
 
     compiler.setup_debug().unwrap();
@@ -74,15 +72,11 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
     compiler.collect_jumps();
     compiler.process_funcs().unwrap();
     let execution_engine = compiler.module.create_jit_execution_engine(OptimizationLevel::Aggressive).unwrap();
-    c.bench_with_input(
-        BenchmarkId::new("Llvm", 1),
-        &(compiler.module, execution_engine),
-        |b, (module, execution_engine)| {
-            b.iter(|| {
-                run_llvm_module(module, execution_engine);
-            });
-        },
-    );
+    c.bench_with_input(BenchmarkId::new("Llvm", 1), &(execution_engine), |b, execution_engine| {
+        b.iter(|| {
+            run_llvm_module(execution_engine);
+        });
+    });
 }
 
 fn benchmark_cairo(c: &mut Criterion, file_path: &str) {
@@ -99,9 +93,9 @@ fn benchmark_cairo(c: &mut Criterion, file_path: &str) {
     });
 }
 
-fn run_llvm_module(module: &Module, execution_engine: &ExecutionEngine) {
+fn run_llvm_module(execution_engine: &ExecutionEngine) {
     unsafe {
-        execution_engine.run_function(module.get_function("main").unwrap(), &[]);
+        execution_engine.run_function(execution_engine.get_function_value("main").unwrap(), &[]);
     }
 }
 

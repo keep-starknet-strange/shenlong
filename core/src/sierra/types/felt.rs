@@ -21,6 +21,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Save the felt type in the types map.
         self.types_by_id.insert(type_declaration.id.id, felt_type);
         self.types_by_name.insert(debug_name.to_string(), felt_type);
-        self.create_debug_type(type_declaration.id.id, debug_name, FELT_INT_WIDTH.into());
+        self.debug.create_debug_type(type_declaration.id.id, debug_name, FELT_INT_WIDTH.into());
     }
 }
