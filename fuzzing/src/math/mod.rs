@@ -38,7 +38,7 @@ pub fn operation(case: &str) {
         }(lhs.clone(), &rhs)
             % prime;
         let ctx = BinaryContext { lhs: lhs.to_string(), rhs: rhs.to_string(), op: case.to_owned() };
-        let source = test_template_file!("operation.sierra", ctx);
+        let source = test_template_file!("binary_op.sierra", ctx);
         let tmp = tempdir::TempDir::new("test_simple_operation").unwrap();
         let file = tmp.into_path().join("output.ll");
 
