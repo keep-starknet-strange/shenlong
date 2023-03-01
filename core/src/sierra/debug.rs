@@ -2,15 +2,15 @@ use inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DIScope, DISubpr
 use inkwell::types::StructType;
 use inkwell::values::FunctionValue;
 
-use super::llvm_compiler::Compiler;
+use super::llvm_compiler::DebugCompiler;
 
-impl<'a, 'ctx> Compiler<'a, 'ctx> {
+impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
     /// Create and set the current debug location.
     #[inline]
     pub fn debug_location(&self, scope: Option<DIScope<'ctx>>) {
-        let location = self.dibuilder.create_debug_location(
+        let location = self.debug_builder.create_debug_location(
             self.context,
-            self.current_line_estimate,
+            self.current_line,
             0,
             scope.unwrap_or_else(|| self.compile_unit.as_debug_info_scope()),
             None,
@@ -29,18 +29,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         return_type: Option<DIType<'ctx>>,
         parameter_types: &[DIType<'ctx>],
     ) -> DIScope<'ctx> {
-        let subroutine_type = self.dibuilder.create_subroutine_type(
+        let subroutine_type = self.debug_builder.create_subroutine_type(
             self.compile_unit.get_file(),
             return_type,
             parameter_types,
             DIFlags::PUBLIC,
         );
-        let func_scope: DISubprogram<'_> = self.dibuilder.create_function(
+        let func_scope: DISubprogram<'_> = self.debug_builder.create_function(
             self.compile_unit.as_debug_info_scope(),
             func_name,
             None,
             self.compile_unit.get_file(),
-            self.current_line_estimate, // line number
+            self.current_line, // line number
             subroutine_type,
             true,
             true,
@@ -57,13 +57,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Creates a type debug info by name.
     pub fn create_debug_type(&mut self, id: u64, name: &str, size_in_bits: u64) -> DIType<'ctx> {
         let debug_type = self
-            .dibuilder
+            .debug_builder
             .create_basic_type(name, size_in_bits, 0x00, inkwell::debug_info::DIFlags::PUBLIC)
             .unwrap()
             .as_type();
 
-        self.debug_types_by_id.insert(id, debug_type);
-        self.debug_types_by_name.insert(name.to_string(), debug_type);
+        self.types_by_id.insert(id, debug_type);
+        self.types_by_name.insert(name.to_string(), debug_type);
         debug_type
     }
 
@@ -84,11 +84,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             bits += arg.get_size_in_bits();
         }
 
-        let debug_struct_type = self.dibuilder.create_struct_type(
+        let debug_struct_type = self.debug_builder.create_struct_type(
             self.compile_unit.as_debug_info_scope(),
             name,
             self.compile_unit.get_file(),
-            self.current_line_estimate,
+            self.current_line,
             bits,
             align_bits,
             inkwell::debug_info::DIFlags::PUBLIC,
@@ -99,8 +99,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             name,
         );
 
-        self.debug_types_by_id.insert(id, debug_struct_type.as_type());
-        self.debug_types_by_name.insert(name.to_string(), debug_struct_type.as_type());
+        self.types_by_id.insert(id, debug_struct_type.as_type());
+        self.types_by_name.insert(name.to_string(), debug_struct_type.as_type());
         debug_struct_type.as_type()
     }
 
@@ -108,7 +108,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Arbitrarily the decided function generated struct return types have id = the function id +
     /// 100_000.
-    pub const fn get_debug_function_return_struct_type_id(func_id: u64) -> u64 {
+    pub const fn get_debug_function_return_struct_type_id(&self, func_id: u64) -> u64 {
         func_id + 100_000
     }
 
@@ -116,7 +116,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Arbitrarily decided the generated struct return types have name = "return_type_{}" where {}
     /// is the function name.
-    pub fn get_debug_function_return_struct_type_name(func_debug_name: &str) -> String {
+    pub fn get_debug_function_return_struct_type_name(&self, func_debug_name: &str) -> String {
         format!("return_type_{}", func_debug_name)
     }
 }

@@ -32,14 +32,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
 
         let arg_type = *self.types_by_id.get(&arg_type_id).unwrap();
-        let debug_arg_type = *self.debug_types_by_id.get(&arg_type_id).unwrap();
+        let debug_arg_type = *self.debug.types_by_id.get(&arg_type_id).unwrap();
 
         // Return a 2 element struct that have the same value. Ex: dup<felt>(1) -> { i252 1, i252 1 }
         let return_type = self.context.struct_type(&[arg_type, arg_type], false);
 
-        let debug_return_type = self.create_debug_type_struct(
-            Self::get_debug_function_return_struct_type_id(libfunc_declaration.id.id),
-            &Self::get_debug_function_return_struct_type_name(func_name),
+        let debug_return_type = self.debug.create_debug_type_struct(
+            self.debug.get_debug_function_return_struct_type_id(libfunc_declaration.id.id),
+            &self.debug.get_debug_function_return_struct_type_name(func_name),
             &return_type,
             &[debug_arg_type],
         );
@@ -51,7 +51,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
 
-        self.create_function_debug(func_name, &func, Some(debug_return_type), &[debug_arg_type]);
+        self.debug.create_function_debug(func_name, &func, Some(debug_return_type), &[debug_arg_type]);
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined dup to have an input parameter so it shouldn't panic.

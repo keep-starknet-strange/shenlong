@@ -1,4 +1,5 @@
 use cairo_lang_sierra::program::{GenBranchTarget, Invocation, StatementIdx};
+use inkwell::debug_info::DIScope;
 use inkwell::IntPredicate::EQ;
 
 use crate::sierra::errors::CompilerResult;
@@ -15,7 +16,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the processing of the branches statements fails.
-    pub fn felt_is_zero(&mut self, invocation: &Invocation, invocation_nb: usize) -> CompilerResult<()> {
+    pub fn felt_is_zero(
+        &mut self,
+        invocation: &Invocation,
+        invocation_nb: usize,
+        scope: DIScope<'ctx>,
+    ) -> CompilerResult<()> {
         // The felt to check.
         let lhs = self.variables.get(&invocation.args[0].id.to_string()).expect("Variable should exist");
         // felt == 0
@@ -40,20 +46,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         match invocation.branches[0].target {
             // if then is fallthrough
             GenBranchTarget::Fallthrough => {
-                self.process_statements_from(invocation_nb + 1)?;
+                self.process_statements_from(invocation_nb + 1, scope)?;
             }
             // then branch is a jump so we process from the jump until a return instruction.
-            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id),
+            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id, scope),
         };
 
         self.builder.position_at_end(else_bb);
         match invocation.branches[1].target {
             // else is fallthrough
             GenBranchTarget::Fallthrough => {
-                self.process_statements_from(invocation_nb + 1)?;
+                self.process_statements_from(invocation_nb + 1, scope)?;
             }
             // else branch is a jump so we process from the jump until a return instruction.
-            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id),
+            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id, scope),
         };
         Ok(())
     }

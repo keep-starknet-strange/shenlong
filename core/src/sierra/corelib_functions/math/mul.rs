@@ -18,7 +18,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn felt_mul(&self, libfunc_declaration: &LibfuncDeclaration) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let felt_type = self.types_by_name.get("felt").expect("Can't get felt from name");
-        let debug_felt_type = *self.debug_types_by_name.get("felt").expect("Can't get felt from name");
+        let debug_felt_type = *self.debug.types_by_name.get("felt").expect("Can't get felt from name");
         // fn felt_mul(a: felt, b: felt) -> felt
         let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
         let func = self.module.add_function(
@@ -28,7 +28,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.create_function_debug(func_name, &func, Some(debug_felt_type), &[debug_felt_type, debug_felt_type]);
+        self.debug.create_function_debug(func_name, &func, Some(debug_felt_type), &[debug_felt_type, debug_felt_type]);
 
         // The maximum value of a multiplication is (prime - 1)² which is 503 bits.
         let double_felt = self.context.custom_width_int_type(512);

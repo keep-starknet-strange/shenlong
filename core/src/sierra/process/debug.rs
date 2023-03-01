@@ -21,7 +21,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // self.create_debug_type("double_felt", DOUBLE_FELT_INT_WIDTH.into());
 
         // double_felt doesn't have a numeric id from sierra.
-        self.create_debug_type(200000, "double_felt", DOUBLE_FELT_INT_WIDTH.into());
+        self.debug.create_debug_type(200000, "double_felt", DOUBLE_FELT_INT_WIDTH.into());
 
         self.move_to(CompilationState::DebugSetup)
     }

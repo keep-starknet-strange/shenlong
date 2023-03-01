@@ -26,13 +26,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // everything is provable but in LLVM IR we're not proving anything so we can consider `NonZero<T>`
                 // to be just `T`).
                 let inner_type = *self.types_by_id.get(id).unwrap();
-                let debug_inner_type = *self.debug_types_by_id.get(id).unwrap();
+                let debug_inner_type = *self.debug.types_by_id.get(id).unwrap();
 
                 self.types_by_id.insert(type_declaration.id.id, inner_type);
                 self.types_by_name.insert(type_declaration.id.debug_name.as_ref().unwrap().to_string(), inner_type);
 
                 let debug_name = type_declaration.id.debug_name.as_ref().unwrap().to_string();
-                self.create_debug_type(type_declaration.id.id, &debug_name, debug_inner_type.get_size_in_bits());
+                self.debug.create_debug_type(type_declaration.id.id, &debug_name, debug_inner_type.get_size_in_bits());
             }
             GenericArg::UserType(_) => todo!(),
             _val => {

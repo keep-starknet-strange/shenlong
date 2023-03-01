@@ -1,3 +1,5 @@
+use inkwell::debug_info::DIScope;
+
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -11,7 +13,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the processing of the branches statements fails.
-    pub fn jump(&mut self, dest_nb: usize) {
+    pub fn jump(&mut self, dest_nb: usize, scope: DIScope<'ctx>) {
         // Get the function that's currently processed.
         // It shouldn't panic as if we're there at least a function has to have been declared
         let func = self.module.get_last_function().unwrap();
@@ -27,6 +29,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.basic_blocks.insert(dest_nb, destination);
         self.builder.position_at_end(destination);
         // Keep processing the statements.
-        self.process_statements_from(dest_nb).unwrap();
+        self.process_statements_from(dest_nb, scope).unwrap();
     }
 }

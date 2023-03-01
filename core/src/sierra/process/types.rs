@@ -18,7 +18,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::DebugSetup)?;
         for type_declaration in self.program.type_declarations.iter() {
-            self.current_line_estimate += 1;
+            self.debug.next_line();
             // All those types are known in advance. A struct is a combination of multiple "primitive" types
             let type_name = type_declaration.long_id.generic_id.0.as_str();
             match type_name {
@@ -33,6 +33,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 _ => debug!(type_name, "unimplemented type"),
             }
         }
+        self.debug.next_line();
         // Move to the next state.
         self.move_to(CompilationState::TypesProcessed)
     }

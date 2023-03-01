@@ -61,7 +61,7 @@ pub struct Compiler<'a, 'ctx> {
     pub builder: &'a Builder<'ctx>,
     /// The LLVM module.
     pub module: Module<'ctx>,
-    /// The variables of the program.
+    /// The variables of the current function.
     pub variables: HashMap<String, BasicValueEnum<'ctx>>,
     /// The LLVM IR output path.
     pub llvm_output_path: PathBuf,
@@ -76,13 +76,54 @@ pub struct Compiler<'a, 'ctx> {
     /// Calls in the main function.
     pub basic_blocks: HashMap<usize, BasicBlock<'ctx>>,
     pub jump_dests: HashSet<usize>,
-    // Debug info
-    pub dibuilder: DebugInfoBuilder<'ctx>,
+    /// A struct holding all the debug info.
+    pub debug: DebugCompiler<'a, 'ctx>,
+}
+
+/// Struct holding all the data needed to produce the debug info by the compiler.
+pub struct DebugCompiler<'a, 'ctx> {
+    /// Debug builder
+    pub debug_builder: DebugInfoBuilder<'ctx>,
+    pub builder: &'a Builder<'ctx>,
     pub compile_unit: DICompileUnit<'ctx>,
-    pub debug_types_by_id: HashMap<u64, DIType<'ctx>>,
-    pub debug_types_by_name: HashMap<String, DIType<'ctx>>,
-    // Sierra doesn't give us spans, we have to estimate the line number.
-    pub current_line_estimate: u32,
+    pub types_by_id: HashMap<u64, DIType<'ctx>>,
+    pub types_by_name: HashMap<String, DIType<'ctx>>,
+    /// The debug info variables of the current function.
+    pub variables: HashMap<String, DIType<'ctx>>,
+    pub current_line: u32,
+    pub current_statement_line: u32,
+    pub context: &'ctx Context,
+}
+
+impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
+    pub fn new(
+        debug_builder: DebugInfoBuilder<'ctx>,
+        builder: &'a Builder<'ctx>,
+        compile_unit: DICompileUnit<'ctx>,
+        context: &'ctx Context,
+    ) -> Self {
+        Self {
+            debug_builder,
+            builder,
+            compile_unit,
+            types_by_id: HashMap::new(),
+            types_by_name: HashMap::new(),
+            variables: HashMap::new(),
+            current_line: 0,
+            current_statement_line: 0,
+            context,
+        }
+    }
+
+    /// Increases the current line by 1.
+    pub fn next_line(&mut self) {
+        self.current_line += 1;
+    }
+
+    /// Sets the current statement line from a statement id.
+    pub fn set_statement_line(&mut self, statement_id: usize) {
+        self.current_statement_line = self.current_line + statement_id as u32;
+    }
 }
 
 /// Compilation state.
@@ -284,11 +325,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             types_by_name: HashMap::new(),
             basic_blocks: HashMap::new(),
             jump_dests: HashSet::new(),
-            dibuilder,
-            compile_unit,
-            debug_types_by_id: HashMap::new(),
-            debug_types_by_name: HashMap::new(),
-            current_line_estimate: 0,
+            debug: DebugCompiler::new(dibuilder, &builder, compile_unit, &context),
         };
 
         // Setup the debug info.
@@ -296,13 +333,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Process the types in the Sierra program.
         compiler.process_types()?;
-        compiler.current_line_estimate += 1; // there is usually a newline between types and libfuncs.
 
         // Process the core library functions in the Sierra program.
         compiler.process_core_lib_functions()?;
-        compiler.collect_jumps();
 
-        compiler.current_line_estimate += 1; // there is usually a newline between libfuncs and statements.
+        // Collect jumps.
+        compiler.collect_jumps();
 
         // Process the functions in the Sierra program.
         compiler.process_funcs()?;
@@ -324,7 +360,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::FunctionsProcessed)?;
 
-        self.dibuilder.finalize();
+        self.debug.debug_builder.finalize();
         // let parent =
         //     output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
         // // Recursively create the output path parent directories if they don't exist.

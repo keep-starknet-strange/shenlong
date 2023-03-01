@@ -15,7 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // A type can't use an undefined type so it should be declared before so it shouldn't panic.
                 // The box type is ignored in LLVM IR we just define `Box<T>` as `T`.
                 let inner_type = *self.types_by_id.get(id).unwrap();
-                let debug_inner_type = *self.debug_types_by_id.get(id).unwrap();
+                let debug_inner_type = *self.debug.types_by_id.get(id).unwrap();
 
                 let debug_name = type_declaration.id.debug_name.as_ref().unwrap().as_str();
 
@@ -23,7 +23,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.types_by_name.insert(debug_name.to_string(), inner_type);
 
                 let debug_name = type_declaration.id.debug_name.as_ref().unwrap().to_string();
-                self.create_debug_type(type_declaration.id.id, &debug_name, debug_inner_type.get_size_in_bits());
+                self.debug.create_debug_type(type_declaration.id.id, &debug_name, debug_inner_type.get_size_in_bits());
             }
             GenericArg::UserType(_) => todo!(),
             _val => {
