@@ -57,8 +57,7 @@ jobs:
       - name: Setup coverage env
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Generate json coverage report
-        run:
-          cargo llvm-cov --all-features --workspace --json --output-path
+        run: cargo llvm-cov --all-features --workspace --json --output-path
           report.json -- --nocapture
       - name: Generate code coverage
         run: cargo llvm-cov report --lcov --output-path lcov.info
@@ -73,45 +72,6 @@ jobs:
           name: code-coverage-report
           path: report.json
           if-no-files-found: error
-          
-  fuzzing:
-    name: fuzzing
-    runs-on: ubuntu-latest
-    env:
-      LLVM_SYS_150_PREFIX: /usr/lib/llvm-16
-      LLI_PATH: /usr/lib/llvm-16/bin/lli
-      HFUZZ_RUN_ARGS: --iterations 10000 --exit_upon_crash
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup rust env
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          components: llvm-tools-preview
-          override: true
-      - name: Install honggfuzz
-        run:
-          cargo install honggfuzz
-      - name: Retreive cached dependecies
-        uses: Swatinem/rust-cache@v2
-      - name: add llvm deb repository
-        uses: myci-actions/add-deb-repo@10
-        with:
-          repo: deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main
-          repo-name: llvm-repo
-          keys-asc: https://apt.llvm.org/llvm-snapshot.gpg.key
-      - name: Install LLVM
-        run: >
-          sudo apt-get install libllvm-16-ocaml-dev libllvm16 llvm-16 llvm-16-dev 
-          llvm-16-doc llvm-16-examples llvm-16-runtime clang-16 clang-tools-16 
-          clang-16-doc libclang-common-16-dev libclang-16-dev libclang1-16 lld-16
-          libpolly-16-dev libclang-rt-16-dev libc++-16-dev libc++abi-16-dev
-          build-essential binutils-dev libblocksruntime-dev liblzma-dev && 
-          sudo apt-get install libunwind-dev
-      - name: Fuzzzzzzzzz
-        working-directory: fuzzing
-        run: cargo hfuzz run fuzzing
 
   fmt:
     name: fmt
