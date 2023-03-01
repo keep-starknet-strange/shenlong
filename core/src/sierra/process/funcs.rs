@@ -23,8 +23,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Loop through the function declarations (last category of the sierra file).
         for func_declaration in self.program.funcs.iter() {
-            self.current_line_estimate += 1;
-
             let func_name = func_declaration.id.debug_name.as_ref().unwrap().as_str();
             debug!("processing function declaration: {}", func_name);
 
@@ -151,6 +149,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // process statements from the line stated in the function definition until the return instruction.
             // ex: fib_caller::fib_caller::main@21() -> (Unit); the function main starts at the statement 21.
             self.process_statements_from(func_declaration.entry_point.0)?;
+            self.current_line_estimate += 1;
         }
         // Move to the next state.
         self.move_to(CompilationState::FunctionsProcessed)
