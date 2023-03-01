@@ -1,3 +1,4 @@
+use std::ops::*;
 use std::process::{Command, Stdio};
 
 use honggfuzz::fuzz;
@@ -30,12 +31,12 @@ pub fn operation(case: &str) {
         ) % &prime;
 
         let mut expected = match case {
-            "add" => (&lhs + &rhs) % prime,
-            "sub" => (&lhs - &rhs) % prime,
-            "mul" => (&lhs * &rhs) % prime,
-
+            "add" => BigInt::add,
+            "sub" => BigInt::sub,
+            "mul" => BigInt::mul,
             _ => panic!("invalid case: {case:}"),
-        };
+        }(lhs.clone(), &rhs)
+            % prime;
         let ctx = BinaryContext { lhs: lhs.to_string(), rhs: rhs.to_string(), op: case.to_owned() };
         let source = test_template_file!("operation.sierra", ctx);
         let tmp = tempdir::TempDir::new("test_simple_operation").unwrap();
