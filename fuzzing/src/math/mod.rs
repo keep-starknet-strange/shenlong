@@ -1,4 +1,5 @@
 use std::ops::*;
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use honggfuzz::fuzz;
@@ -42,7 +43,7 @@ pub fn operation(case: &str) {
         let tmp = tempdir::TempDir::new("test_simple_operation").unwrap();
         let file = tmp.into_path().join("output.ll");
 
-        Compiler::compile_from_code(&source, &file, None).unwrap();
+        Compiler::compile_from_code(&source, &file, Path::new(""), None).unwrap();
         let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to the `lli` tool from llvm 16");
 
         let cmd = Command::new(lli_path).arg(file).stdout(Stdio::piped()).spawn().unwrap();
