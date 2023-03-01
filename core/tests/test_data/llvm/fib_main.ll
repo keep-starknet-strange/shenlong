@@ -6,51 +6,51 @@ declare i32 @printf(ptr, ...)
 
 define void @print_felt(i253 %0) !dbg !3 {
 entry:
-  %rounded_size_val = zext i253 %0 to i256
-  %shifted = lshr i256 %rounded_size_val, 224
-  %print_value_trunc = trunc i256 %shifted to i32
-  %format = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format, align 1
-  %chars_printed = call i32 (ptr, ...) @printf(ptr %format, i32 %print_value_trunc)
-  %shifted1 = lshr i256 %rounded_size_val, 192
-  %print_value_trunc2 = trunc i256 %shifted1 to i32
-  %format3 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format3, align 1
-  %chars_printed4 = call i32 (ptr, ...) @printf(ptr %format3, i32 %print_value_trunc2)
-  %shifted5 = lshr i256 %rounded_size_val, 160
-  %print_value_trunc6 = trunc i256 %shifted5 to i32
-  %format7 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format7, align 1
-  %chars_printed8 = call i32 (ptr, ...) @printf(ptr %format7, i32 %print_value_trunc6)
-  %shifted9 = lshr i256 %rounded_size_val, 128
-  %print_value_trunc10 = trunc i256 %shifted9 to i32
-  %format11 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format11, align 1
-  %chars_printed12 = call i32 (ptr, ...) @printf(ptr %format11, i32 %print_value_trunc10)
-  %shifted13 = lshr i256 %rounded_size_val, 96
-  %print_value_trunc14 = trunc i256 %shifted13 to i32
-  %format15 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format15, align 1
-  %chars_printed16 = call i32 (ptr, ...) @printf(ptr %format15, i32 %print_value_trunc14)
-  %shifted17 = lshr i256 %rounded_size_val, 64
-  %print_value_trunc18 = trunc i256 %shifted17 to i32
-  %format19 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format19, align 1
-  %chars_printed20 = call i32 (ptr, ...) @printf(ptr %format19, i32 %print_value_trunc18)
-  %shifted21 = lshr i256 %rounded_size_val, 32
-  %print_value_trunc22 = trunc i256 %shifted21 to i32
-  %format23 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format23, align 1
-  %chars_printed24 = call i32 (ptr, ...) @printf(ptr %format23, i32 %print_value_trunc22)
-  %shifted25 = lshr i256 %rounded_size_val, 0
-  %print_value_trunc26 = trunc i256 %shifted25 to i32
-  %format27 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format27, align 1
-  %chars_printed28 = call i32 (ptr, ...) @printf(ptr %format27, i32 %print_value_trunc26)
-  %format29 = alloca [2 x i8], align 1
-  store [2 x i8] c"\0A\00", ptr %format29, align 1
-  %chars_printed30 = call i32 (ptr, ...) @printf(ptr %format29)
-  ret void
+  %rounded_size_val = zext i253 %0 to i256, !dbg !8
+  %shifted = lshr i256 %rounded_size_val, 224, !dbg !8
+  %print_value_trunc = trunc i256 %shifted to i32, !dbg !8
+  %format = alloca [5 x i8], align 1, !dbg !8
+  store [5 x i8] c"%08X\00", ptr %format, align 1, !dbg !8
+  %chars_printed = call i32 (ptr, ...) @printf(ptr %format, i32 %print_value_trunc), !dbg !8
+  %shifted1 = lshr i256 %rounded_size_val, 192, !dbg !8
+  %print_value_trunc2 = trunc i256 %shifted1 to i32, !dbg !8
+  %format3 = alloca [5 x i8], align 1, !dbg !8
+  store [5 x i8] c"%08X\00", ptr %format3, align 1, !dbg !8
+  %chars_printed4 = call i32 (ptr, ...) @printf(ptr %format3, i32 %print_value_trunc2), !dbg !8
+  %shifted5 = lshr i256 %rounded_size_val, 160, !dbg !8
+  %print_value_trunc6 = trunc i256 %shifted5 to i32, !dbg !8
+  %format7 = alloca [5 x i8], align 1, !dbg !8
+  store [5 x i8] c"%08X\00", ptr %format7, align 1, !dbg !8
+  %chars_printed8 = call i32 (ptr, ...) @printf(ptr %format7, i32 %print_value_trunc6), !dbg !8
+  %shifted9 = lshr i256 %rounded_size_val, 128, !dbg !8
+  %print_value_trunc10 = trunc i256 %shifted9 to i32, !dbg !8
+  %format11 = alloca [5 x i8], align 1, !dbg !8
+  store [5 x i8] c"%08X\00", ptr %format11, align 1, !dbg !8
+  %chars_printed12 = call i32 (ptr, ...) @printf(ptr %format11, i32 %print_value_trunc10), !dbg !8
+  %shifted13 = lshr i256 %rounded_size_val, 96, !dbg !8
+  %print_value_trunc14 = trunc i256 %shifted13 to i32, !dbg !8
+  %format15 = alloca [5 x i8], align 1, !dbg !8
+  store [5 x i8] c"%08X\00", ptr %format15, align 1, !dbg !8
+  %chars_printed16 = call i32 (ptr, ...) @printf(ptr %format15, i32 %print_value_trunc14), !dbg !8
+  %shifted17 = lshr i256 %rounded_size_val, 64, !dbg !8
+  %print_value_trunc18 = trunc i256 %shifted17 to i32, !dbg !8
+  %format19 = alloca [5 x i8], align 1, !dbg !8
+  store [5 x i8] c"%08X\00", ptr %format19, align 1, !dbg !8
+  %chars_printed20 = call i32 (ptr, ...) @printf(ptr %format19, i32 %print_value_trunc18), !dbg !8
+  %shifted21 = lshr i256 %rounded_size_val, 32, !dbg !8
+  %print_value_trunc22 = trunc i256 %shifted21 to i32, !dbg !8
+  %format23 = alloca [5 x i8], align 1, !dbg !8
+  store [5 x i8] c"%08X\00", ptr %format23, align 1, !dbg !8
+  %chars_printed24 = call i32 (ptr, ...) @printf(ptr %format23, i32 %print_value_trunc22), !dbg !8
+  %shifted25 = lshr i256 %rounded_size_val, 0, !dbg !8
+  %print_value_trunc26 = trunc i256 %shifted25 to i32, !dbg !8
+  %format27 = alloca [5 x i8], align 1, !dbg !8
+  store [5 x i8] c"%08X\00", ptr %format27, align 1, !dbg !8
+  %chars_printed28 = call i32 (ptr, ...) @printf(ptr %format27, i32 %print_value_trunc26), !dbg !8
+  %format29 = alloca [2 x i8], align 1, !dbg !8
+  store [2 x i8] c"\0A\00", ptr %format29, align 1, !dbg !8
+  %chars_printed30 = call i32 (ptr, ...) @printf(ptr %format29), !dbg !8
+  ret void, !dbg !8
 }
 
 define void @print_double_felt(i512 %0) !dbg !9 {
@@ -249,51 +249,51 @@ dest3:                                            ; preds = %dest1
 
 define void @print_return(i253 %0) !dbg !47 {
 entry:
-  %rounded_size_val = zext i253 %0 to i256
-  %shifted = lshr i256 %rounded_size_val, 224
-  %print_value_trunc = trunc i256 %shifted to i32
-  %format = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format, align 1
-  %chars_printed = call i32 (ptr, ...) @printf(ptr %format, i32 %print_value_trunc)
-  %shifted1 = lshr i256 %rounded_size_val, 192
-  %print_value_trunc2 = trunc i256 %shifted1 to i32
-  %format3 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format3, align 1
-  %chars_printed4 = call i32 (ptr, ...) @printf(ptr %format3, i32 %print_value_trunc2)
-  %shifted5 = lshr i256 %rounded_size_val, 160
-  %print_value_trunc6 = trunc i256 %shifted5 to i32
-  %format7 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format7, align 1
-  %chars_printed8 = call i32 (ptr, ...) @printf(ptr %format7, i32 %print_value_trunc6)
-  %shifted9 = lshr i256 %rounded_size_val, 128
-  %print_value_trunc10 = trunc i256 %shifted9 to i32
-  %format11 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format11, align 1
-  %chars_printed12 = call i32 (ptr, ...) @printf(ptr %format11, i32 %print_value_trunc10)
-  %shifted13 = lshr i256 %rounded_size_val, 96
-  %print_value_trunc14 = trunc i256 %shifted13 to i32
-  %format15 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format15, align 1
-  %chars_printed16 = call i32 (ptr, ...) @printf(ptr %format15, i32 %print_value_trunc14)
-  %shifted17 = lshr i256 %rounded_size_val, 64
-  %print_value_trunc18 = trunc i256 %shifted17 to i32
-  %format19 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format19, align 1
-  %chars_printed20 = call i32 (ptr, ...) @printf(ptr %format19, i32 %print_value_trunc18)
-  %shifted21 = lshr i256 %rounded_size_val, 32
-  %print_value_trunc22 = trunc i256 %shifted21 to i32
-  %format23 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format23, align 1
-  %chars_printed24 = call i32 (ptr, ...) @printf(ptr %format23, i32 %print_value_trunc22)
-  %shifted25 = lshr i256 %rounded_size_val, 0
-  %print_value_trunc26 = trunc i256 %shifted25 to i32
-  %format27 = alloca [5 x i8], align 1
-  store [5 x i8] c"%08X\00", ptr %format27, align 1
-  %chars_printed28 = call i32 (ptr, ...) @printf(ptr %format27, i32 %print_value_trunc26)
-  %format29 = alloca [2 x i8], align 1
-  store [2 x i8] c"\0A\00", ptr %format29, align 1
-  %chars_printed30 = call i32 (ptr, ...) @printf(ptr %format29)
-  ret void
+  %rounded_size_val = zext i253 %0 to i256, !dbg !48
+  %shifted = lshr i256 %rounded_size_val, 224, !dbg !48
+  %print_value_trunc = trunc i256 %shifted to i32, !dbg !48
+  %format = alloca [5 x i8], align 1, !dbg !48
+  store [5 x i8] c"%08X\00", ptr %format, align 1, !dbg !48
+  %chars_printed = call i32 (ptr, ...) @printf(ptr %format, i32 %print_value_trunc), !dbg !48
+  %shifted1 = lshr i256 %rounded_size_val, 192, !dbg !48
+  %print_value_trunc2 = trunc i256 %shifted1 to i32, !dbg !48
+  %format3 = alloca [5 x i8], align 1, !dbg !48
+  store [5 x i8] c"%08X\00", ptr %format3, align 1, !dbg !48
+  %chars_printed4 = call i32 (ptr, ...) @printf(ptr %format3, i32 %print_value_trunc2), !dbg !48
+  %shifted5 = lshr i256 %rounded_size_val, 160, !dbg !48
+  %print_value_trunc6 = trunc i256 %shifted5 to i32, !dbg !48
+  %format7 = alloca [5 x i8], align 1, !dbg !48
+  store [5 x i8] c"%08X\00", ptr %format7, align 1, !dbg !48
+  %chars_printed8 = call i32 (ptr, ...) @printf(ptr %format7, i32 %print_value_trunc6), !dbg !48
+  %shifted9 = lshr i256 %rounded_size_val, 128, !dbg !48
+  %print_value_trunc10 = trunc i256 %shifted9 to i32, !dbg !48
+  %format11 = alloca [5 x i8], align 1, !dbg !48
+  store [5 x i8] c"%08X\00", ptr %format11, align 1, !dbg !48
+  %chars_printed12 = call i32 (ptr, ...) @printf(ptr %format11, i32 %print_value_trunc10), !dbg !48
+  %shifted13 = lshr i256 %rounded_size_val, 96, !dbg !48
+  %print_value_trunc14 = trunc i256 %shifted13 to i32, !dbg !48
+  %format15 = alloca [5 x i8], align 1, !dbg !48
+  store [5 x i8] c"%08X\00", ptr %format15, align 1, !dbg !48
+  %chars_printed16 = call i32 (ptr, ...) @printf(ptr %format15, i32 %print_value_trunc14), !dbg !48
+  %shifted17 = lshr i256 %rounded_size_val, 64, !dbg !48
+  %print_value_trunc18 = trunc i256 %shifted17 to i32, !dbg !48
+  %format19 = alloca [5 x i8], align 1, !dbg !48
+  store [5 x i8] c"%08X\00", ptr %format19, align 1, !dbg !48
+  %chars_printed20 = call i32 (ptr, ...) @printf(ptr %format19, i32 %print_value_trunc18), !dbg !48
+  %shifted21 = lshr i256 %rounded_size_val, 32, !dbg !48
+  %print_value_trunc22 = trunc i256 %shifted21 to i32, !dbg !48
+  %format23 = alloca [5 x i8], align 1, !dbg !48
+  store [5 x i8] c"%08X\00", ptr %format23, align 1, !dbg !48
+  %chars_printed24 = call i32 (ptr, ...) @printf(ptr %format23, i32 %print_value_trunc22), !dbg !48
+  %shifted25 = lshr i256 %rounded_size_val, 0, !dbg !48
+  %print_value_trunc26 = trunc i256 %shifted25 to i32, !dbg !48
+  %format27 = alloca [5 x i8], align 1, !dbg !48
+  store [5 x i8] c"%08X\00", ptr %format27, align 1, !dbg !48
+  %chars_printed28 = call i32 (ptr, ...) @printf(ptr %format27, i32 %print_value_trunc26), !dbg !48
+  %format29 = alloca [2 x i8], align 1, !dbg !48
+  store [2 x i8] c"\0A\00", ptr %format29, align 1, !dbg !48
+  %chars_printed30 = call i32 (ptr, ...) @printf(ptr %format29), !dbg !48
+  ret void, !dbg !48
 }
 
 define i32 @main(i253 %0) !dbg !49 {

@@ -234,7 +234,7 @@ dependencies = [
 [[package]]
 name = "cairo-lang-sierra"
 version = "1.0.0-alpha.3"
-source = "git+https://github.com/starkware-libs/cairo?branch=main#babb2b0381aa6a6043b99a9158f84362e5a58ecc"
+source = "git+https://github.com/starkware-libs/cairo?branch=main#818cfb7319f5adec57e63dc63755d9b6d3334173"
 dependencies = [
  "cairo-lang-utils",
  "const-fnv1a-hash",
@@ -256,7 +256,7 @@ dependencies = [
 [[package]]
 name = "cairo-lang-utils"
 version = "1.0.0-alpha.3"
-source = "git+https://github.com/starkware-libs/cairo?branch=main#babb2b0381aa6a6043b99a9158f84362e5a58ecc"
+source = "git+https://github.com/starkware-libs/cairo?branch=main#818cfb7319f5adec57e63dc63755d9b6d3334173"
 dependencies = [
  "chrono",
  "env_logger 0.9.3",
