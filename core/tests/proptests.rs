@@ -80,6 +80,11 @@ fn substraction_negative_result() {
     test_binary_op("sub", "2", "4", BigInt::sub).unwrap();
 }
 
+#[test]
+fn simple_division() {
+    test_binary_op("div", "7", "2", BigInt::div).unwrap();
+}
+
 proptest! {
     #[test]
     fn proptest_add(a: Vec<u8>, b: Vec<u8>) {
