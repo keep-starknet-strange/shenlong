@@ -1,5 +1,4 @@
 use std::process::{Command, Stdio};
-use std::str::FromStr;
 
 use honggfuzz::fuzz;
 use num_bigint::BigInt;
@@ -28,7 +27,6 @@ struct BinaryContext {
 fn main() {
     loop {
         fuzz!(|data: (&[u8], &[u8])| {
-            use inkwell::targets::{InitializationConfig, Target};
             let prime = BigInt::from_str_radix(
                 "3618502788666131213697322783095070105623107215331596699973092056135872020481",
                 10,
@@ -43,9 +41,6 @@ fn main() {
                 if data.1.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
                 data.1,
             ) % &prime;
-            // let lhs = BigInt::from(-1);
-            // let rhs = BigInt::from(0);
-            Target::initialize_native(&InitializationConfig::default()).expect("Failed to initialize native target");
 
             let ctx = BinaryContext { lhs: lhs.to_string(), rhs: rhs.to_string() };
             let source = test_template_file!("addition.sierra", ctx);
