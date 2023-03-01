@@ -82,7 +82,7 @@
         </span><span class="kw">let </span>comparison = <span class="self">self</span>.builder.build_int_compare(
             EQ,
             lhs.into_int_value(),
-            <span class="self">self</span>.get_type_from_name(<span class="string">&quot;felt&quot;</span>)<span class="question-mark">?</span>.into_int_type().const_int(<span class="number">0</span>, <span class="bool-val">false</span>),
+            <span class="self">self</span>.types_by_name.get(<span class="string">&quot;felt&quot;</span>).unwrap().into_int_type().const_int(<span class="number">0</span>, <span class="bool-val">false</span>),
             <span class="string">&quot;check&quot;</span>,
         );
         <span class="comment">// Get the current function.

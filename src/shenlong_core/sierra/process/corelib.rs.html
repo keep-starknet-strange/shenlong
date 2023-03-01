@@ -89,12 +89,18 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
 </pre><pre class="rust"><code><span class="kw">use </span>inkwell::module::Linkage;
+<span class="kw">use </span>inkwell::types::BasicType;
 <span class="kw">use </span>inkwell::AddressSpace;
 <span class="kw">use </span>tracing::debug;
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::CompilerResult;
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::{CompilationState, Compiler};
+<span class="kw">use </span><span class="kw">crate</span>::sierra::types::felt::DOUBLE_FELT_INT_WIDTH;
 
 <span class="kw">pub const </span>PRINT_FELT_FUNC: <span class="kw-2">&amp;</span>str = <span class="string">&quot;print_felt&quot;</span>;
 <span class="kw">pub const </span>PRINT_DOUBLE_FELT_FUNC: <span class="kw-2">&amp;</span>str = <span class="string">&quot;print_double_felt&quot;</span>;
@@ -124,14 +130,16 @@
         <span class="comment">// Generate print functions for felts and double felts.
         // Useful for debugging in the current early stage of development.
         // Should probably be removed in the future.
-        </span><span class="kw">let </span>felt_type = <span class="self">self</span>.get_type_from_name(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
-        <span class="self">self</span>.printf_for_type(felt_type.into(), PRINT_FELT_FUNC);
-        <span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">512</span>);
-        <span class="self">self</span>.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC);
+        </span><span class="kw">let </span>felt_type = <span class="self">self</span>.types_by_name.get(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+        <span class="self">self</span>.printf_for_type(felt_type.as_basic_type_enum().into(), PRINT_FELT_FUNC, <span class="string">&quot;felt&quot;</span>);
+        <span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(DOUBLE_FELT_INT_WIDTH);
+        <span class="self">self</span>.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC, <span class="string">&quot;double_felt&quot;</span>);
         <span class="self">self</span>.modulo();
 
         <span class="comment">// Iterate over the libfunc declarations in the Sierra program.
         </span><span class="kw">for </span>libfunc_declaration <span class="kw">in </span><span class="self">self</span>.program.libfunc_declarations.iter() {
+            <span class="self">self</span>.current_line_estimate += <span class="number">1</span>;
+
             <span class="comment">// Get the debug name of the function.
             </span><span class="kw">let </span>libfunc_name = libfunc_declaration.long_id.generic_id.<span class="number">0</span>.as_str();
             <span class="macro">debug!</span>(libfunc_name, <span class="string">&quot;processing&quot;</span>);

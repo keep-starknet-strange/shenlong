@@ -51,6 +51,23 @@
 <a href="#51" id="51">51</a>
 <a href="#52" id="52">52</a>
 <a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::{GenericArg, LibfuncDeclaration};
 
@@ -68,27 +85,44 @@
     ///
     /// Panics if the type T has not been declared previously as all types should be declared at the
     /// beginning of the sierra file.
-    </span><span class="kw">pub fn </span>dup(<span class="kw-2">&amp;</span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
+    </span><span class="kw">pub fn </span>dup(<span class="kw-2">&amp;mut </span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
         <span class="comment">// dup&lt;T&gt; can only duplicate the type T. If several types need the dup instruction it&#39;ll be defined
         // multiple times. Ex: dup&lt;felt&gt;; dup&lt;i128&gt;;
         // Get the type that this dup function has to handle
-        </span><span class="kw">let </span>arg_type = <span class="kw">match </span><span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_args[<span class="number">0</span>] {
-            <span class="comment">// Panics if the type has not been declared.
-            </span>GenericArg::Type(ConcreteTypeId { id, debug_name: <span class="kw">_ </span>}) =&gt; {
-                <span class="self">self</span>.types.get(<span class="kw-2">&amp;</span>id.to_string()).unwrap().as_basic_type_enum()
-            }
+
+        </span><span class="kw">let </span>arg_type_id = <span class="kw">match </span><span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_args[<span class="number">0</span>] {
+            GenericArg::Type(ConcreteTypeId { id, debug_name: <span class="kw">_ </span>}) =&gt; <span class="kw-2">*</span>id,
             <span class="comment">// Not sure if dup can dup user defined types
             </span>GenericArg::UserType(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Dup only takes type or user type&quot;</span>),
+            _val =&gt; {
+                <span class="macro">panic!</span>(<span class="string">&quot;dup only takes type or user type&quot;</span>)
+            }
         };
+
+        <span class="kw">let </span>func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
+
+        <span class="kw">let </span>arg_type = <span class="kw-2">*</span><span class="self">self</span>.types_by_id.get(<span class="kw-2">&amp;</span>arg_type_id).unwrap();
+        <span class="kw">let </span>debug_arg_type = <span class="kw-2">*</span><span class="self">self</span>.debug_types_by_id.get(<span class="kw-2">&amp;</span>arg_type_id).unwrap();
+
         <span class="comment">// Return a 2 element struct that have the same value. Ex: dup&lt;felt&gt;(1) -&gt; { i252 1, i252 1 }
         </span><span class="kw">let </span>return_type = <span class="self">self</span>.context.struct_type(<span class="kw-2">&amp;</span>[arg_type, arg_type], <span class="bool-val">false</span>);
+
+        <span class="kw">let </span>debug_return_type = <span class="self">self</span>.create_debug_type_struct(
+            <span class="self">Self</span>::get_debug_function_return_struct_type_id(libfunc_declaration.id.id),
+            <span class="kw-2">&amp;</span><span class="self">Self</span>::get_debug_function_return_struct_type_name(func_name),
+            <span class="kw-2">&amp;</span>return_type,
+            <span class="kw-2">&amp;</span>[debug_arg_type],
+        );
+
         <span class="comment">// fn dup&lt;T&gt;(a: T) -&gt; {T, T}
         </span><span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
             libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
             return_type.fn_type(<span class="kw-2">&amp;</span>[arg_type.into()], <span class="bool-val">false</span>),
             <span class="prelude-val">None</span>,
         );
+
+        <span class="self">self</span>.create_function_debug(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_return_type), <span class="kw-2">&amp;</span>[debug_arg_type]);
+
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
         <span class="comment">// We just defined dup to have an input parameter so it shouldn&#39;t panic.
         </span><span class="kw">let </span>arg = func.get_first_param().unwrap();

@@ -59,7 +59,7 @@
         <span class="comment">// Type of the struct that we have to deconstruct.
         </span><span class="kw">let </span>args = <span class="kw">match </span><span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_args[<span class="number">0</span>] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: <span class="kw">_ </span>}) =&gt; {
-                <span class="self">self</span>.types.get(<span class="kw-2">&amp;</span>id.to_string()).unwrap().as_basic_type_enum().into_struct_type()
+                <span class="self">self</span>.types_by_id.get(id).unwrap().into_struct_type()
             }
             _val =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Struct deconstruct only takes predefined structs&quot;</span>)

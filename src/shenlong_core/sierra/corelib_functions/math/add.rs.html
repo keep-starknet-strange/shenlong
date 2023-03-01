@@ -58,6 +58,13 @@
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::program::LibfuncDeclaration;
 <span class="kw">use </span>inkwell::types::BasicType;
 
@@ -77,14 +84,21 @@
     /// not been declared previously.
     </span><span class="kw">pub fn </span>felt_add(<span class="kw-2">&amp;</span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
         <span class="comment">// We could hardcode the LLVM IR type for felt but this adds a check.
-        </span><span class="kw">let </span>felt_type = <span class="self">self</span>.get_type_from_name(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+        </span><span class="kw">let </span>felt_type = <span class="self">self</span>.types_by_name.get(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+        <span class="kw">let </span>debug_felt_type = <span class="kw-2">*</span><span class="self">self</span>.debug_types_by_name.get(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+
         <span class="comment">// fn felt_add(a: felt, b: felt) -&gt; felt
-        </span><span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
-            libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
+        </span><span class="kw">let </span>func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
+        <span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
+            func_name,
             felt_type.fn_type(<span class="kw-2">&amp;</span>[felt_type.as_basic_type_enum().into(), felt_type.as_basic_type_enum().into()], <span class="bool-val">false</span>),
             <span class="prelude-val">None</span>,
         );
+
+        <span class="self">self</span>.create_function_debug(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_felt_type), <span class="kw-2">&amp;</span>[debug_felt_type, debug_felt_type]);
+
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
+
         <span class="comment">// The maximum value of and addition is 2 * (prime - 1) which is 253 bits.
         </span><span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">512</span>);
         <span class="comment">// Extend left hand side.

@@ -288,6 +288,38 @@
 <a href="#288" id="288">288</a>
 <a href="#289" id="289">289</a>
 <a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+<a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::VarId;
 <span class="doccomment">/// This file contains everything related to sierra statement processing.
 </span><span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
@@ -306,17 +338,17 @@
     ///
     /// If the processing of the sierra statements fails.
     </span><span class="kw">pub fn </span>process_statements_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: usize) -&gt; CompilerResult&lt;()&gt; {
-        <span class="macro">debug!</span>(<span class="string">&quot;processing statements&quot;</span>);
         <span class="comment">// Check that the current state is valid.
         </span><span class="kw">for </span>(<span class="kw-2">mut </span>statement_id, statement) <span class="kw">in </span><span class="self">self</span>.program.statements.iter().skip(from).enumerate() {
             <span class="comment">// Set the statement number to the absolute statement number.
             </span>statement_id += from;
+            <span class="kw">let </span>current_line_estimate = <span class="self">self</span>.current_line_estimate + statement_id <span class="kw">as </span>u32;
             <span class="kw">match </span>statement {
                 <span class="comment">// If the statement is a sierra function call.
                 </span>GenStatement::Invocation(invocation) =&gt; {
                     <span class="comment">// Get core lib function called by this instruction.
                     </span><span class="kw">let </span>fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
-                    <span class="macro">debug!</span>(fn_name, <span class="string">&quot;processing statement: invocation&quot;</span>);
+                    <span class="macro">debug!</span>(fn_name, current_line_estimate, <span class="string">&quot;processing statement: invocation&quot;</span>);
                     <span class="comment">// Function has only one branch and doesn&#39;t return anything.
                     </span><span class="kw">if </span>invocation.branches.len() == <span class="number">1 </span>&amp;&amp; invocation.branches[<span class="number">0</span>].results.is_empty() {
                         <span class="kw">match </span>fn_name.as_str() {
@@ -410,7 +442,16 @@
                     }
                 }
                 GenStatement::Return(ret) =&gt; {
-                    <span class="macro">debug!</span>(<span class="string">&quot;processing statement: return&quot;</span>);
+                    <span class="kw">let </span>func_name = <span class="self">self
+                        </span>.module
+                        .get_last_function()
+                        .expect(<span class="string">&quot;Current function should have been declared&quot;</span>)
+                        .get_name()
+                        .to_str()
+                        .unwrap()
+                        .to_string();
+
+                    <span class="macro">debug!</span>(func_name, current_line_estimate, <span class="string">&quot;processing statement: return&quot;</span>);
                     <span class="comment">// If there is actually something to return.
                     </span><span class="kw">if </span>!ret.is_empty() {
                         <span class="kw">let </span><span class="kw-2">mut </span>types = <span class="macro">vec!</span>[];
@@ -426,36 +467,33 @@
                         // Ex:
                         // fn foo() -&gt; (felt, felt, felt)
                         // Would be translated to
-                        // define { i252, i252, i252 } @foo()
-                        </span><span class="kw">let </span>return_struct_type = <span class="self">self</span>.context.struct_type(<span class="kw-2">&amp;</span>types, <span class="bool-val">false</span>);
-                        <span class="comment">// Allocate a pointer for the return struct.
-                        </span><span class="kw">let </span>return_struct_ptr = <span class="self">self</span>.builder.build_alloca(return_struct_type, <span class="string">&quot;ret_struct_ptr&quot;</span>);
-                        <span class="comment">// Save each variable to return in the struct.
-                        </span><span class="kw">for </span>(index, value) <span class="kw">in </span>values.iter().enumerate() {
-                            <span class="kw">let </span>tuple_ptr = <span class="self">self
-                                </span>.builder
-                                .build_struct_gep(
-                                    return_struct_type,
-                                    return_struct_ptr,
-                                    index.try_into().unwrap(),
-                                    <span class="macro">format!</span>(<span class="string">&quot;field_{index}_ptr&quot;</span>).as_str(),
-                                )
-                                .expect(<span class="string">&quot;Pointer should be valid&quot;</span>);
-                            <span class="self">self</span>.builder.build_store(tuple_ptr, <span class="kw-2">**</span>value);
-                        }
-                        <span class="comment">// Load the values to return in a variable.
-                        </span><span class="kw">let </span><span class="kw-2">mut </span>return_value =
-                            <span class="self">self</span>.builder.build_load(return_struct_type, return_struct_ptr, <span class="string">&quot;return_struct_value&quot;</span>);
-                        <span class="comment">// If the function is the main function.
-                        </span><span class="kw">if </span><span class="self">self
-                            </span>.module
-                            .get_last_function()
-                            .expect(<span class="string">&quot;Current function should have been declared&quot;</span>)
-                            .get_name()
-                            .to_str()
-                            .unwrap()
-                            == <span class="string">&quot;main&quot;
-                        </span>{
+                        // define { i253, i253, i253 } @foo()
+                        //
+                        // but fn foo() -&gt; felt
+                        // define i253 @foo()
+
+                        // If the function is the main function.
+                        </span><span class="kw">let </span>return_value = <span class="kw">if </span>func_name == <span class="string">&quot;main&quot; </span>{
+                            <span class="kw">let </span>return_struct_type = <span class="self">self</span>.context.struct_type(<span class="kw-2">&amp;</span>types, <span class="bool-val">false</span>);
+                            <span class="comment">// Allocate a pointer for the return struct.
+                            </span><span class="kw">let </span>return_struct_ptr = <span class="self">self</span>.builder.build_alloca(return_struct_type, <span class="string">&quot;ret_struct_ptr&quot;</span>);
+                            <span class="comment">// Save each variable to return in the struct.
+                            </span><span class="kw">for </span>(index, value) <span class="kw">in </span>values.iter().enumerate() {
+                                <span class="kw">let </span>tuple_ptr = <span class="self">self
+                                    </span>.builder
+                                    .build_struct_gep(
+                                        return_struct_type,
+                                        return_struct_ptr,
+                                        index.try_into().unwrap(),
+                                        <span class="macro">format!</span>(<span class="string">&quot;field_{index}_ptr&quot;</span>).as_str(),
+                                    )
+                                    .expect(<span class="string">&quot;Pointer should be valid&quot;</span>);
+                                <span class="self">self</span>.builder.build_store(tuple_ptr, <span class="kw-2">**</span>value);
+                            }
+                            <span class="comment">// Load the values to return in a variable.
+                            </span><span class="kw">let </span><span class="kw-2">mut </span>return_value =
+                                <span class="self">self</span>.builder.build_load(return_struct_type, return_struct_ptr, <span class="string">&quot;return_struct_value&quot;</span>);
+
                             <span class="comment">// Get the first field of the return type (we&#39;ll check that it&#39;s not the unit type)
                             </span><span class="kw">let </span>field_ret_type =
                                 return_value.into_struct_value().get_type().get_field_type_at_index(<span class="number">0</span>).unwrap();
@@ -511,7 +549,33 @@
                                 }
                                 return_value = <span class="self">self</span>.context.i32_type().const_int(<span class="number">0</span>, <span class="bool-val">false</span>).into();
                             }
+                            return_value
                         }
+                        <span class="comment">// if its not main, return the value directly if its only 1, otherwise create a struct.
+                        </span><span class="kw">else if </span>values.len() == <span class="number">1 </span>{
+                            <span class="kw-2">*</span>values[<span class="number">0</span>]
+                        } <span class="kw">else </span>{
+                            <span class="kw">let </span>return_struct_type = <span class="self">self</span>.context.struct_type(<span class="kw-2">&amp;</span>types, <span class="bool-val">false</span>);
+                            <span class="comment">// Allocate a pointer for the return struct.
+                            </span><span class="kw">let </span>return_struct_ptr = <span class="self">self</span>.builder.build_alloca(return_struct_type, <span class="string">&quot;ret_struct_ptr&quot;</span>);
+                            <span class="comment">// Save each variable to return in the struct.
+                            </span><span class="kw">for </span>(index, value) <span class="kw">in </span>values.iter().enumerate() {
+                                <span class="kw">let </span>tuple_ptr = <span class="self">self
+                                    </span>.builder
+                                    .build_struct_gep(
+                                        return_struct_type,
+                                        return_struct_ptr,
+                                        index.try_into().unwrap(),
+                                        <span class="macro">format!</span>(<span class="string">&quot;field_{index}_ptr&quot;</span>).as_str(),
+                                    )
+                                    .expect(<span class="string">&quot;Pointer should be valid&quot;</span>);
+                                <span class="self">self</span>.builder.build_store(tuple_ptr, <span class="kw-2">**</span>value);
+                            }
+                            <span class="comment">// Load the values to return in a variable.
+                            </span><span class="kw">let </span>return_value =
+                                <span class="self">self</span>.builder.build_load(return_struct_type, return_struct_ptr, <span class="string">&quot;return_struct_value&quot;</span>);
+                            return_value
+                        };
                         <span class="comment">// Return the specified value.
                         </span><span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>return_value));
                     }

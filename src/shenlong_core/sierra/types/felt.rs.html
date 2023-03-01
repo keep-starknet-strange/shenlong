@@ -20,10 +20,17 @@
 <a href="#20" id="20">20</a>
 <a href="#21" id="21">21</a>
 <a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::program::TypeDeclaration;
 <span class="kw">use </span>inkwell::types::BasicType;
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::llvm_compiler::Compiler;
+
+<span class="kw">pub const </span>FELT_INT_WIDTH: u32 = <span class="number">253</span>;
+<span class="kw">pub const </span>DOUBLE_FELT_INT_WIDTH: u32 = <span class="number">512</span>;
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
     <span class="doccomment">/// Declares the LLVM IR representation for the felt type.
@@ -32,14 +39,15 @@
     ///
     /// * `type_declaration` - the sierra type declaration
     </span><span class="kw">pub fn </span>felt(<span class="kw-2">&amp;mut </span><span class="self">self</span>, type_declaration: <span class="kw-2">&amp;</span>TypeDeclaration) {
-        <span class="comment">// Save felt in the id from name map to be able to get the LLVM IR type from the type name.
-        </span><span class="self">self</span>.id_from_name.insert(<span class="string">&quot;felt&quot;</span>.to_owned(), type_declaration.id.id.to_string());
+        <span class="comment">// Use 253 bits to represent a felt to leave space for the sign.
+        </span><span class="kw">let </span>felt_type = <span class="self">self</span>.context.custom_width_int_type(FELT_INT_WIDTH).as_basic_type_enum();
+
+        <span class="kw">let </span>debug_name = type_declaration.id.debug_name.as_ref().unwrap().as_str();
+
         <span class="comment">// Save the felt type in the types map.
-        </span><span class="self">self</span>.types.insert(
-            type_declaration.id.id.to_string(),
-            <span class="comment">// Use 253 bits to represent a felt to leave space for the sign.
-            </span>Box::new(<span class="self">self</span>.context.custom_width_int_type(<span class="number">253</span>).as_basic_type_enum()),
-        );
+        </span><span class="self">self</span>.types_by_id.insert(type_declaration.id.id, felt_type);
+        <span class="self">self</span>.types_by_name.insert(debug_name.to_string(), felt_type);
+        <span class="self">self</span>.create_debug_type(type_declaration.id.id, debug_name, FELT_INT_WIDTH.into());
     }
 }
 </code></pre></div>

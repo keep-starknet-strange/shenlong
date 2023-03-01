@@ -41,6 +41,7 @@
 <a href="#41" id="41">41</a>
 <a href="#42" id="42">42</a>
 <a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::program::GenericArg::Value;
 <span class="kw">use </span>cairo_lang_sierra::program::LibfuncDeclaration;
 <span class="kw">use </span>inkwell::types::{BasicType, StringRadix};
@@ -60,14 +61,15 @@
     /// Panics if the felt type has not been declared previously.
     </span><span class="kw">pub fn </span>felt_const(<span class="kw-2">&amp;</span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
         <span class="comment">// We could hardcode the LLVM IR type for felt but this adds a check.
-        </span><span class="kw">let </span>return_type = <span class="self">self</span>.get_type_from_name(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+        </span><span class="kw">let </span>func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
+        <span class="kw">let </span>return_type = <span class="self">self</span>.types_by_name.get(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+        <span class="kw">let </span>debug_return_type = <span class="kw-2">*</span><span class="self">self</span>.debug_types_by_name.get(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+
         <span class="comment">// fn felt_const() -&gt; felt
-        </span><span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
-            libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
-            return_type.fn_type(<span class="kw-2">&amp;</span>[], <span class="bool-val">false</span>),
-            <span class="prelude-val">None</span>,
-        );
+        </span><span class="kw">let </span>func = <span class="self">self</span>.module.add_function(func_name, return_type.fn_type(<span class="kw-2">&amp;</span>[], <span class="bool-val">false</span>), <span class="prelude-val">None</span>);
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
+
+        <span class="self">self</span>.create_function_debug(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_return_type), <span class="kw-2">&amp;</span>[]);
 
         <span class="comment">// Convert the bigint value of the constant into an LLVM IR const int value. Panics if the constant
         // value is not a decimal value.
