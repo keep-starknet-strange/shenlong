@@ -22,7 +22,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let comparison = self.builder.build_int_compare(
             EQ,
             lhs.into_int_value(),
-            self.get_type_from_name("felt")?.into_int_type().const_int(0, false),
+            self.types_by_name.get("felt").unwrap().into_int_type().const_int(0, false),
             "check",
         );
         // Get the current function.

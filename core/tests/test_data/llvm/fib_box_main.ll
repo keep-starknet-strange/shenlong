@@ -402,7 +402,7 @@ entry:
 !18 = distinct !DISubprogram(name: "felt_add", linkageName: "felt_add", scope: null, file: !2, line: 17, type: !19, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
 !19 = !DISubroutineType(flags: DIFlagPublic, types: !20)
 !20 = !{!6, !6, !6}
-!21 = !DILocation(line: 17, scope: !1)
+!21 = !DILocation(line: 17, scope: !18)
 !22 = distinct !DISubprogram(name: "felt_const<1>", linkageName: "felt_const<1>", scope: null, file: !2, line: 19, type: !23, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
 !23 = !DISubroutineType(flags: DIFlagPublic, types: !24)
 !24 = !{!6}

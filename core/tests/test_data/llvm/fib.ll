@@ -148,107 +148,103 @@ entry:
   ret i253 %res, !dbg !17
 }
 
-define { i253, i253 } @"dup<felt>"(i253 %0) {
+define { i253, i253 } @"dup<felt>"(i253 %0) !dbg !18 {
 entry:
-  %res_ptr = alloca { i253, i253 }, align 8, !dbg !17
-  %tuple_ptr = getelementptr inbounds { i253, i253 }, ptr %res_ptr, i32 0, i32 0, !dbg !17
-  store i253 %0, ptr %tuple_ptr, align 4, !dbg !17
-  %tuple_ptr_2 = getelementptr inbounds { i253, i253 }, ptr %res_ptr, i32 0, i32 1, !dbg !17
-  store i253 %0, ptr %tuple_ptr_2, align 4, !dbg !17
-  %res = load { i253, i253 }, ptr %res_ptr, align 4, !dbg !17
-  ret { i253, i253 } %res, !dbg !17
+  %res_ptr = alloca { i253, i253 }, align 8, !dbg !23
+  %tuple_ptr = getelementptr inbounds { i253, i253 }, ptr %res_ptr, i32 0, i32 0, !dbg !23
+  store i253 %0, ptr %tuple_ptr, align 4, !dbg !23
+  %tuple_ptr_2 = getelementptr inbounds { i253, i253 }, ptr %res_ptr, i32 0, i32 1, !dbg !23
+  store i253 %0, ptr %tuple_ptr_2, align 4, !dbg !23
+  %res = load { i253, i253 }, ptr %res_ptr, align 4, !dbg !23
+  ret { i253, i253 } %res, !dbg !23
 }
 
-define i253 @"store_temp<felt>"(i253 %0) {
-entry:
-  ret i253 %0, !dbg !17
-}
-
-define i253 @felt_add(i253 %0, i253 %1) !dbg !18 {
-entry:
-  %extended_a = sext i253 %0 to i512, !dbg !21
-  %extended_b = sext i253 %1 to i512, !dbg !21
-  %res = add i512 %extended_a, %extended_b, !dbg !21
-  %res1 = call i253 @modulo(i512 %res), !dbg !21
-  ret i253 %res1, !dbg !21
-}
-
-define i253 @"felt_const<1>"() !dbg !22 {
-entry:
-  ret i253 1, !dbg !25
-}
-
-define i253 @felt_sub(i253 %0, i253 %1) !dbg !26 {
-entry:
-  %res = sub i253 %0, %1, !dbg !27
-  %arg = sext i253 %res to i512, !dbg !27
-  %res1 = call i253 @modulo(i512 %arg), !dbg !27
-  ret i253 %res1, !dbg !27
-}
-
-define i253 @"rename<felt>"(i253 %0) {
+define i253 @"store_temp<felt>"(i253 %0) !dbg !24 {
 entry:
   ret i253 %0, !dbg !27
 }
 
-define { i253 } @"fib::fib::fib"(i253 %0, i253 %1, i253 %2) {
+define i253 @felt_add(i253 %0, i253 %1) !dbg !28 {
 entry:
-  %3 = call { i253, i253 } @"dup<felt>"(i253 %2), !dbg !27
-  %res_ptr = alloca { i253, i253 }, align 8, !dbg !27
-  store { i253, i253 } %3, ptr %res_ptr, align 4, !dbg !27
-  %"2_ptr" = getelementptr inbounds { i253, i253 }, ptr %res_ptr, i32 0, i32 0, !dbg !27
-  %"2" = load i253, ptr %"2_ptr", align 4, !dbg !27
-  %"3_ptr" = getelementptr inbounds { i253, i253 }, ptr %res_ptr, i32 0, i32 1, !dbg !27
-  %"3" = load i253, ptr %"3_ptr", align 4, !dbg !27
-  %check = icmp eq i253 %"3", 0, !dbg !27
-  br i1 %check, label %then, label %else, !dbg !27
+  %extended_a = sext i253 %0 to i512, !dbg !31
+  %extended_b = sext i253 %1 to i512, !dbg !31
+  %res = add i512 %extended_a, %extended_b, !dbg !31
+  %res1 = call i253 @modulo(i512 %res), !dbg !31
+  ret i253 %res1, !dbg !31
+}
+
+define i253 @"felt_const<1>"() !dbg !32 {
+entry:
+  ret i253 1, !dbg !34
+}
+
+define i253 @felt_sub(i253 %0, i253 %1) !dbg !35 {
+entry:
+  %res = sub i253 %0, %1, !dbg !36
+  %arg = sext i253 %res to i512, !dbg !36
+  %res1 = call i253 @modulo(i512 %arg), !dbg !36
+  ret i253 %res1, !dbg !36
+}
+
+define i253 @"rename<felt>"(i253 %0) !dbg !37 {
+entry:
+  ret i253 %0, !dbg !38
+}
+
+define i253 @"fib::fib::fib"(i253 %0, i253 %1, i253 %2) !dbg !39 {
+entry:
+  %3 = call { i253, i253 } @"dup<felt>"(i253 %2), !dbg !42
+  %res_ptr = alloca { i253, i253 }, align 8, !dbg !42
+  store { i253, i253 } %3, ptr %res_ptr, align 4, !dbg !42
+  %"2_ptr" = getelementptr inbounds { i253, i253 }, ptr %res_ptr, i32 0, i32 0, !dbg !42
+  %"2" = load i253, ptr %"2_ptr", align 4, !dbg !42
+  %"3_ptr" = getelementptr inbounds { i253, i253 }, ptr %res_ptr, i32 0, i32 1, !dbg !42
+  %"3" = load i253, ptr %"3_ptr", align 4, !dbg !42
+  %check = icmp eq i253 %"3", 0, !dbg !42
+  br i1 %check, label %then, label %else, !dbg !42
 
 then:                                             ; preds = %entry
-  %4 = call i253 @"store_temp<felt>"(i253 %0), !dbg !27
-  br label %dest, !dbg !27
+  %4 = call i253 @"store_temp<felt>"(i253 %0), !dbg !42
+  br label %dest, !dbg !42
 
 else:                                             ; preds = %entry
-  br label %dest1, !dbg !27
+  br label %dest1, !dbg !42
 
 dest:                                             ; preds = %then
-  %5 = call i253 @"rename<felt>"(i253 %4), !dbg !27
-  %ret_struct_ptr = alloca { i253 }, align 8, !dbg !27
-  %field_0_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !27
-  store i253 %5, ptr %field_0_ptr, align 4, !dbg !27
-  %return_struct_value = load { i253 }, ptr %ret_struct_ptr, align 4, !dbg !27
-  ret { i253 } %return_struct_value, !dbg !27
+  %5 = call i253 @"rename<felt>"(i253 %4), !dbg !42
+  %ret_struct_ptr = alloca { i253 }, align 8, !dbg !42
+  %field_0_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !42
+  store i253 %5, ptr %field_0_ptr, align 4, !dbg !42
+  %return_struct_value = load { i253 }, ptr %ret_struct_ptr, align 4, !dbg !42
+  ret { i253 } %return_struct_value, !dbg !42
 
 dest1:                                            ; preds = %else
-  %6 = call { i253, i253 } @"dup<felt>"(i253 %1), !dbg !27
-  %res_ptr2 = alloca { i253, i253 }, align 8, !dbg !27
-  store { i253, i253 } %6, ptr %res_ptr2, align 4, !dbg !27
-  %"1_ptr" = getelementptr inbounds { i253, i253 }, ptr %res_ptr2, i32 0, i32 0, !dbg !27
-  %"1" = load i253, ptr %"1_ptr", align 4, !dbg !27
-  %"7_ptr" = getelementptr inbounds { i253, i253 }, ptr %res_ptr2, i32 0, i32 1, !dbg !27
-  %"7" = load i253, ptr %"7_ptr", align 4, !dbg !27
-  %7 = call i253 @felt_add(i253 %0, i253 %"7"), !dbg !27
-  %8 = call i253 @"felt_const<1>"(), !dbg !27
-  %9 = call i253 @felt_sub(i253 %"2", i253 %8), !dbg !27
-  %10 = call i253 @"store_temp<felt>"(i253 %"1"), !dbg !27
-  %11 = call i253 @"store_temp<felt>"(i253 %7), !dbg !27
-  %12 = call i253 @"rename<felt>"(i253 %11), !dbg !27
-  %13 = call i253 @"store_temp<felt>"(i253 %9), !dbg !27
-  %14 = call i253 @"rename<felt>"(i253 %13), !dbg !27
-  %15 = call { i253 } @"fib::fib::fib"(i253 %10, i253 %12, i253 %14), !dbg !27
-  %res_ptr3 = alloca { i253 }, align 8, !dbg !27
-  store { i253 } %15, ptr %res_ptr3, align 4, !dbg !27
-  %"10_ptr" = getelementptr inbounds { i253 }, ptr %res_ptr3, i32 0, i32 0, !dbg !27
-  %"10" = load i253, ptr %"10_ptr", align 4, !dbg !27
-  %16 = call i253 @"rename<felt>"(i253 %"10"), !dbg !27
-  br label %dest4, !dbg !27
+  %6 = call { i253, i253 } @"dup<felt>"(i253 %1), !dbg !42
+  %res_ptr2 = alloca { i253, i253 }, align 8, !dbg !42
+  store { i253, i253 } %6, ptr %res_ptr2, align 4, !dbg !42
+  %"1_ptr" = getelementptr inbounds { i253, i253 }, ptr %res_ptr2, i32 0, i32 0, !dbg !42
+  %"1" = load i253, ptr %"1_ptr", align 4, !dbg !42
+  %"7_ptr" = getelementptr inbounds { i253, i253 }, ptr %res_ptr2, i32 0, i32 1, !dbg !42
+  %"7" = load i253, ptr %"7_ptr", align 4, !dbg !42
+  %7 = call i253 @felt_add(i253 %0, i253 %"7"), !dbg !42
+  %8 = call i253 @"felt_const<1>"(), !dbg !42
+  %9 = call i253 @felt_sub(i253 %"2", i253 %8), !dbg !42
+  %10 = call i253 @"store_temp<felt>"(i253 %"1"), !dbg !42
+  %11 = call i253 @"store_temp<felt>"(i253 %7), !dbg !42
+  %12 = call i253 @"rename<felt>"(i253 %11), !dbg !42
+  %13 = call i253 @"store_temp<felt>"(i253 %9), !dbg !42
+  %14 = call i253 @"rename<felt>"(i253 %13), !dbg !42
+  %15 = call i253 @"fib::fib::fib"(i253 %10, i253 %12, i253 %14), !dbg !42
+  %16 = call i253 @"rename<felt>"(i253 %15), !dbg !42
+  br label %dest3, !dbg !42
 
-dest4:                                            ; preds = %dest1
-  %17 = call i253 @"rename<felt>"(i253 %16), !dbg !27
-  %ret_struct_ptr5 = alloca { i253 }, align 8, !dbg !27
-  %field_0_ptr6 = getelementptr inbounds { i253 }, ptr %ret_struct_ptr5, i32 0, i32 0, !dbg !27
-  store i253 %17, ptr %field_0_ptr6, align 4, !dbg !27
-  %return_struct_value7 = load { i253 }, ptr %ret_struct_ptr5, align 4, !dbg !27
-  ret { i253 } %return_struct_value7, !dbg !27
+dest3:                                            ; preds = %dest1
+  %17 = call i253 @"rename<felt>"(i253 %16), !dbg !42
+  %ret_struct_ptr4 = alloca { i253 }, align 8, !dbg !42
+  %field_0_ptr5 = getelementptr inbounds { i253 }, ptr %ret_struct_ptr4, i32 0, i32 0, !dbg !42
+  store i253 %17, ptr %field_0_ptr5, align 4, !dbg !42
+  %return_struct_value6 = load { i253 }, ptr %ret_struct_ptr4, align 4, !dbg !42
+  ret { i253 } %return_struct_value6, !dbg !42
 }
 
 !llvm.module.flags = !{!0}
@@ -272,13 +268,28 @@ dest4:                                            ; preds = %dest1
 !15 = !DISubroutineType(flags: DIFlagPublic, types: !16)
 !16 = !{!6, !12}
 !17 = !DILocation(line: 3, scope: !14)
-!18 = distinct !DISubprogram(name: "felt_add", linkageName: "felt_add", scope: null, file: !2, line: 12, type: !19, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!18 = distinct !DISubprogram(name: "dup<felt>", linkageName: "dup<felt>", scope: null, file: !2, line: 5, type: !19, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
 !19 = !DISubroutineType(flags: DIFlagPublic, types: !20)
-!20 = !{!6, !6, !6}
-!21 = !DILocation(line: 12, scope: !1)
-!22 = distinct !DISubprogram(name: "felt_const<1>", linkageName: "felt_const<1>", scope: null, file: !2, line: 13, type: !23, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
-!23 = !DISubroutineType(flags: DIFlagPublic, types: !24)
-!24 = !{!6}
-!25 = !DILocation(line: 13, scope: !22)
-!26 = distinct !DISubprogram(name: "felt_sub", linkageName: "felt_sub", scope: null, file: !2, line: 14, type: !19, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
-!27 = !DILocation(line: 14, scope: !26)
+!20 = !{!21, !6}
+!21 = !DICompositeType(tag: DW_TAG_structure_type, name: "return_type_dup<felt>", file: !2, line: 5, size: 253, align: 64, flags: DIFlagPublic, elements: !22, identifier: "return_type_dup<felt>")
+!22 = !{!6}
+!23 = !DILocation(line: 5, scope: !18)
+!24 = distinct !DISubprogram(name: "store_temp<felt>", linkageName: "store_temp<felt>", scope: null, file: !2, line: 9, type: !25, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!25 = !DISubroutineType(flags: DIFlagPublic, types: !26)
+!26 = !{!6, !6}
+!27 = !DILocation(line: 9, scope: !24)
+!28 = distinct !DISubprogram(name: "felt_add", linkageName: "felt_add", scope: null, file: !2, line: 12, type: !29, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!29 = !DISubroutineType(flags: DIFlagPublic, types: !30)
+!30 = !{!6, !6, !6}
+!31 = !DILocation(line: 12, scope: !28)
+!32 = distinct !DISubprogram(name: "felt_const<1>", linkageName: "felt_const<1>", scope: null, file: !2, line: 13, type: !33, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!33 = !DISubroutineType(flags: DIFlagPublic, types: !22)
+!34 = !DILocation(line: 13, scope: !32)
+!35 = distinct !DISubprogram(name: "felt_sub", linkageName: "felt_sub", scope: null, file: !2, line: 14, type: !29, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!36 = !DILocation(line: 14, scope: !35)
+!37 = distinct !DISubprogram(name: "rename<felt>", linkageName: "rename<felt>", scope: null, file: !2, line: 15, type: !25, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!38 = !DILocation(line: 15, scope: !37)
+!39 = distinct !DISubprogram(name: "fib::fib::fib", linkageName: "fib::fib::fib", scope: null, file: !2, line: 18, type: !40, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!40 = !DISubroutineType(flags: DIFlagPublic, types: !41)
+!41 = !{!6, !6, !6, !6}
+!42 = !DILocation(line: 18, scope: !39)

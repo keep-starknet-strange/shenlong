@@ -57,13 +57,13 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
         llvm_output_path: Path::new("").to_path_buf(),
         state: CompilationState::NotStarted,
         valid_state_transitions: Compiler::init_state_transitions(),
-        types: HashMap::new(),
+        types_by_id: HashMap::new(),
         id_from_name: HashMap::new(),
         basic_blocks: HashMap::new(),
         jump_dests: HashSet::new(),
         dibuilder,
         compile_unit,
-        ditypes: HashMap::new(),
+        debug_types_by_id: HashMap::new(),
         current_line_estimate: 0,
     };
 

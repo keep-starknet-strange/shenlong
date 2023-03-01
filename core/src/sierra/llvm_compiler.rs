@@ -43,7 +43,7 @@ use inkwell::context::Context;
 use inkwell::debug_info::{DICompileUnit, DIType, DebugInfoBuilder};
 use inkwell::module::Module;
 use inkwell::targets::TargetTriple;
-use inkwell::types::BasicType;
+use inkwell::types::BasicTypeEnum;
 use inkwell::values::BasicValueEnum;
 use tracing::{debug, info};
 
@@ -69,17 +69,18 @@ pub struct Compiler<'a, 'ctx> {
     pub state: CompilationState,
     /// The valid state transitions.
     pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
-    /// The types.
-    pub types: HashMap<String, Box<dyn BasicType<'ctx> + 'a>>,
-    /// Mapping from type name to program id.
-    pub id_from_name: HashMap<String, String>,
+    /// The types by sierra id.
+    pub types_by_id: HashMap<u64, BasicTypeEnum<'ctx>>,
+    /// The types by debug name
+    pub types_by_name: HashMap<String, BasicTypeEnum<'ctx>>,
     /// Calls in the main function.
     pub basic_blocks: HashMap<usize, BasicBlock<'ctx>>,
     pub jump_dests: HashSet<usize>,
     // Debug info
     pub dibuilder: DebugInfoBuilder<'ctx>,
     pub compile_unit: DICompileUnit<'ctx>,
-    pub ditypes: HashMap<String, DIType<'ctx>>,
+    pub debug_types_by_id: HashMap<u64, DIType<'ctx>>,
+    pub debug_types_by_name: HashMap<String, DIType<'ctx>>,
     // Sierra doesn't give us spans, we have to estimate the line number.
     pub current_line_estimate: u32,
 }
@@ -266,13 +267,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         info!("Target triple: {}", module.get_triple());
 
-        // Instantiate variables map.
-        let variables = HashMap::new();
-        let types = HashMap::new();
-        let id_from_name = HashMap::new();
-        let basic_blocks = HashMap::new();
-        let jump_dests = HashSet::new();
-
         // Create a map of valid state transitions.
         let valid_state_transitions = Compiler::init_state_transitions();
 
@@ -282,17 +276,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             context: &context,
             builder: &builder,
             module,
-            variables,
+            variables: HashMap::new(),
             llvm_output_path: llvm_output_path.to_owned(),
             state: CompilationState::NotStarted,
             valid_state_transitions,
-            types,
-            id_from_name,
-            basic_blocks,
-            jump_dests,
+            types_by_id: HashMap::new(),
+            types_by_name: HashMap::new(),
+            basic_blocks: HashMap::new(),
+            jump_dests: HashSet::new(),
             dibuilder,
             compile_unit,
-            ditypes: HashMap::new(),
+            debug_types_by_id: HashMap::new(),
+            debug_types_by_name: HashMap::new(),
             current_line_estimate: 0,
         };
 

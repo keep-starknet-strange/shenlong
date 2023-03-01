@@ -18,13 +18,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn felt_const(&self, libfunc_declaration: &LibfuncDeclaration) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
-        let return_type = self.get_type_from_name("felt").expect("Can't get felt from name");
+        let return_type = self.types_by_name.get("felt").expect("Can't get felt from name");
+        let debug_return_type = *self.debug_types_by_name.get("felt").expect("Can't get felt from name");
 
         // fn felt_const() -> felt
         let func = self.module.add_function(func_name, return_type.fn_type(&[], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.create_function_debug(func_name, &func, Some("felt"), &[]);
+        self.create_function_debug(func_name, &func, Some(debug_return_type), &[]);
 
         // Convert the bigint value of the constant into an LLVM IR const int value. Panics if the constant
         // value is not a decimal value.

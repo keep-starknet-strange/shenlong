@@ -19,19 +19,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// * `type_declaration` - the sierra type declaration.
     pub fn non_zero(&mut self, type_declaration: &TypeDeclaration) {
-        dbg!(&type_declaration);
         match &type_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
-                let type_name = type_declaration.id.id.to_string();
-                let inner_type_name = id.to_string();
-                self.types.insert(
-                    type_name,
-                    // A type can't use an undefined type so it should be declared before so it shouldn't panic.
-                    // The NonZero type doesn't really make sense in LLVM IR (it does in sierra to make sure that
-                    // everything is provable but in LLVM IR we're not proving anything so we can consider `NonZero<T>`
-                    // to be just `T`).
-                    Box::from(self.types.get(&inner_type_name).unwrap().as_basic_type_enum()),
-                );
+                // A type can't use an undefined type so it should be declared before so it shouldn't panic.
+                // The NonZero type doesn't really make sense in LLVM IR (it does in sierra to make sure that
+                // everything is provable but in LLVM IR we're not proving anything so we can consider `NonZero<T>`
+                // to be just `T`).
+                let inner_type = *self.types_by_id.get(id).unwrap();
+
+                self.types_by_id.insert(type_declaration.id.id, inner_type);
+                self.types_by_name.insert(type_declaration.id.debug_name.as_ref().unwrap().to_string(), inner_type);
             }
             GenericArg::UserType(_) => todo!(),
             _val => {

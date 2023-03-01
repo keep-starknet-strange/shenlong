@@ -1,6 +1,6 @@
 use cairo_lang_sierra::ids::ConcreteTypeId;
 use cairo_lang_sierra::program::Param;
-use inkwell::types::BasicMetadataTypeEnum;
+use inkwell::types::{BasicMetadataTypeEnum, BasicType};
 use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
@@ -25,32 +25,59 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         for func_declaration in self.program.funcs.iter() {
             self.current_line_estimate += 1;
 
+            let func_name = func_declaration.id.debug_name.as_ref().unwrap().as_str();
+
             // Clear the variables map in case a previous function has been processed.
             self.variables.clear();
 
             // Arguments of the function.
             let mut args = vec![];
+            let mut args_debug_types = vec![];
+
             for Param { id: _, ty: ConcreteTypeId { id: type_id, debug_name: _debug_name } } in &func_declaration.params
             {
                 // Get the type of the argument. Panics if the type is not found because it should have been
                 // declared at the beginning of the sierra file.
-                let ty =
-                    self.types.get(&type_id.to_string()).expect("Function argument type should have been declared");
+                let ty = *self.types_by_id.get(type_id).expect("Function argument type should have been declared");
                 args.push(ty);
+                let debug_type = self.debug_types_by_id.get(type_id).unwrap();
+                args_debug_types.push(*debug_type);
             }
+
             // Create return type if the function returns something.
-            let return_type = if !func_declaration.signature.ret_types.is_empty() {
-                let mut ret_types = vec![];
-                // In case the function returns multiple values collect all the types.
-                for ret_type in &func_declaration.signature.ret_types {
-                    ret_types.push(
-                        self.types
-                            .get(&ret_type.id.to_string())
-                            .expect("Type should have been declared before function")
-                            .as_basic_type_enum(),
+
+            let return_info = if !func_declaration.signature.ret_types.is_empty() {
+                // If the function returns a single value, return it directly.
+                if func_declaration.signature.ret_types.len() == 1 {
+                    let ty = *self.types_by_id.get(&func_declaration.signature.ret_types[0].id).unwrap();
+                    let debug_ty = *self.debug_types_by_id.get(&func_declaration.signature.ret_types[0].id).unwrap();
+                    Some((ty, debug_ty))
+                } else {
+                    // In case the function returns multiple values collect all the types into a struct.
+                    let mut ret_types = vec![];
+                    let mut ret_debug_types = vec![];
+
+                    for ret_type in &func_declaration.signature.ret_types {
+                        ret_types.push(
+                            *self
+                                .types_by_id
+                                .get(&ret_type.id)
+                                .expect("Type should have been declared before function"),
+                        );
+                        ret_debug_types.push(*self.debug_types_by_id.get(&ret_type.id).unwrap());
+                    }
+                    let generated_return_struct_type = self.context.struct_type(&ret_types, false);
+                    // Arbitrarely decided generated struct return types have id = the function id + 100_000.
+                    // Arbitrarely decided generated struct return types have name = "return_type_{}" where {} is the
+                    // function name.
+                    let debug_type = self.create_debug_type_struct(
+                        Self::get_debug_function_return_struct_type_id(func_declaration.id.id),
+                        &Self::get_debug_function_return_struct_type_name(func_name),
+                        &generated_return_struct_type,
+                        &ret_debug_types,
                     );
+                    Some((generated_return_struct_type.as_basic_type_enum(), debug_type))
                 }
-                Some(self.context.struct_type(&ret_types, false))
             } else {
                 None
             };
@@ -64,32 +91,43 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Declare the function type (if it's the main function strip everything so it's recognized like the
             // main function)
             let func_name = func_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
-            let func = if let Some(ret_ty) = return_type && func_name.ends_with("::main") {
+            let func = if let Some(ret_ty) = return_info && func_name.ends_with("::main") {
+                let ret_ty = ret_ty.0;
                 // Generate the print function for the return value type.
 
-                if ret_ty.count_fields() > 0 {
-                    // If there is a return value, it will always be 1, (tuples are a struct, they count as one).
-                    let field = ret_ty.get_field_type_at_index(0).unwrap();
-                    if field.is_int_type() {
-                        self.printf_for_type(field.into(), PRINT_RETURN, "felt");
-                    }
-                    // If its a struct, print all their values
-                    else if field.is_struct_type() {
-                        let field = field.into_struct_type();
+                if ret_ty.is_int_type() {
+                    let ret_ty = ret_ty.into_int_type();
+                    self.printf_for_type(ret_ty.into(), PRINT_RETURN, "felt");
+                }
+                else if ret_ty.is_struct_type() {
+                    let ret_ty = ret_ty.into_struct_type();
 
-                        for f in field.get_field_types() {
-                            if f.is_int_type() {
-                                self.printf_for_type(f.into(), PRINT_RETURN, "felt");
+                    if ret_ty.count_fields() > 0 {
+                        // If there is a return value, it will always be 1, (tuples are a struct, they count as one).
+                        let field = ret_ty.get_field_type_at_index(0).unwrap();
+
+                        if field.is_int_type() {
+                            self.printf_for_type(field.into(), PRINT_RETURN, "felt");
+                        }
+                        // If its a struct, print all their values
+                        else if field.is_struct_type() {
+                            let field = field.into_struct_type();
+
+                            for f in field.get_field_types() {
+                                if f.is_int_type() {
+                                    self.printf_for_type(f.into(), PRINT_RETURN, "felt");
+                                }
                             }
                         }
                     }
                 }
+
                 self.module.add_function("main", self.context.i32_type().fn_type(args_metadata, false), None)
             } else {
                 self.module.add_function(
                     func_name.as_str(),
-                    match return_type {
-                        Some(ret) => ret.fn_type(args_metadata, false),
+                    match return_info {
+                        Some(ret) => ret.0.fn_type(args_metadata, false),
                         None => self.context.void_type().fn_type(args_metadata, false),
                     },
                     None,
@@ -97,6 +135,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             };
 
             self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
+
+            self.create_function_debug(&func_name, &func, return_info.map(|x| x.1), &args_debug_types);
+
             // Loop through the arguments of the function. The variable id counter always starts from zero for a
             // function.
             for (var_id, _) in args.iter().enumerate() {
