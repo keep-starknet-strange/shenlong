@@ -12,7 +12,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// * `type_declaration` - the sierra type declaration.
     pub fn sierra_struct(&mut self, type_declaration: &TypeDeclaration) {
-        dbg!(&type_declaration);
         let mut args = vec![];
         let mut args_ids = vec![];
         for generic_arg in type_declaration.long_id.generic_args.iter() {
