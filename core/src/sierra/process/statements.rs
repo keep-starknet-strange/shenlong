@@ -2,7 +2,7 @@ use cairo_lang_sierra::ids::VarId;
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
 use inkwell::debug_info::DIScope;
-use inkwell::values::{BasicMetadataValueEnum, StructValue};
+use inkwell::values::{AnyValue, BasicMetadataValueEnum, BasicValue, BasicValueEnum, StructValue};
 use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
@@ -22,12 +22,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Set the statement number to the absolute statement number.
             statement_id += from;
             self.debug.set_statement_line(statement_id);
-            self.debug.debug_location(Some(scope));
+            let debug_location = self.debug.debug_location(Some(scope));
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
                     // Get core lib function called by this instruction.
-                    let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
+                    let fn_name = invocation.libfunc_id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).to_string();
                     debug!(fn_name, line = self.debug.get_line(), "processing statement: invocation");
                     // Function has only one branch and doesn't return anything.
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
@@ -64,22 +64,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     // Those 2 instructions have only 1 branch and the target is fallthrough (which means next
                     // instruction).
                     if invocation.branches.len() == 1 && invocation.branches[0].target == GenBranchTarget::Fallthrough {
-                        let function = if invocation.libfunc_id.debug_name.clone().unwrap().starts_with("function_call")
-                        {
+                        let function = if fn_name.starts_with("function_call") {
                             // Case where the invocation is a function call (it's probably not possible to process it
                             // before the statements because it needs the called function to
                             // be defined to call it).
                             self.module
                                 .get_function(
-                                    invocation
-                                        .libfunc_id
-                                        .debug_name
-                                        .clone()
-                                        .unwrap()
-                                        .strip_prefix("function_call<user@")
-                                        .unwrap()
-                                        .strip_suffix('>')
-                                        .unwrap(),
+                                    fn_name.strip_prefix("function_call<user@").unwrap().strip_suffix('>').unwrap(),
                                 )
                                 .unwrap()
                         } else {
@@ -90,13 +81,28 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         };
                         // Get the arguments for the function call.
                         let args = self.process_args(invocation);
+
                         // Call the function.
                         let res = self
                             .builder
-                            .build_call(function, &args, "")
+                            .build_call(function, &args.iter().map(|x| (*x).into()).collect::<Vec<_>>(), "")
                             .try_as_basic_value()
                             .left()
                             .expect("Call should have worked");
+
+                        let real_fn_name = function.get_name().to_string_lossy();
+                        let debug_function = self.debug.functions.get(&*real_fn_name).unwrap();
+                        for (i, dbg_arg) in debug_function.params.iter().enumerate() {
+                            let value = args[i];
+                            self.debug.debug_builder.insert_dbg_value_before(
+                                value,
+                                *dbg_arg,
+                                None,
+                                debug_location,
+                                res.as_instruction_value().unwrap(),
+                            );
+                        }
+
                         if res.is_struct_value()
                             && res.into_struct_value().get_type().count_fields() > 0
                             && !fn_name.starts_with("store_temp")
@@ -280,16 +286,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     ///
     /// Panics if the argument needed is not found.
-    fn process_args(&self, invocation: &Invocation) -> Vec<BasicMetadataValueEnum<'ctx>> {
+    fn process_args(&self, invocation: &Invocation) -> Vec<BasicValueEnum<'ctx>> {
         let mut args = vec![];
         if !invocation.args.is_empty() {
             for argument in invocation.args.iter() {
-                args.push(
-                    (*self.variables.get(&argument.id.to_string()).unwrap_or_else(|| {
-                        panic!("Variable {:} passed as argument should have been declared first", argument.id)
-                    }))
-                    .into(),
-                );
+                args.push(*self.variables.get(&argument.id.to_string()).unwrap_or_else(|| {
+                    panic!("Variable {:} passed as argument should have been declared first", argument.id)
+                }));
             }
         }
         args

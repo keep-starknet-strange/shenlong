@@ -80,11 +80,14 @@ pub struct Compiler<'a, 'ctx> {
     pub debug: DebugCompiler<'a, 'ctx>,
 }
 
+#[derive(Debug, Clone)]
 pub struct FunctionDebugInfo<'ctx> {
     pub function: DISubprogram<'ctx>,
     pub params: Vec<DILocalVariable<'ctx>>,
 }
+
 /// Struct holding all the data needed to produce the debug info by the compiler.
+#[derive(Debug)]
 pub struct DebugCompiler<'a, 'ctx> {
     /// Debug builder
     pub debug_builder: DebugInfoBuilder<'ctx>,

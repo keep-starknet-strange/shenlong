@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DIScope, DISubprogram, DIType};
+use inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DILocation, DIScope, DISubprogram, DIType};
 use inkwell::types::StructType;
 use inkwell::values::FunctionValue;
 use regex::Regex;
@@ -10,7 +10,7 @@ use super::llvm_compiler::{DebugCompiler, FunctionDebugInfo};
 impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
     /// Create and set the current debug location.
     #[inline]
-    pub fn debug_location(&self, scope: Option<DIScope<'ctx>>) {
+    pub fn debug_location(&self, scope: Option<DIScope<'ctx>>) -> DILocation {
         let location = self.debug_builder.create_debug_location(
             self.context,
             self.get_line(),
@@ -19,6 +19,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             None,
         );
         self.builder.set_current_debug_location(location);
+        location
     }
 
     /// Utility method to generate debug info for a function.
