@@ -12,15 +12,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn modulo(&mut self) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let felt_type = self.get_type_from_name("felt").expect("Can't get felt from name");
-        let felt_type_id = self.get_type_id_from_name("felt").expect("Can't get felt from name").clone();
         // Max size of felt operation (Prime - 1 ) * ( Prime - 1) = 503 bits number
         let big_felt_type = self.context.custom_width_int_type(512);
         // fn felt_modulo(a: double_felt) -> felt
         let func = self.module.add_function("modulo", felt_type.fn_type(&[big_felt_type.into()], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.basic_type_debug_info("double_felt", 512);
-        self.create_function_debug("modulo", &func, &felt_type_id, &["double_felt".to_string()]);
+        self.create_function_debug("modulo", &func, Some("felt"), &["double_felt"]);
 
         let prime = big_felt_type.const_int_from_string(DEFAULT_PRIME, inkwell::types::StringRadix::Decimal).unwrap();
         // smod

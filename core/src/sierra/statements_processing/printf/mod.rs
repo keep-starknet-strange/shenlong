@@ -20,8 +20,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func = self.module.add_function(func_name, void_type.fn_type(&[ty], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.basic_type_debug_info("void", 0);
-        self.create_function_debug(func_name, &func, "void", &[type_id.to_string()]);
+        self.create_function_debug(func_name, &func, None, &[type_id]);
 
         // For now we only allow printing int types.
         let value = func.get_first_param().expect("Function should have exactly 1 param").into_int_value();

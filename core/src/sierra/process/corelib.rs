@@ -4,6 +4,7 @@ use tracing::debug;
 
 use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
+use crate::sierra::types::felt::DOUBLE_FELT_INT_WIDTH;
 
 pub const PRINT_FELT_FUNC: &str = "print_felt";
 pub const PRINT_DOUBLE_FELT_FUNC: &str = "print_double_felt";
@@ -34,10 +35,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Useful for debugging in the current early stage of development.
         // Should probably be removed in the future.
         let felt_type = self.get_type_from_name("felt").expect("Can't get felt from name");
-        let felt_type_id = self.get_type_id_from_name("felt_type_id").expect("Can't get felt from name").clone();
-        self.printf_for_type(felt_type.into(), PRINT_FELT_FUNC, &felt_type_id);
-        let double_felt = self.context.custom_width_int_type(512);
-        self.basic_type_debug_info("double_felt", 512);
+        self.printf_for_type(felt_type.into(), PRINT_FELT_FUNC, "felt");
+        let double_felt = self.context.custom_width_int_type(DOUBLE_FELT_INT_WIDTH);
         self.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC, "double_felt");
         self.modulo();
 

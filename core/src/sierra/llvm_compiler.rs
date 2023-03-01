@@ -77,9 +77,9 @@ pub struct Compiler<'a, 'ctx> {
     pub basic_blocks: HashMap<usize, BasicBlock<'ctx>>,
     pub jump_dests: HashSet<usize>,
     // Debug info
-    pub dibuilder: Option<DebugInfoBuilder<'ctx>>,
-    pub compile_unit: Option<DICompileUnit<'ctx>>,
-    pub ditypes: Option<HashMap<String, DIType<'ctx>>>,
+    pub dibuilder: DebugInfoBuilder<'ctx>,
+    pub compile_unit: DICompileUnit<'ctx>,
+    pub ditypes: HashMap<String, DIType<'ctx>>,
     // Sierra doesn't give us spans, we have to estimate the line number.
     pub current_line_estimate: u32,
 }
@@ -97,6 +97,8 @@ pub struct Compiler<'a, 'ctx> {
 pub enum CompilationState {
     /// The compilation has not started yet.
     NotStarted,
+    /// The necessary types for debugging have been created.
+    DebugSetup,
     /// The types have been processed.
     TypesProcessed,
     /// The functions have been processed.
@@ -288,11 +290,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             id_from_name,
             basic_blocks,
             jump_dests,
-            dibuilder: Some(dibuilder),
-            compile_unit: Some(compile_unit),
-            ditypes: Some(HashMap::new()),
+            dibuilder,
+            compile_unit,
+            ditypes: HashMap::new(),
             current_line_estimate: 0,
         };
+
+        // Setup the debug info.
+        compiler.setup_debug()?;
 
         // Process the types in the Sierra program.
         compiler.process_types()?;
@@ -324,9 +329,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::FunctionsProcessed)?;
 
-        if let Some(dibuilder) = &self.dibuilder {
-            dibuilder.finalize();
-        }
+        self.dibuilder.finalize();
         // let parent =
         //     output_path.parent().ok_or_else(|| eyre::eyre!("parent output path is not valid"))?;
         // // Recursively create the output path parent directories if they don't exist.
@@ -403,7 +406,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Initialize valid state transitions.
     pub fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
         HashMap::from([
-            ((CompilationState::NotStarted, CompilationState::TypesProcessed), true),
+            ((CompilationState::NotStarted, CompilationState::DebugSetup), true),
+            ((CompilationState::DebugSetup, CompilationState::TypesProcessed), true),
             ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), true),
             ((CompilationState::CoreLibFunctionsProcessed, CompilationState::FunctionsProcessed), true),
             ((CompilationState::FunctionsProcessed, CompilationState::Finalized), true),

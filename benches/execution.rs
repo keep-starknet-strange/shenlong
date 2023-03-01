@@ -22,11 +22,37 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
 fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
     let context = inkwell::context::Context::create();
+
+    let module = context.create_module("root");
+
+    let mut parent = Path::new(file_path).parent().unwrap().to_string_lossy();
+    if parent.is_empty() {
+        parent = ".".into();
+    }
+
+    let (dibuilder, compile_unit) = module.create_debug_info_builder(
+        true,
+        inkwell::debug_info::DWARFSourceLanguage::CPlusPlus,
+        &file_path,
+        &parent,
+        "shenlong",
+        false,                                        // is_optimized
+        "",                                           // compiler command line flags
+        0,                                            // runtime version
+        "",                                           // split name
+        inkwell::debug_info::DWARFEmissionKind::Full, // kind
+        0,                                            // dwo_id
+        false,                                        // split_debug_inlining
+        false,                                        // debug_info_for_profiling
+        "",                                           // The Clang system root (value of -isysroot).  ?
+        "",                                           //  The SDK. On Darwin, the last component of the sysroot.  ?
+    );
+
     let mut compiler = Compiler {
         program: &ProgramParser::new().parse(&fs::read_to_string(file_path).unwrap()).unwrap(),
         context: &context,
         builder: &context.create_builder(),
-        module: context.create_module("root"),
+        module,
         variables: HashMap::new(),
         llvm_output_path: Path::new("").to_path_buf(),
         state: CompilationState::NotStarted,
@@ -35,12 +61,13 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
         id_from_name: HashMap::new(),
         basic_blocks: HashMap::new(),
         jump_dests: HashSet::new(),
-        dibuilder: None,
-        compile_unit: None,
-        ditypes: None,
+        dibuilder,
+        compile_unit,
+        ditypes: HashMap::new(),
         current_line_estimate: 0,
     };
 
+    compiler.setup_debug().unwrap();
     compiler.process_types().unwrap();
     compiler.process_core_lib_functions().unwrap();
     compiler.collect_jumps();

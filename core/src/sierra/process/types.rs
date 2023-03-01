@@ -17,7 +17,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug!("processing types");
 
         // Check that the current state is valid.
-        self.check_state(&CompilationState::NotStarted)?;
+        self.check_state(&CompilationState::DebugSetup)?;
         for type_declaration in self.program.type_declarations.iter() {
             self.current_line_estimate += 1;
             // All those types are known in advance. A struct is a combination of multiple "primitive" types

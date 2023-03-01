@@ -71,8 +71,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     // If there is a return value, it will always be 1, (tuples are a struct, they count as one).
                     let field = ret_ty.get_field_type_at_index(0).unwrap();
                     if field.is_int_type() {
-                        let felt_type_id = self.get_type_id_from_name("felt").unwrap().clone();
-                        self.printf_for_type(field.into(), PRINT_RETURN, felt_type_id);
+                        self.printf_for_type(field.into(), PRINT_RETURN, "felt");
                     }
                     // If its a struct, print all their values
                     else if field.is_struct_type() {
@@ -80,8 +79,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                         for f in field.get_field_types() {
                             if f.is_int_type() {
-                                let felt_type_id = self.get_type_id_from_name("felt").unwrap();
-                                self.printf_for_type(f.into(), PRINT_RETURN, felt_type_id);
+                                self.printf_for_type(f.into(), PRINT_RETURN, "felt");
                             }
                         }
                     }
