@@ -216,7 +216,7 @@ entry:
 !27 = !DICompositeType(tag: DW_TAG_structure_type, name: "Tuple<felt, felt>", file: !2, line: 2, size: 506, align: 64, flags: DIFlagPublic, elements: !28, identifier: "Tuple<felt, felt>")
 !28 = !{!6, !6}
 !29 = !DILocation(line: 7, scope: !24)
-!30 = distinct !DISubprogram(name: "struct_construct::struct_construct::complex_type", linkageName: "struct_construct::struct_construct::complex_type", scope: null, file: !2, line: 9, type: !31, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!30 = distinct !DISubprogram(name: "struct_construct::struct_construct::complex_type", linkageName: "struct_construct::struct_construct::complex_type", scope: null, file: !2, line: 8, type: !31, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
 !31 = !DISubroutineType(flags: DIFlagPublic, types: !32)
 !32 = !{!27}
-!33 = !DILocation(line: 9, scope: !30)
+!33 = !DILocation(line: 8, scope: !30)
