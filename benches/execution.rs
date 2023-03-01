@@ -33,7 +33,7 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
     let (dibuilder, compile_unit) = module.create_debug_info_builder(
         true,
         inkwell::debug_info::DWARFSourceLanguage::CPlusPlus,
-        &file_path,
+        file_path,
         &parent,
         "shenlong",
         false,                                        // is_optimized
