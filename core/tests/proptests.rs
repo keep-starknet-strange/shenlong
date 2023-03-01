@@ -10,6 +10,7 @@ use tinytemplate::TinyTemplate;
 
 #[derive(Serialize)]
 struct BinaryContext<'a> {
+    op: &'a str,
     lhs: &'a str,
     rhs: &'a str,
 }
@@ -18,18 +19,12 @@ fn get_prime() -> BigInt {
     BigInt::from_str_radix("3618502788666131213697322783095070105623107215331596699973092056135872020481", 10).unwrap()
 }
 
-fn test_binary_op<F>(
-    template_name: &str,
-    lhs: &str,
-    rhs: &str,
-    bigint_op: F,
-) -> Result<(), proptest::test_runner::TestCaseError>
+fn test_binary_op<F>(op: &str, lhs: &str, rhs: &str, bigint_op: F) -> Result<(), proptest::test_runner::TestCaseError>
 where
     F: FnOnce(BigInt, BigInt) -> BigInt,
 {
-    let ctx = BinaryContext { lhs, rhs };
-    let template =
-        std::path::PathBuf::from(format!("{}/tests/templates/{}", env!("CARGO_MANIFEST_DIR"), template_name));
+    let ctx = BinaryContext { op, lhs, rhs };
+    let template = std::path::PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/templates/binary_op.sierra"));
     let mut tt = TinyTemplate::new();
     let template = std::fs::read_to_string(template).unwrap();
     tt.add_template("test", &template).unwrap();
@@ -57,22 +52,21 @@ where
     let lhs = BigInt::from_str_radix(lhs, 10).unwrap();
     let rhs = BigInt::from_str_radix(rhs, 10).unwrap();
     let mut expected = bigint_op(lhs, rhs) % prime;
-    let zero = BigInt::zero();
     let two = BigInt::from(2).pow(return_value.bits() as u32);
-    expected += if expected < zero { two } else { zero };
+    expected = expected.modpow(&BigInt::from(1), &two);
     prop_assert_eq!(return_value, expected);
     Ok(())
 }
 
 #[test]
 fn simple_addition() {
-    test_binary_op("addition.sierra", "9223372036854775807", "9223372036854775807", BigInt::add).unwrap();
+    test_binary_op("add", "9223372036854775807", "9223372036854775807", BigInt::add).unwrap();
 }
 
 #[test]
 fn addition_overflow() {
     test_binary_op(
-        "addition.sierra",
+        "add",
         "3618502788666131213697322783095070105623107215331596699973092056135872020480",
         "2",
         BigInt::add,
@@ -82,7 +76,7 @@ fn addition_overflow() {
 
 #[test]
 fn substraction_negative_result() {
-    test_binary_op("substraction.sierra", "2", "4", BigInt::sub).unwrap();
+    test_binary_op("sub", "2", "4", BigInt::sub).unwrap();
 }
 
 proptest! {
@@ -99,7 +93,7 @@ proptest! {
             &b,
         ) % &prime;
 
-        test_binary_op("addition.sierra", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::add)?;
+        test_binary_op("add", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::add)?;
     }
 
     #[test]
@@ -114,7 +108,7 @@ proptest! {
             if b.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
             &b,
         ) % &prime;
-        test_binary_op("substraction.sierra", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::sub)?;
+        test_binary_op("sub", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::sub)?;
     }
 
     #[test]
@@ -129,6 +123,6 @@ proptest! {
             if b.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
             &b,
         ) % &prime;
-        test_binary_op("mul.sierra", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::mul)?;
+        test_binary_op("mul", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::mul)?;
     }
 }
