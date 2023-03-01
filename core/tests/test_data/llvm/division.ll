@@ -16,7 +16,7 @@ entry:
 
 define i252 @"felt_const<2>"() {
 entry:
-  ret i252 2
+  ret i252 3
 }
 
 define i252 @"store_temp<felt>"(i252 %0) {
@@ -26,46 +26,50 @@ entry:
 
 define i252 @felt_div(i252 %0, i252 %1) {
 entry:
-  %t = alloca i503, align 8
-  %new_t = alloca i503, align 8
+  %x = alloca i503, align 8
+  %y = alloca i503, align 8
   %r = alloca i503, align 8
-  %new_r = alloca i503, align 8
-  store i503 0, ptr %t, align 4
-  store i503 1, ptr %new_t, align 4
+  %s = alloca i503, align 8
+  store i503 0, ptr %x, align 4
+  store i503 1, ptr %y, align 4
   store i503 3618502788666131213697322783095070105623107215331596699973092056135872020481, ptr %r, align 4
-  %new_r_extended = sext i252 %1 to i503
-  store i503 %new_r_extended, ptr %new_r, align 4
+  %s1 = sext i252 %1 to i503
+  store i503 %s1, ptr %s, align 4
   br label %while
 
 while:                                            ; preds = %body, %entry
-  %new_r_value = load i503, ptr %new_r, align 4
-  %while_compare = icmp ne i503 %new_r_value, 0
+  %s_check = load i503, ptr %s, align 4
+  %while_compare = icmp ne i503 %s_check, 0
   br i1 %while_compare, label %body, label %exit
 
 body:                                             ; preds = %while
-  %r_value = load i503, ptr %r, align 4
-  %new_r_value1 = load i503, ptr %new_r, align 4
-  %new_quotient_value = sdiv i503 %r_value, %new_r_value1
-  %old_t_value = load i503, ptr %t, align 4
-  %new_t_value = load i503, ptr %new_t, align 4
-  store i503 %new_t_value, ptr %t, align 4
-  %quotient_mul_new_t = mul i503 %new_quotient_value, %new_t_value
-  %sub_t_res = sub i503 %old_t_value, %quotient_mul_new_t
-  store i503 %sub_t_res, ptr %new_t, align 4
-  %old_r_value = load i503, ptr %r, align 4
-  %new_r_value2 = load i503, ptr %new_r, align 4
-  store i503 %new_r_value2, ptr %r, align 4
-  %quotient_mul_new_r = mul i503 %new_quotient_value, %new_r_value2
-  %sub_r_res = sub i503 %old_r_value, %quotient_mul_new_r
-  store i503 %sub_r_res, ptr %new_r, align 4
+  %r2 = load i503, ptr %r, align 4
+  %s3 = load i503, ptr %s, align 4
+  %q = sdiv i503 %r2, %s3
+  call i32 @print(i503 %q)
+  %q_mul_s = mul i503 %q, %s3
+  %q_mul_s_mod = srem i503 %q_mul_s, 3618502788666131213697322783095070105623107215331596699973092056135872020481
+  %new_s = sub i503 %r2, %q_mul_s_mod
+  %new_s_mod = srem i503 %new_s, 3618502788666131213697322783095070105623107215331596699973092056135872020481
+  %new_r = load i503, ptr %s, align 4
+  store i503 %new_s_mod, ptr %s, align 4
+  store i503 %new_r, ptr %r, align 4
+  %x4 = load i503, ptr %x, align 4
+  %y5 = load i503, ptr %y, align 4
+  %q_mul_y = mul i503 %q, %y5
+  %q_mul_y_mod = srem i503 %q_mul_y, 3618502788666131213697322783095070105623107215331596699973092056135872020481
+  %new_y = sub i503 %x4, %q_mul_y_mod
+  %new_x = load i503, ptr %y, align 4
+  store i503 %new_y, ptr %y, align 4
+  store i503 %new_x, ptr %x, align 4
   br label %while
 
 exit:                                             ; preds = %while
   %extended_a = sext i252 %0 to i503
-  %inverse = load i503, ptr %t, align 4
+  %inverse = load i503, ptr %x, align 4
   %res = mul i503 %extended_a, %inverse
-  %res3 = call i252 @modulo(i503 %res)
-  ret i252 %res3
+  %res6 = call i252 @modulo(i503 %res)
+  ret i252 %res6
 }
 
 define i252 @"rename<felt>"(i252 %0) {
@@ -75,11 +79,11 @@ entry:
 
 declare i32 @printf(ptr, ...)
 
-define i32 @print({ i252 } %0) {
+define i32 @print(i503 %0) {
 entry:
   %prefix = alloca [5 x i8], align 1
   store [5 x i8] c"%ld\0A\00", ptr %prefix, align 1
-  %worked = call i32 (ptr, ...) @printf(ptr %prefix, { i252 } %0)
+  %worked = call i32 (ptr, ...) @printf(ptr %prefix, i503 %0)
   ret i32 %worked
 }
 
@@ -95,6 +99,5 @@ entry:
   %field_0_ptr = getelementptr inbounds { i252 }, ptr %ret_struct_ptr, i32 0, i32 0
   store i252 %5, ptr %field_0_ptr, align 4
   %return_struct_value = load { i252 }, ptr %ret_struct_ptr, align 4
-  %worked = call i32 @print({ i252 } %return_struct_value)
-  ret i32 %worked
+  ret i32 0
 }
