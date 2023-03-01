@@ -109,7 +109,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Arbitrarily the decided function generated struct return types have id = the function id +
     /// 100_000.
     pub const fn get_debug_function_return_struct_type_id(func_id: u64) -> u64 {
-        func_id + 100_1000
+        func_id + 100_000
     }
 
     /// Returns the id for a function return struct type name.
