@@ -16,17 +16,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// If the processing of the sierra statements fails.
     pub fn process_statements_from(&mut self, from: usize) -> CompilerResult<()> {
-        debug!("processing statements");
         // Check that the current state is valid.
         for (mut statement_id, statement) in self.program.statements.iter().skip(from).enumerate() {
             // Set the statement number to the absolute statement number.
             statement_id += from;
+            let current_line_estimate = self.current_line_estimate + statement_id as u32;
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
                     // Get core lib function called by this instruction.
                     let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
-                    debug!(fn_name, "processing statement: invocation");
+                    debug!(fn_name, current_line_estimate, "processing statement: invocation");
                     // Function has only one branch and doesn't return anything.
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
                         match fn_name.as_str() {
@@ -129,7 +129,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         .unwrap()
                         .to_string();
 
-                    debug!(func_name, "processing statement: return");
+                    debug!(func_name, current_line_estimate, "processing statement: return");
                     // If there is actually something to return.
                     if !ret.is_empty() {
                         let mut types = vec![];
