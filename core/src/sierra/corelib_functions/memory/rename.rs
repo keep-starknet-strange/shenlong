@@ -20,23 +20,28 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // This function just dumbly returns its input value. When it's called it just stores the value in
         // the next variable. Not sure how relevant it is in LLVM but might be useful later for branching.
         // Get the type that this rename function has to handle
-        let func_type = match &libfunc_declaration.long_id.generic_args[0] {
-            // Panics if the type has not been declared.
-            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
-                self.types.get(&id.to_string()).unwrap().as_basic_type_enum()
-            }
+
+        let type_id = match &libfunc_declaration.long_id.generic_args[0] {
+            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => *id,
             // Not sure if rename can rename user defined types
             GenericArg::UserType(_) => todo!(),
             _val => {
                 panic!("rename only takes type or user type")
             }
         };
+
+        // Panics if the type has not been declared.
+        let func_and_arg_type = self.types_by_id.get(&type_id).unwrap().as_basic_type_enum();
+        let debug_func_and_arg_type = *self.debug_types_by_id.get(&type_id).unwrap();
+
+        let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
+
         // fn rename<T>(a: T) -> T
-        let func = self.module.add_function(
-            libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
-            func_type.fn_type(&[func_type.into()], false),
-            None,
-        );
+        let func =
+            self.module.add_function(func_name, func_and_arg_type.fn_type(&[func_and_arg_type.into()], false), None);
+
+        self.create_function_debug(func_name, &func, Some(debug_func_and_arg_type), &[debug_func_and_arg_type]);
+
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined rename to have an input parameter so it shouldn't panic.
         let arg = func.get_first_param().unwrap();

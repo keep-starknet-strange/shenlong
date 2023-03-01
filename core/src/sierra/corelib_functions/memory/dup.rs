@@ -15,27 +15,44 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Panics if the type T has not been declared previously as all types should be declared at the
     /// beginning of the sierra file.
-    pub fn dup(&self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn dup(&mut self, libfunc_declaration: &LibfuncDeclaration) {
         // dup<T> can only duplicate the type T. If several types need the dup instruction it'll be defined
         // multiple times. Ex: dup<felt>; dup<i128>;
         // Get the type that this dup function has to handle
-        let arg_type = match &libfunc_declaration.long_id.generic_args[0] {
-            // Panics if the type has not been declared.
-            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
-                self.types.get(&id.to_string()).unwrap().as_basic_type_enum()
-            }
+
+        let arg_type_id = match &libfunc_declaration.long_id.generic_args[0] {
+            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => *id,
             // Not sure if dup can dup user defined types
             GenericArg::UserType(_) => todo!(),
-            _ => panic!("Dup only takes type or user type"),
+            _val => {
+                panic!("dup only takes type or user type")
+            }
         };
+
+        let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
+
+        let arg_type = *self.types_by_id.get(&arg_type_id).unwrap();
+        let debug_arg_type = *self.debug_types_by_id.get(&arg_type_id).unwrap();
+
         // Return a 2 element struct that have the same value. Ex: dup<felt>(1) -> { i252 1, i252 1 }
         let return_type = self.context.struct_type(&[arg_type, arg_type], false);
+
+        let debug_return_type = self.create_debug_type_struct(
+            Self::get_debug_function_return_struct_type_id(libfunc_declaration.id.id),
+            &Self::get_debug_function_return_struct_type_name(func_name),
+            &return_type,
+            &[debug_arg_type],
+        );
+
         // fn dup<T>(a: T) -> {T, T}
         let func = self.module.add_function(
             libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
             return_type.fn_type(&[arg_type.into()], false),
             None,
         );
+
+        self.create_function_debug(func_name, &func, Some(debug_return_type), &[debug_arg_type]);
+
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined dup to have an input parameter so it shouldn't panic.
         let arg = func.get_first_param().unwrap();

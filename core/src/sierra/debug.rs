@@ -1,4 +1,5 @@
 use inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DIScope, DISubprogram, DIType};
+use inkwell::types::StructType;
 use inkwell::values::FunctionValue;
 
 use super::llvm_compiler::Compiler;
@@ -25,16 +26,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         &self,
         func_name: &str,
         func: &FunctionValue<'ctx>,
-        return_type_id: Option<&str>,
-        parameter_type_ids: &[&str],
+        return_type: Option<DIType<'ctx>>,
+        parameter_types: &[DIType<'ctx>],
     ) -> DIScope<'ctx> {
-        let return_type = return_type_id.map(|id| self.get_debug_type(id));
-        let parameter_types: Vec<_> = parameter_type_ids.iter().map(|id| self.get_debug_type(id)).collect();
-
         let subroutine_type = self.dibuilder.create_subroutine_type(
             self.compile_unit.get_file(),
             return_type,
-            &parameter_types,
+            parameter_types,
             DIFlags::PUBLIC,
         );
         let func_scope: DISubprogram<'_> = self.dibuilder.create_function(
@@ -56,20 +54,70 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         scope
     }
 
-    /// Returns the debug type.
-    ///
-    /// Panics if it doesn't exist yet.
-    pub fn get_debug_type(&self, name: &str) -> DIType<'ctx> {
-        self.ditypes.get(name).cloned().expect("type should exist")
+    /// Creates a type debug info by name.
+    pub fn create_debug_type(&mut self, id: u64, name: &str, size_in_bits: u64) -> DIType<'ctx> {
+        let debug_type = self
+            .dibuilder
+            .create_basic_type(name, size_in_bits, 0x00, inkwell::debug_info::DIFlags::PUBLIC)
+            .unwrap()
+            .as_type();
+
+        self.debug_types_by_id.insert(id, debug_type);
+        self.debug_types_by_name.insert(name.to_string(), debug_type);
+        debug_type
     }
 
-    /// Creates a type debug info.
-    pub fn create_debug_type(&mut self, name: &str, size_in_bits: u64) -> DIType<'ctx> {
-        *self.ditypes.entry(name.to_string()).or_insert_with(|| {
-            self.dibuilder
-                .create_basic_type(name, size_in_bits, 0x00, inkwell::debug_info::DIFlags::PUBLIC)
-                .unwrap()
-                .as_type()
-        })
+    /// Creates a struct debug type.
+    pub fn create_debug_type_struct(
+        &mut self,
+        id: u64,
+        name: &str,
+        struct_type: &StructType<'ctx>,
+        fields: &[DIType<'ctx>],
+    ) -> DIType<'ctx> {
+        let struct_align = struct_type.get_alignment();
+
+        let mut bits = 0;
+        let align_bits = struct_align.get_type().get_bit_width();
+
+        for arg in fields {
+            bits += arg.get_size_in_bits();
+        }
+
+        let debug_struct_type = self.dibuilder.create_struct_type(
+            self.compile_unit.as_debug_info_scope(),
+            name,
+            self.compile_unit.get_file(),
+            self.current_line_estimate,
+            bits,
+            align_bits,
+            inkwell::debug_info::DIFlags::PUBLIC,
+            None,
+            fields,
+            0,
+            None,
+            name,
+        );
+
+        self.debug_types_by_id.insert(id, debug_struct_type.as_type());
+        self.debug_types_by_name.insert(name.to_string(), debug_struct_type.as_type());
+        debug_struct_type.as_type()
+    }
+
+    // Arbitrarely decided generated struct return types have id = the function id + 100_000.
+
+    /// Returns the automatically generated return struct type name.
+    ///
+    /// Arbitrarely decided generated struct return types have id = the function id + 100_000.
+    pub const fn get_debug_function_return_struct_type_id(func_id: u64) -> u64 {
+        func_id + 100_1000
+    }
+
+    /// Returns the automatically generated return struct type name.
+    ///
+    /// Arbitrarely decided generated struct return types have name = "return_type_{}" where {} is
+    /// the function name.
+    pub fn get_debug_function_return_struct_type_name(func_debug_name: &str) -> String {
+        format!("return_type_{}", func_debug_name)
     }
 }

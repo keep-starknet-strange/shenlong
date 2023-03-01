@@ -1,4 +1,5 @@
 use inkwell::module::Linkage;
+use inkwell::types::BasicType;
 use inkwell::AddressSpace;
 use tracing::debug;
 
@@ -34,8 +35,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Generate print functions for felts and double felts.
         // Useful for debugging in the current early stage of development.
         // Should probably be removed in the future.
-        let felt_type = self.get_type_from_name("felt").expect("Can't get felt from name");
-        self.printf_for_type(felt_type.into(), PRINT_FELT_FUNC, "felt");
+        let felt_type = self.types_by_name.get("felt").expect("Can't get felt from name");
+        self.printf_for_type(felt_type.as_basic_type_enum().into(), PRINT_FELT_FUNC, "felt");
         let double_felt = self.context.custom_width_int_type(DOUBLE_FELT_INT_WIDTH);
         self.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC, "double_felt");
         self.modulo();

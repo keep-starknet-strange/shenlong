@@ -158,26 +158,12 @@ entry:
   ret i253 2, !dbg !23
 }
 
-define i253 @"store_temp<felt>"(i253 %0) {
-entry:
-  ret i253 %0, !dbg !23
-}
-
-define i253 @felt_add(i253 %0, i253 %1) !dbg !24 {
-entry:
-  %extended_a = sext i253 %0 to i512, !dbg !27
-  %extended_b = sext i253 %1 to i512, !dbg !27
-  %res = add i512 %extended_a, %extended_b, !dbg !27
-  %res1 = call i253 @modulo(i512 %res), !dbg !27
-  ret i253 %res1, !dbg !27
-}
-
-define i253 @"rename<felt>"(i253 %0) {
+define i253 @"store_temp<felt>"(i253 %0) !dbg !24 {
 entry:
   ret i253 %0, !dbg !27
 }
 
-define void @print_return(i253 %0) !dbg !28 {
+define i253 @felt_add(i253 %0, i253 %1) !dbg !28 {
 entry:
   %rounded_size_val = zext i253 %0 to i256
   %shifted = lshr i256 %rounded_size_val, 224
@@ -226,25 +212,79 @@ entry:
   ret void
 }
 
-define i32 @main() {
+define i253 @"rename<felt>"(i253 %0) !dbg !32 {
 entry:
-  %0 = call i253 @"felt_const<1>"(), !dbg !29
-  %1 = call i253 @"felt_const<2>"(), !dbg !29
-  %2 = call i253 @"store_temp<felt>"(i253 %0), !dbg !29
-  %3 = call i253 @felt_add(i253 %2, i253 %1), !dbg !29
-  %4 = call i253 @"store_temp<felt>"(i253 %3), !dbg !29
-  %5 = call i253 @"rename<felt>"(i253 %4), !dbg !29
-  %ret_struct_ptr = alloca { i253 }, align 8, !dbg !29
-  %field_0_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !29
-  store i253 %5, ptr %field_0_ptr, align 4, !dbg !29
-  %return_struct_value = load { i253 }, ptr %ret_struct_ptr, align 4, !dbg !29
-  %return_value_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !29
-  %return_value = load i253, ptr %return_value_ptr, align 4, !dbg !29
-  %format = alloca [15 x i8], align 1, !dbg !29
-  store [15 x i8] c"Return value: \00", ptr %format, align 1, !dbg !29
-  %chars_printed = call i32 (ptr, ...) @printf(ptr %format), !dbg !29
-  call void @print_return(i253 %return_value), !dbg !29
-  ret i32 0, !dbg !29
+  ret i253 %0, !dbg !33
+}
+
+define void @print_return(i253 %0) !dbg !34 {
+entry:
+  %rounded_size_val = sext i253 %0 to i256, !dbg !35
+  %shifted = lshr i256 %rounded_size_val, 224, !dbg !35
+  %print_value_trunc = trunc i256 %shifted to i32, !dbg !35
+  %format = alloca [5 x i8], align 1, !dbg !35
+  store [5 x i8] c"%08X\00", ptr %format, align 1, !dbg !35
+  %chars_printed = call i32 (ptr, ...) @printf(ptr %format, i32 %print_value_trunc), !dbg !35
+  %shifted1 = lshr i256 %rounded_size_val, 192, !dbg !35
+  %print_value_trunc2 = trunc i256 %shifted1 to i32, !dbg !35
+  %format3 = alloca [5 x i8], align 1, !dbg !35
+  store [5 x i8] c"%08X\00", ptr %format3, align 1, !dbg !35
+  %chars_printed4 = call i32 (ptr, ...) @printf(ptr %format3, i32 %print_value_trunc2), !dbg !35
+  %shifted5 = lshr i256 %rounded_size_val, 160, !dbg !35
+  %print_value_trunc6 = trunc i256 %shifted5 to i32, !dbg !35
+  %format7 = alloca [5 x i8], align 1, !dbg !35
+  store [5 x i8] c"%08X\00", ptr %format7, align 1, !dbg !35
+  %chars_printed8 = call i32 (ptr, ...) @printf(ptr %format7, i32 %print_value_trunc6), !dbg !35
+  %shifted9 = lshr i256 %rounded_size_val, 128, !dbg !35
+  %print_value_trunc10 = trunc i256 %shifted9 to i32, !dbg !35
+  %format11 = alloca [5 x i8], align 1, !dbg !35
+  store [5 x i8] c"%08X\00", ptr %format11, align 1, !dbg !35
+  %chars_printed12 = call i32 (ptr, ...) @printf(ptr %format11, i32 %print_value_trunc10), !dbg !35
+  %shifted13 = lshr i256 %rounded_size_val, 96, !dbg !35
+  %print_value_trunc14 = trunc i256 %shifted13 to i32, !dbg !35
+  %format15 = alloca [5 x i8], align 1, !dbg !35
+  store [5 x i8] c"%08X\00", ptr %format15, align 1, !dbg !35
+  %chars_printed16 = call i32 (ptr, ...) @printf(ptr %format15, i32 %print_value_trunc14), !dbg !35
+  %shifted17 = lshr i256 %rounded_size_val, 64, !dbg !35
+  %print_value_trunc18 = trunc i256 %shifted17 to i32, !dbg !35
+  %format19 = alloca [5 x i8], align 1, !dbg !35
+  store [5 x i8] c"%08X\00", ptr %format19, align 1, !dbg !35
+  %chars_printed20 = call i32 (ptr, ...) @printf(ptr %format19, i32 %print_value_trunc18), !dbg !35
+  %shifted21 = lshr i256 %rounded_size_val, 32, !dbg !35
+  %print_value_trunc22 = trunc i256 %shifted21 to i32, !dbg !35
+  %format23 = alloca [5 x i8], align 1, !dbg !35
+  store [5 x i8] c"%08X\00", ptr %format23, align 1, !dbg !35
+  %chars_printed24 = call i32 (ptr, ...) @printf(ptr %format23, i32 %print_value_trunc22), !dbg !35
+  %shifted25 = lshr i256 %rounded_size_val, 0, !dbg !35
+  %print_value_trunc26 = trunc i256 %shifted25 to i32, !dbg !35
+  %format27 = alloca [5 x i8], align 1, !dbg !35
+  store [5 x i8] c"%08X\00", ptr %format27, align 1, !dbg !35
+  %chars_printed28 = call i32 (ptr, ...) @printf(ptr %format27, i32 %print_value_trunc26), !dbg !35
+  %format29 = alloca [2 x i8], align 1, !dbg !35
+  store [2 x i8] c"\0A\00", ptr %format29, align 1, !dbg !35
+  %chars_printed30 = call i32 (ptr, ...) @printf(ptr %format29), !dbg !35
+  ret void, !dbg !35
+}
+
+define i32 @main() !dbg !36 {
+entry:
+  %0 = call i253 @"felt_const<1>"(), !dbg !37
+  %1 = call i253 @"felt_const<2>"(), !dbg !37
+  %2 = call i253 @"store_temp<felt>"(i253 %0), !dbg !37
+  %3 = call i253 @felt_add(i253 %2, i253 %1), !dbg !37
+  %4 = call i253 @"store_temp<felt>"(i253 %3), !dbg !37
+  %5 = call i253 @"rename<felt>"(i253 %4), !dbg !37
+  %ret_struct_ptr = alloca { i253 }, align 8, !dbg !37
+  %field_0_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !37
+  store i253 %5, ptr %field_0_ptr, align 4, !dbg !37
+  %return_struct_value = load { i253 }, ptr %ret_struct_ptr, align 4, !dbg !37
+  %return_value_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !37
+  %return_value = load i253, ptr %return_value_ptr, align 4, !dbg !37
+  %format = alloca [15 x i8], align 1, !dbg !37
+  store [15 x i8] c"Return value: \00", ptr %format, align 1, !dbg !37
+  %chars_printed = call i32 (ptr, ...) @printf(ptr %format), !dbg !37
+  call void @print_return(i253 %return_value), !dbg !37
+  ret i32 0, !dbg !37
 }
 
 !llvm.module.flags = !{!0}
@@ -274,9 +314,17 @@ entry:
 !21 = !DILocation(line: 3, scope: !18)
 !22 = distinct !DISubprogram(name: "felt_const<2>", linkageName: "felt_const<2>", scope: null, file: !2, line: 4, type: !19, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
 !23 = !DILocation(line: 4, scope: !22)
-!24 = distinct !DISubprogram(name: "felt_add", linkageName: "felt_add", scope: null, file: !2, line: 6, type: !25, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!24 = distinct !DISubprogram(name: "store_temp<felt>", linkageName: "store_temp<felt>", scope: null, file: !2, line: 5, type: !25, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
 !25 = !DISubroutineType(flags: DIFlagPublic, types: !26)
-!26 = !{!6, !6, !6}
-!27 = !DILocation(line: 6, scope: !1)
-!28 = distinct !DISubprogram(name: "print_return", linkageName: "print_return", scope: null, file: !2, line: 9, type: !4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
-!29 = !DILocation(line: 9, scope: !28)
+!26 = !{!6, !6}
+!27 = !DILocation(line: 5, scope: !24)
+!28 = distinct !DISubprogram(name: "felt_add", linkageName: "felt_add", scope: null, file: !2, line: 6, type: !29, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!29 = !DISubroutineType(flags: DIFlagPublic, types: !30)
+!30 = !{!6, !6, !6}
+!31 = !DILocation(line: 6, scope: !28)
+!32 = distinct !DISubprogram(name: "rename<felt>", linkageName: "rename<felt>", scope: null, file: !2, line: 7, type: !25, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!33 = !DILocation(line: 7, scope: !32)
+!34 = distinct !DISubprogram(name: "print_return", linkageName: "print_return", scope: null, file: !2, line: 9, type: !4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!35 = !DILocation(line: 9, scope: !34)
+!36 = distinct !DISubprogram(name: "add::add::main", linkageName: "add::add::main", scope: null, file: !2, line: 9, type: !19, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!37 = !DILocation(line: 9, scope: !36)

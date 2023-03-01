@@ -8,7 +8,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Defines a function that wraps printf to print a value of type `ty`.
     /// Useful for debugging, specially for integers with a size > 64bit.
     /// Requires printf to be declared beforehand.
-    pub fn printf_for_type(&self, ty: BasicMetadataTypeEnum<'ctx>, func_name: &str, type_id: &str) {
+    pub fn printf_for_type(&self, ty: BasicMetadataTypeEnum<'ctx>, func_name: &str, type_name: &str) {
         if self.module.get_function(func_name).is_some() {
             warn!("Tried to redefine {} printf function.", func_name);
             return;
@@ -20,7 +20,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func = self.module.add_function(func_name, void_type.fn_type(&[ty], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.create_function_debug(func_name, &func, None, &[type_id]);
+        self.create_function_debug(func_name, &func, None, &[*self.debug_types_by_name.get(type_name).unwrap()]);
 
         // For now we only allow printing int types.
         let value = func.get_first_param().expect("Function should have exactly 1 param").into_int_value();

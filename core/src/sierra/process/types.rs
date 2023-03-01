@@ -1,7 +1,6 @@
-use inkwell::types::BasicTypeEnum;
 use tracing::debug;
 
-use crate::sierra::errors::{CompilerError, CompilerResult};
+use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
 
 /// Implementation for the type processing for the compiler.
@@ -36,30 +35,5 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         }
         // Move to the next state.
         self.move_to(CompilationState::TypesProcessed)
-    }
-
-    /// Returns the LLVM IR type from the type name
-    ///
-    /// # Arguments
-    ///
-    /// * `type_name` - The type name (ex: "felt")
-    ///
-    /// # Returns
-    ///
-    /// The LLVM IR type.
-    pub fn get_type_from_name(&self, type_name: &str) -> CompilerResult<BasicTypeEnum<'ctx>> {
-        // id_from_name : name => id
-        // variables : id => LLVM IR type
-        // ex: return variables[id_from_name["felt"]]
-        Ok(self
-            .types
-            .get(self.id_from_name.get(type_name).ok_or(CompilerError::TypeNotFound(type_name.to_owned()))?)
-            .ok_or(CompilerError::TypeNotFound(type_name.to_owned()))?
-            .as_basic_type_enum())
-    }
-
-    // Returns the type id mapped from the debug name.
-    pub fn get_type_id_from_name(&self, type_name: &str) -> CompilerResult<&String> {
-        self.id_from_name.get(type_name).ok_or(CompilerError::TypeNotFound(type_name.to_owned()))
     }
 }

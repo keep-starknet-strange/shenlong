@@ -13,13 +13,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// * `type_declaration` - the sierra type declaration
     pub fn felt(&mut self, type_declaration: &TypeDeclaration) {
-        // Save felt in the id from name map to be able to get the LLVM IR type from the type name.
-        self.id_from_name.insert("felt".to_owned(), type_declaration.id.id.to_string());
+        // Use 253 bits to represent a felt to leave space for the sign.
+        let felt_type = self.context.custom_width_int_type(FELT_INT_WIDTH).as_basic_type_enum();
+
+        let debug_name = type_declaration.id.debug_name.as_ref().unwrap().as_str();
+
         // Save the felt type in the types map.
-        self.types.insert(
-            type_declaration.id.id.to_string(),
-            // Use 253 bits to represent a felt to leave space for the sign.
-            Box::new(self.context.custom_width_int_type(FELT_INT_WIDTH).as_basic_type_enum()),
-        );
+        self.types_by_id.insert(type_declaration.id.id, felt_type);
+        self.types_by_name.insert(debug_name.to_string(), felt_type);
+        self.create_debug_type(type_declaration.id.id, debug_name, FELT_INT_WIDTH.into());
     }
 }

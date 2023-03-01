@@ -169,22 +169,22 @@ entry:
   ret { i253, i253 } %res, !dbg !23
 }
 
-define { i253, i253 } @"store_temp<Tuple<felt, felt>>"({ i253, i253 } %0) {
+define { i253, i253 } @"store_temp<Tuple<felt, felt>>"({ i253, i253 } %0) !dbg !24 {
 entry:
-  ret { i253, i253 } %0, !dbg !23
+  ret { i253, i253 } %0, !dbg !29
 }
 
-define { { i253, i253 } } @"struct_construct::struct_construct::complex_type"() {
+define { i253, i253 } @"struct_construct::struct_construct::complex_type"() !dbg !30 {
 entry:
-  %0 = call i253 @"felt_const<2>"(), !dbg !23
-  %1 = call i253 @"felt_const<4>"(), !dbg !23
-  %2 = call { i253, i253 } @"struct_construct<Tuple<felt, felt>>"(i253 %0, i253 %1), !dbg !23
-  %3 = call { i253, i253 } @"store_temp<Tuple<felt, felt>>"({ i253, i253 } %2), !dbg !23
-  %ret_struct_ptr = alloca { { i253, i253 } }, align 8, !dbg !23
-  %field_0_ptr = getelementptr inbounds { { i253, i253 } }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !23
-  store { i253, i253 } %3, ptr %field_0_ptr, align 4, !dbg !23
-  %return_struct_value = load { { i253, i253 } }, ptr %ret_struct_ptr, align 4, !dbg !23
-  ret { { i253, i253 } } %return_struct_value, !dbg !23
+  %0 = call i253 @"felt_const<2>"(), !dbg !33
+  %1 = call i253 @"felt_const<4>"(), !dbg !33
+  %2 = call { i253, i253 } @"struct_construct<Tuple<felt, felt>>"(i253 %0, i253 %1), !dbg !33
+  %3 = call { i253, i253 } @"store_temp<Tuple<felt, felt>>"({ i253, i253 } %2), !dbg !33
+  %ret_struct_ptr = alloca { { i253, i253 } }, align 8, !dbg !33
+  %field_0_ptr = getelementptr inbounds { { i253, i253 } }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !33
+  store { i253, i253 } %3, ptr %field_0_ptr, align 4, !dbg !33
+  %return_struct_value = load { { i253, i253 } }, ptr %ret_struct_ptr, align 4, !dbg !33
+  ret { { i253, i253 } } %return_struct_value, !dbg !33
 }
 
 !llvm.module.flags = !{!0}
@@ -214,3 +214,13 @@ entry:
 !21 = !DILocation(line: 4, scope: !18)
 !22 = distinct !DISubprogram(name: "felt_const<4>", linkageName: "felt_const<4>", scope: null, file: !2, line: 5, type: !19, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
 !23 = !DILocation(line: 5, scope: !22)
+!24 = distinct !DISubprogram(name: "store_temp<Tuple<felt, felt>>", linkageName: "store_temp<Tuple<felt, felt>>", scope: null, file: !2, line: 7, type: !25, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!25 = !DISubroutineType(flags: DIFlagPublic, types: !26)
+!26 = !{!27, !27}
+!27 = !DICompositeType(tag: DW_TAG_structure_type, name: "Tuple<felt, felt>", file: !2, line: 2, size: 506, align: 64, flags: DIFlagPublic, elements: !28, identifier: "Tuple<felt, felt>")
+!28 = !{!6, !6}
+!29 = !DILocation(line: 7, scope: !24)
+!30 = distinct !DISubprogram(name: "struct_construct::struct_construct::complex_type", linkageName: "struct_construct::struct_construct::complex_type", scope: null, file: !2, line: 9, type: !31, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !7)
+!31 = !DISubroutineType(flags: DIFlagPublic, types: !32)
+!32 = !{!27}
+!33 = !DILocation(line: 9, scope: !30)

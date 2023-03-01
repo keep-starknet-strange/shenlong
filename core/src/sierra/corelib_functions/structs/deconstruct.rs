@@ -20,7 +20,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Type of the struct that we have to deconstruct.
         let args = match &libfunc_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
-                self.types.get(&id.to_string()).unwrap().as_basic_type_enum().into_struct_type()
+                self.types_by_id.get(id).unwrap().into_struct_type()
             }
             _val => {
                 panic!("Struct deconstruct only takes predefined structs")
