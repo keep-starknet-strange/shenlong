@@ -39,44 +39,46 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.types.insert(type_declaration.id.id.to_string(), Box::from(struct_type));
 
         // Debug info
-        if let Some(dibuilder) = &self.dibuilder {
-            let ditypes = self.ditypes.as_mut().unwrap();
-            let compile_unit = self.compile_unit.as_ref().unwrap();
+        // TODO: check if this really works.
 
-            let mut bits = 0;
-            let align_bits = struct_align.get_type().get_bit_width();
-            let mut struct_elements = Vec::with_capacity(args.len());
+        let mut bits = 0;
+        let align_bits = struct_align.get_type().get_bit_width();
+        let mut struct_elements = Vec::with_capacity(args.len());
 
-            for arg in &args {
-                if let Some(size) = arg.size_of() {
-                    bits += size.get_type().get_bit_width();
-                }
+        for arg in &args {
+            if let Some(size) = arg.size_of() {
+                bits += size.get_type().get_bit_width();
             }
-
-            for arg_id in &args_ids {
-                let debug_type = *ditypes.get(arg_id).unwrap();
-
-                struct_elements.push(debug_type);
-            }
-
-            let debug_name = type_declaration.id.debug_name.as_ref().unwrap().as_str();
-
-            let debug_struct_type = dibuilder.create_struct_type(
-                compile_unit.as_debug_info_scope(),
-                debug_name,
-                compile_unit.get_file(),
-                self.current_line_estimate,
-                bits.into(),
-                align_bits,
-                inkwell::debug_info::DIFlags::PUBLIC,
-                None,
-                &struct_elements,
-                0,
-                None,
-                debug_name,
-            );
-
-            self.ditypes.as_mut().unwrap().insert(debug_name.to_string(), debug_struct_type.as_type());
         }
+
+        let felt_type_id = self.get_type_id_from_name("felt").unwrap();
+        for arg_id in &args_ids {
+            let debug_type = if arg_id.eq_ignore_ascii_case(felt_type_id) {
+                self.get_debug_type("felt")
+            } else {
+                self.get_debug_type(arg_id)
+            };
+
+            struct_elements.push(debug_type);
+        }
+
+        let debug_name = type_declaration.id.debug_name.as_ref().unwrap().as_str();
+
+        let debug_struct_type = self.dibuilder.create_struct_type(
+            self.compile_unit.as_debug_info_scope(),
+            debug_name,
+            self.compile_unit.get_file(),
+            self.current_line_estimate,
+            bits.into(),
+            align_bits,
+            inkwell::debug_info::DIFlags::PUBLIC,
+            None,
+            &struct_elements,
+            0,
+            None,
+            debug_name,
+        );
+
+        self.ditypes.insert(debug_name.to_string(), debug_struct_type.as_type());
     }
 }

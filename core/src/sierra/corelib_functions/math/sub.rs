@@ -18,7 +18,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn felt_sub(&self, libfunc_declaration: &LibfuncDeclaration) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let felt_type = self.get_type_from_name("felt").expect("Can't get felt from name");
-        let felt_type_id = self.get_type_id_from_name("felt").expect("Can't get felt from name");
         let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
         // fn felt_sub(a: felt, b: felt) -> felt
         let func = self.module.add_function(
@@ -28,7 +27,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.create_function_debug(func_name, &func, felt_type_id, &[felt_type_id.clone(), felt_type_id.clone()]);
+        self.create_function_debug(func_name, &func, Some("felt"), &["felt", "felt"]);
 
         // Return a - b
         // Panics if the function doesn't have enough arguments but it should happen since we just defined

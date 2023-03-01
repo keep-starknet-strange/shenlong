@@ -1,4 +1,5 @@
 use std::ops::*;
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use num_bigint::BigInt;
@@ -33,7 +34,7 @@ where
     let tmp = tempdir::TempDir::new("shenlong_tests").unwrap();
     let file = tmp.into_path().join("output.ll");
 
-    Compiler::compile_from_code(&source, &file, None).unwrap();
+    Compiler::compile_from_code(&source, Path::new("addition.sierra"), &file, None).unwrap();
 
     let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to the `lli` tool from llvm 16");
 
