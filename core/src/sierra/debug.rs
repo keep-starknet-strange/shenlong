@@ -104,17 +104,18 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         debug_struct_type.as_type()
     }
 
-    /// Returns the automatically generated return struct type name.
+    /// Returns the id for a function return struct type id.
     ///
-    /// Arbitrarely decided generated struct return types have id = the function id + 100_000.
+    /// Arbitrarily the decided function generated struct return types have id = the function id +
+    /// 100_000.
     pub const fn get_debug_function_return_struct_type_id(func_id: u64) -> u64 {
         func_id + 100_1000
     }
 
-    /// Returns the automatically generated return struct type name.
+    /// Returns the id for a function return struct type name.
     ///
-    /// Arbitrarely decided generated struct return types have name = "return_type_{}" where {} is
-    /// the function name.
+    /// Arbitrarily decided the generated struct return types have name = "return_type_{}" where {}
+    /// is the function name.
     pub fn get_debug_function_return_struct_type_name(func_debug_name: &str) -> String {
         format!("return_type_{}", func_debug_name)
     }
