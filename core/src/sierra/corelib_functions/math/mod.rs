@@ -1,5 +1,6 @@
 pub mod add;
 pub mod constants;
+pub mod div;
 pub mod modulo;
 pub mod mul;
 pub mod sub;
