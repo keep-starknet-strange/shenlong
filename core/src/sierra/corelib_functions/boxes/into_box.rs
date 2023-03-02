@@ -16,7 +16,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Panics if the type T has not been declared previously as all types should be declared at the
     /// beginning of the sierra file.
-    pub fn into_box(&self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn into_box(&mut self, libfunc_declaration: &LibfuncDeclaration) {
         // This function is completely irrelevant for LLVM IR but for simplicity we implement it like rename
         // for now.
         // Get the type that this into_box function has to handle
@@ -43,7 +43,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
 
-        self.debug.create_function_debug(func_name, &func, Some(debug_func_and_arg_type), &[debug_func_and_arg_type]);
+        self.debug.create_function(func_name, &func, Some(debug_func_and_arg_type), &[debug_func_and_arg_type], None);
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined into_box to have an input parameter so it shouldn't panic.

@@ -39,6 +39,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.types_by_id.insert(type_declaration.id.id, struct_type.as_basic_type_enum());
         self.types_by_name.insert(debug_name.to_string(), struct_type.as_basic_type_enum());
 
-        self.debug.create_debug_type_struct(type_declaration.id.id, debug_name, &struct_type, &debug_args);
+        self.debug.create_struct(type_declaration.id.id, debug_name, &struct_type, &debug_args);
     }
 }

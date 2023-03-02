@@ -69,9 +69,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     // Arbitrarely decided generated struct return types have id = the function id + 100_000.
                     // Arbitrarely decided generated struct return types have name = "return_type_{}" where {} is the
                     // function name.
-                    let debug_type = self.debug.create_debug_type_struct(
-                        self.debug.get_debug_function_return_struct_type_id(func_declaration.id.id),
-                        &self.debug.get_debug_function_return_struct_type_name(func_name),
+                    let debug_type = self.debug.create_struct(
+                        self.debug.get_fn_struct_type_id(func_declaration.id.id),
+                        &self.debug.get_fn_struct_type_name(func_name),
                         &generated_return_struct_type,
                         &ret_debug_types,
                     );
@@ -135,7 +135,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-            let scope = self.debug.create_function_debug(func_name, &func, return_info.map(|x| x.1), &args_debug_types);
+            let scope = self.debug.create_function(
+                func_name,
+                &func,
+                return_info.map(|x| x.1),
+                &args_debug_types,
+                Some(func_declaration.entry_point.0),
+            );
 
             // Loop through the arguments of the function. The variable id counter always starts from zero for a
             // function.

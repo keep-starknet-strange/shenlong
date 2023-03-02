@@ -32,7 +32,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 self.types_by_name.insert(type_declaration.id.debug_name.as_ref().unwrap().to_string(), inner_type);
 
                 let debug_name = type_declaration.id.debug_name.as_ref().unwrap().to_string();
-                self.debug.create_debug_type(type_declaration.id.id, &debug_name, debug_inner_type.get_size_in_bits());
+                self.debug.create_type(type_declaration.id.id, &debug_name, debug_inner_type.get_size_in_bits());
             }
             GenericArg::UserType(_) => todo!(),
             _val => {

@@ -40,7 +40,7 @@ use cairo_lang_sierra::ProgramParser;
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::debug_info::{DICompileUnit, DIType, DebugInfoBuilder};
+use inkwell::debug_info::{DICompileUnit, DILocalVariable, DISubprogram, DIType, DebugInfoBuilder};
 use inkwell::module::Module;
 use inkwell::targets::TargetTriple;
 use inkwell::types::BasicTypeEnum;
@@ -80,6 +80,10 @@ pub struct Compiler<'a, 'ctx> {
     pub debug: DebugCompiler<'a, 'ctx>,
 }
 
+pub struct FunctionDebugInfo<'ctx> {
+    pub function: DISubprogram<'ctx>,
+    pub params: Vec<DILocalVariable<'ctx>>,
+}
 /// Struct holding all the data needed to produce the debug info by the compiler.
 pub struct DebugCompiler<'a, 'ctx> {
     /// Debug builder
@@ -90,8 +94,9 @@ pub struct DebugCompiler<'a, 'ctx> {
     pub types_by_name: HashMap<String, DIType<'ctx>>,
     /// The debug info variables of the current function.
     pub variables: HashMap<String, DIType<'ctx>>,
-    pub current_line: u32,
-    pub current_statement_line: u32,
+    pub functions: HashMap<String, FunctionDebugInfo<'ctx>>,
+    current_line: u32,
+    current_statement_line: u32,
     pub context: &'ctx Context,
 }
 
@@ -109,6 +114,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             types_by_id: HashMap::new(),
             types_by_name: HashMap::new(),
             variables: HashMap::new(),
+            functions: HashMap::new(),
             current_line: 0,
             current_statement_line: 0,
             context,
@@ -118,11 +124,17 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
     /// Increases the current line by 1.
     pub fn next_line(&mut self) {
         self.current_line += 1;
+        self.current_statement_line = self.current_line;
     }
 
     /// Sets the current statement line from a statement id.
     pub fn set_statement_line(&mut self, statement_id: usize) {
         self.current_statement_line = self.current_line + statement_id as u32;
+    }
+
+    // Gets the current line.
+    pub fn get_line(&self) -> u32 {
+        self.current_statement_line
     }
 }
 

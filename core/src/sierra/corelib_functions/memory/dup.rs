@@ -37,9 +37,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Return a 2 element struct that have the same value. Ex: dup<felt>(1) -> { i252 1, i252 1 }
         let return_type = self.context.struct_type(&[arg_type, arg_type], false);
 
-        let debug_return_type = self.debug.create_debug_type_struct(
-            self.debug.get_debug_function_return_struct_type_id(libfunc_declaration.id.id),
-            &self.debug.get_debug_function_return_struct_type_name(func_name),
+        let debug_return_type = self.debug.create_struct(
+            self.debug.get_fn_struct_type_id(libfunc_declaration.id.id),
+            &self.debug.get_fn_struct_type_name(func_name),
             &return_type,
             &[debug_arg_type],
         );
@@ -51,7 +51,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
 
-        self.debug.create_function_debug(func_name, &func, Some(debug_return_type), &[debug_arg_type]);
+        self.debug.create_function(func_name, &func, Some(debug_return_type), &[debug_arg_type], None);
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined dup to have an input parameter so it shouldn't panic.
