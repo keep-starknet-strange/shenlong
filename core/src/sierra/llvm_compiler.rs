@@ -40,7 +40,9 @@ use cairo_lang_sierra::ProgramParser;
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::debug_info::{DICompileUnit, DILocalVariable, DISubprogram, DIType, DebugInfoBuilder};
+use inkwell::debug_info::{
+    DICompileUnit, DILocalVariable, DILocation, DIScope, DISubprogram, DIType, DebugInfoBuilder,
+};
 use inkwell::module::Module;
 use inkwell::targets::TargetTriple;
 use inkwell::types::BasicTypeEnum;
@@ -62,7 +64,7 @@ pub struct Compiler<'a, 'ctx> {
     /// The LLVM module.
     pub module: Module<'ctx>,
     /// The variables of the current function.
-    pub variables: HashMap<String, BasicValueEnum<'ctx>>,
+    pub variables: HashMap<u64, BasicValueEnum<'ctx>>,
     /// The LLVM IR output path.
     pub llvm_output_path: PathBuf,
     /// The current compilation state.
@@ -82,8 +84,16 @@ pub struct Compiler<'a, 'ctx> {
 
 #[derive(Debug, Clone)]
 pub struct FunctionDebugInfo<'ctx> {
+    /// The function debug info.
     pub function: DISubprogram<'ctx>,
-    pub params: Vec<DILocalVariable<'ctx>>,
+    /// The function debug params.
+    pub params: Vec<DIType<'ctx>>,
+    /// The parameter local variables.
+    pub params_local_vars: Vec<DILocalVariable<'ctx>>,
+    /// The function scope.
+    pub scope: DIScope<'ctx>,
+    /// The function location.
+    pub location: DILocation<'ctx>,
 }
 
 /// Struct holding all the data needed to produce the debug info by the compiler.

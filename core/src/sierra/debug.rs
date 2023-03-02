@@ -1,16 +1,24 @@
 use std::borrow::Cow;
 
-use inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DILocation, DIScope, DISubprogram, DIType};
+use inkwell::debug_info::{
+    AsDIScope, DIFlags, DIFlagsConstants, DILocalVariable, DILocation, DIScope, DISubprogram, DIType,
+};
 use inkwell::types::StructType;
-use inkwell::values::FunctionValue;
+use inkwell::values::{BasicValueEnum, FunctionValue, InstructionValue};
 use regex::Regex;
 
 use super::llvm_compiler::{DebugCompiler, FunctionDebugInfo};
 
 impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
+    #[inline]
+    pub fn create_debug_location(&self, line: u32, scope: DIScope<'ctx>) -> DILocation {
+        let location = self.debug_builder.create_debug_location(self.context, line, 0, scope, None);
+        location
+    }
+
     /// Create and set the current debug location.
     #[inline]
-    pub fn debug_location(&self, scope: Option<DIScope<'ctx>>) -> DILocation {
+    pub fn debug_location(&self, scope: Option<DIScope<'ctx>>) -> DILocation<'ctx> {
         let location = self.debug_builder.create_debug_location(
             self.context,
             self.get_line(),
@@ -26,6 +34,8 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
     ///
     /// Sets the current debug location too, so you don't have to call debug_location with the
     /// returned scope.
+    ///
+    /// Returns the function scope and the function argument local variables.
     pub fn create_function(
         &mut self,
         func_name: &str,
@@ -33,7 +43,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
         return_type: Option<DIType<'ctx>>,
         parameter_types: &[DIType<'ctx>],
         scope_line: Option<usize>,
-    ) -> DIScope<'ctx> {
+    ) -> FunctionDebugInfo<'ctx> {
         let debug_func_name = self.clear_function_name(func_name);
         let subroutine_type = self.debug_builder.create_subroutine_type(
             self.compile_unit.get_file(),
@@ -41,7 +51,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             parameter_types,
             DIFlags::PUBLIC,
         );
-        let func_scope: DISubprogram<'_> = self.debug_builder.create_function(
+        let function: DISubprogram<'_> = self.debug_builder.create_function(
             self.compile_unit.as_debug_info_scope(),
             &debug_func_name,
             Some(func_name),
@@ -54,37 +64,99 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             DIFlags::PUBLIC,
             false,
         );
-        func.set_subprogram(func_scope);
-        let scope = func_scope.as_debug_info_scope();
+        func.set_subprogram(function);
+        let scope = function.as_debug_info_scope();
 
-        let mut params = Vec::with_capacity(parameter_types.len());
+        let arg_local_vars: Vec<DILocalVariable<'ctx>> = parameter_types
+            .iter()
+            .enumerate()
+            .map(|(i, param)| {
+                self.debug_builder.create_parameter_variable(
+                    scope,
+                    &i.to_string(),
+                    i as u32 + 1,
+                    self.compile_unit.get_file(),
+                    self.get_line(),
+                    *param,
+                    true,
+                    DIFlags::PUBLIC,
+                )
+            })
+            .collect();
 
-        for (i, param) in parameter_types.iter().enumerate() {
-            let local_var = self.debug_builder.create_parameter_variable(
-                scope,
-                &i.to_string(),
-                i as u32 + 1,
-                self.compile_unit.get_file(),
-                self.get_line(),
-                *param,
-                true,
-                DIFlags::PUBLIC,
-            );
-            params.push(local_var);
-        }
+        let location = self.debug_location(Some(scope));
 
-        let info = FunctionDebugInfo { function: func_scope, params };
+        let info = FunctionDebugInfo {
+            function,
+            params: parameter_types.to_vec(),
+            params_local_vars: arg_local_vars,
+            location,
+            scope,
+        };
 
-        self.functions.insert(func_name.to_string(), info);
+        self.functions.insert(func_name.to_string(), info.clone());
+        info
+    }
 
-        self.debug_location(Some(scope));
-        scope
+    pub fn create_local_variable(
+        &self,
+        name: &str,
+        scope: DIScope<'ctx>,
+        ty: DIType<'ctx>,
+        arg: Option<u32>,
+    ) -> DILocalVariable<'ctx> {
+        self.debug_builder.create_parameter_variable(
+            scope,
+            name,
+            arg.unwrap_or(0),
+            self.compile_unit.get_file(),
+            self.get_line(),
+            ty,
+            true,
+            DIFlags::PUBLIC,
+        )
+    }
+
+    /// Creates local variables for a function call.
+    pub fn create_function_call_local_vars(
+        &self,
+        func: &FunctionDebugInfo<'ctx>,
+        scope: DIScope<'ctx>,
+    ) -> Vec<DILocalVariable<'ctx>> {
+        func.params
+            .iter()
+            .enumerate()
+            .map(|(i, param)| {
+                self.debug_builder.create_parameter_variable(
+                    scope,
+                    &i.to_string(),
+                    0, /* must be 0 here, since its not a subprogram parameter, but a variable passed to the
+                        * subprogram. */
+                    self.compile_unit.get_file(),
+                    self.get_line(),
+                    *param,
+                    true,
+                    DIFlags::PUBLIC,
+                )
+            })
+            .collect()
+    }
+
+    /// Inserts a variable value debug info before the instruction given.
+    pub fn insert_dbg_value(
+        &self,
+        value: BasicValueEnum<'ctx>,
+        local_var: DILocalVariable<'ctx>,
+        loc: DILocation<'ctx>,
+        inst: InstructionValue<'ctx>,
+    ) {
+        self.debug_builder.insert_dbg_value_before(value, local_var, None, loc, inst);
     }
 
     /// Creates a type debug info by name.
     pub fn create_type(&mut self, id: u64, name: &str, size_in_bits: u64) -> DIType<'ctx> {
         let debug_type =
-            self.debug_builder.create_basic_type(name, size_in_bits, 0x00, DIFlags::PUBLIC).unwrap().as_type();
+            self.debug_builder.create_basic_type(name, size_in_bits, 0x05, DIFlags::PUBLIC).unwrap().as_type();
 
         self.types_by_id.insert(id, debug_type);
         self.types_by_name.insert(name.to_string(), debug_type);
