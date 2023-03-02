@@ -51,12 +51,10 @@ where
 
     let lhs = BigInt::from_str_radix(lhs, 10).unwrap();
     let rhs = BigInt::from_str_radix(rhs, 10).unwrap();
-    let mut expected = bigint_op(lhs, rhs) % &prime;
+    let expected = bigint_op(lhs, rhs) % &prime;
     let two = BigInt::from(2).pow(return_value.bits() as u32);
-    expected = expected.modpow(&BigInt::one(), &two);
-    return_value =
-        if return_value > prime { (return_value - &two).modpow(&BigInt::one(), &prime) } else { return_value };
-    prop_assert_eq!(return_value, expected);
+    return_value -= if return_value > prime { two } else { BigInt::zero() };
+    prop_assert_eq!(return_value.modpow(&BigInt::one(), &prime), expected.modpow(&BigInt::one(), &prime));
     Ok(())
 }
 
@@ -150,6 +148,9 @@ proptest! {
             if b.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
             &b,
         ) % &prime;
+        if rhs == BigInt::zero() {
+            return Ok(());
+        }
         test_binary_op("div", &lhs.to_str_radix(10), &rhs.to_str_radix(10), divmod)?;
     }
 }

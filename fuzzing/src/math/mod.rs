@@ -64,9 +64,8 @@ pub fn operation(case: &str) {
         assert!(output.starts_with("Return value: "));
         let output = &output["Return value: ".len()..];
         let mut return_value = BigInt::from_str_radix(output, 16).unwrap();
-        return_value =
-            if return_value > prime { (return_value - &two).modpow(&BigInt::one(), &prime) } else { return_value };
-        assert_eq!(return_value, expected);
+        return_value -= if return_value > prime { two } else { BigInt::zero() };
+        assert_eq!(return_value.modpow(&BigInt::one(), &prime), expected.modpow(&BigInt::one(), &prime));
     });
 }
 
