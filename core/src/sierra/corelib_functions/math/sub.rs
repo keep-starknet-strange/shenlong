@@ -15,7 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Panics if the felt type has not been declared previously or if the module felt function has
     /// not been declared previously.
-    pub fn felt_sub(&self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn felt_sub(&mut self, libfunc_declaration: &LibfuncDeclaration) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let felt_type = self.types_by_name.get("felt").expect("Can't get felt from name");
         let debug_felt_type = *self.debug.types_by_name.get("felt").expect("Can't get felt from name");
@@ -28,7 +28,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.debug.create_function_debug(func_name, &func, Some(debug_felt_type), &[debug_felt_type, debug_felt_type]);
+        self.debug.create_function(func_name, &func, Some(debug_felt_type), &[debug_felt_type, debug_felt_type], None);
 
         // Return a - b
         // Panics if the function doesn't have enough arguments but it should happen since we just defined

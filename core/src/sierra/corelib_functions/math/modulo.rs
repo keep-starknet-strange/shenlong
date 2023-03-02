@@ -22,7 +22,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func = self.module.add_function("modulo", felt_type.fn_type(&[big_felt_type.into()], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.debug.create_function_debug("modulo", &func, Some(debug_felt_type), &[debug_double_felt_type]);
+        self.debug.create_function("modulo", &func, Some(debug_felt_type), &[debug_double_felt_type], None);
 
         let prime = big_felt_type.const_int_from_string(DEFAULT_PRIME, inkwell::types::StringRadix::Decimal).unwrap();
         // smod

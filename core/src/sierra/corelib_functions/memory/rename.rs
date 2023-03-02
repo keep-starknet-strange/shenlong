@@ -16,7 +16,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Panics if the type T has not been declared previously as all types should be declared at the
     /// beginning of the sierra file.
-    pub fn rename(&self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn rename(&mut self, libfunc_declaration: &LibfuncDeclaration) {
         // This function just dumbly returns its input value. When it's called it just stores the value in
         // the next variable. Not sure how relevant it is in LLVM but might be useful later for branching.
         // Get the type that this rename function has to handle
@@ -40,7 +40,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func =
             self.module.add_function(func_name, func_and_arg_type.fn_type(&[func_and_arg_type.into()], false), None);
 
-        self.debug.create_function_debug(func_name, &func, Some(debug_func_and_arg_type), &[debug_func_and_arg_type]);
+        self.debug.create_function(func_name, &func, Some(debug_func_and_arg_type), &[debug_func_and_arg_type], None);
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined rename to have an input parameter so it shouldn't panic.

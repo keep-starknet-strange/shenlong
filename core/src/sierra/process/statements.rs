@@ -22,12 +22,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Set the statement number to the absolute statement number.
             statement_id += from;
             self.debug.set_statement_line(statement_id);
+            self.debug.debug_location(Some(scope));
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
                     // Get core lib function called by this instruction.
                     let fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
-                    debug!(fn_name, self.debug.current_statement_line, "processing statement: invocation");
+                    debug!(fn_name, line = self.debug.get_line(), "processing statement: invocation");
                     // Function has only one branch and doesn't return anything.
                     if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
                         match fn_name.as_str() {
@@ -130,7 +131,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         .unwrap()
                         .to_string();
 
-                    debug!(func_name, self.debug.current_statement_line, "processing statement: return");
+                    debug!(func_name, line = self.debug.get_line(), "processing statement: return");
                     // If there is actually something to return.
                     if !ret.is_empty() {
                         let mut types = vec![];
