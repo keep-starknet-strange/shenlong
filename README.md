@@ -125,7 +125,7 @@ export LLI_PATH=/usr/lib/llvm-16/bin/lli # used for testing
 While the oficial brew repo doesn't have LLVM 16 right now, you can use this custom tap:
 
 ```
-brew install edg-l/tap/llvm@16
+brew install -s edg-l/tap/llvm@16
 ```
 
 Example of `.zshenv` file:
