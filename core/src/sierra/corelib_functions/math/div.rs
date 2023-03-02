@@ -1,5 +1,5 @@
 use cairo_lang_sierra::program::LibfuncDeclaration;
-use inkwell::types::BasicType;
+use inkwell::types::{BasicType, StringRadix};
 use inkwell::IntPredicate;
 
 use super::DEFAULT_PRIME;
@@ -38,7 +38,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let double_felt = self.context.custom_width_int_type(512);
 
         let prime_val = double_felt
-            .const_int_from_string(DEFAULT_PRIME, inkwell::types::StringRadix::Decimal)
+            .const_int_from_string(DEFAULT_PRIME, StringRadix::Decimal)
             .expect("Should have been able to parse the prime");
 
         // Compute felt division = a * b^-1
@@ -49,16 +49,34 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let y = self.builder.build_alloca(double_felt, "y");
         let r = self.builder.build_alloca(double_felt, "r");
         let s = self.builder.build_alloca(double_felt, "s");
-        // let quotient = self.builder.build_alloca(double_felt, "quotient");
+
+        let param_s = func.get_last_param().unwrap().into_int_value();
+
+        let is_s_neg = self.builder.build_int_compare(
+            IntPredicate::SLT,
+            param_s,
+            felt_type.const_zero().into_int_value(),
+            "is_s_neg",
+        );
+        let s_val = self
+            .builder
+            .build_select(
+                is_s_neg,
+                self.builder.build_int_add(
+                    param_s,
+                    felt_type.into_int_type().const_int_from_string(DEFAULT_PRIME, StringRadix::Decimal).unwrap(),
+                    "s_pos",
+                ),
+                param_s,
+                "s_pos",
+            )
+            .into_int_value();
 
         // store their initial values
         self.builder.build_store(x, double_felt.const_int(0, false));
         self.builder.build_store(y, double_felt.const_int(1, false));
         self.builder.build_store(r, prime_val);
-        self.builder.build_store(
-            s,
-            self.builder.build_int_s_extend(func.get_last_param().unwrap().into_int_value(), double_felt, "s"),
-        );
+        self.builder.build_store(s, self.builder.build_int_s_extend(s_val, double_felt, "s"));
 
         self.builder.build_unconditional_branch(while_loop);
         self.builder.position_at_end(while_loop);
@@ -75,6 +93,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let r_val = self.builder.build_load(double_felt, r, "r").into_int_value();
         let s_val = self.builder.build_load(double_felt, s, "s").into_int_value();
         let q = self.builder.build_int_signed_div(r_val, s_val, "q");
+
         let q_mul_s = self.builder.build_int_signed_rem(
             self.builder.build_int_mul(q, s_val, "q_mul_s"),
             prime_val,
@@ -85,7 +104,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             prime_val,
             "new_s_mod",
         );
+
         let new_r = self.builder.build_load(double_felt, s, "new_r");
+
         self.builder.build_store(s, new_s);
         self.builder.build_store(r, new_r);
 
@@ -98,6 +119,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         let new_y = self.builder.build_int_sub(x_val, q_mul_y, "new_y");
         let new_x = self.builder.build_load(double_felt, y, "new_x");
+
         self.builder.build_store(y, new_y);
         self.builder.build_store(x, new_x);
 
@@ -113,12 +135,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             double_felt,
             "extended_a",
         );
+        let inv = self.builder.build_load(double_felt, x, "inverse").into_int_value();
 
-        let rhs = self.builder.build_int_signed_rem(
-            self.builder.build_load(double_felt, x, "inverse").into_int_value(),
-            prime_val,
-            "inv_mod",
-        );
+        let rhs = self.builder.build_int_signed_rem(inv, prime_val, "inv_mod");
 
         let mul = self.builder.build_int_mul(lhs, rhs, "res");
         // Panics if the function doesn't have enough arguments but it shouldn't happen since we just

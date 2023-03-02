@@ -88,7 +88,13 @@ fn simple_division() {
 
 #[test]
 fn complicated_division() {
-    test_binary_op("div", "1728053247", "-949187772416", divmod).unwrap();
+    test_binary_op(
+        "div",
+        "-1447380296471745994575940859302708693108287489970759423838251140273846255720",
+        "-8796093022208",
+        divmod,
+    )
+    .unwrap();
 }
 
 proptest! {
@@ -155,10 +161,11 @@ proptest! {
 }
 
 fn divmod(lhs: BigInt, rhs: BigInt) -> BigInt {
-    lhs * modinverse(rhs, get_prime())
+    let prime = get_prime();
+    (lhs * modinverse(rhs.modpow(&BigInt::one(), &prime), prime.clone())).modpow(&BigInt::one(), &prime)
 }
 fn modinverse(a: BigInt, m: BigInt) -> BigInt {
-    let (g, x, _) = egcd(a, m.clone());
+    let (g, x, _) = egcd(a.clone(), m.clone());
     assert_eq!(g, BigInt::one());
     (&x % &m + &m) % &m
 }
