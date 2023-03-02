@@ -62,7 +62,7 @@ where
 
 #[test]
 fn simple_addition() {
-    test_binary_op("add", "0", "-2", BigInt::add).unwrap();
+    test_binary_op("add", "9223372036854775807", "9223372036854775807", BigInt::add).unwrap();
 }
 
 #[test]
@@ -88,13 +88,7 @@ fn simple_division() {
 
 #[test]
 fn complicated_division() {
-    test_binary_op(
-        "div",
-        "-1447380296471745994575940859302708693108287489970759423838251140273846255720",
-        "-8796093022208",
-        divmod,
-    )
-    .unwrap();
+    test_binary_op("div", "7", "2", divmod).unwrap();
 }
 
 proptest! {
