@@ -64,7 +64,6 @@ pub fn operation(case: &str) {
         let mut return_value = BigInt::from_str_radix(output, 16).unwrap();
 
         let two = BigInt::from(2).pow(return_value.bits() as u32);
-        expected = expected.modpow(&BigInt::one(), &prime) % &prime;
         return_value -= if return_value > prime { two } else { BigInt::zero() };
         assert_eq!(return_value.modpow(&BigInt::one(), &prime), expected.modpow(&BigInt::one(), &prime));
     });
@@ -75,7 +74,7 @@ fn divmod(lhs: BigInt, rhs: BigInt) -> BigInt {
     (lhs * modinverse(rhs.modpow(&BigInt::one(), &prime), prime.clone())).modpow(&BigInt::one(), &prime)
 }
 fn modinverse(a: BigInt, m: BigInt) -> BigInt {
-    let (g, x, _) = egcd(a.clone(), m.clone());
+    let (g, x, _) = egcd(a, m.clone());
     assert_eq!(g, BigInt::one());
     (&x % &m + &m) % &m
 }
