@@ -18,7 +18,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Returns an error if the felt type has not been declared previously.
     pub fn felt_div(&self, libfunc_declaration: &LibfuncDeclaration) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
-        let felt_type = self.get_type_from_name("felt").unwrap();
+        let felt_type = self.types_by_name.get("felt").unwrap();
         // fn felt_div(a: felt, b: felt) -> felt
         let func = self.module.add_function(
             libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
@@ -114,7 +114,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             "extended_a",
         );
 
-        let rhs = self.builder.build_load(double_felt, x, "inverse").into_int_value();
+        let rhs = self.builder.build_int_signed_rem(
+            self.builder.build_load(double_felt, x, "inverse").into_int_value(),
+            prime_val,
+            "inv_mod",
+        );
 
         let mul = self.builder.build_int_mul(lhs, rhs, "res");
         // Panics if the function doesn't have enough arguments but it shouldn't happen since we just
