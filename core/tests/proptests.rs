@@ -3,7 +3,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use num_bigint::BigInt;
-use num_traits::Num;
+use num_traits::{Num, One, Zero};
 use proptest::prelude::*;
 use serde::Serialize;
 use shenlong_core::sierra::llvm_compiler::Compiler;
@@ -46,22 +46,23 @@ where
     assert!(output.starts_with("Return value: "));
     let output = &output["Return value: ".len()..];
 
-    let return_value = BigInt::from_str_radix(output, 16).unwrap();
-
     let prime = get_prime();
+    let mut return_value = BigInt::from_str_radix(output, 16).unwrap();
 
     let lhs = BigInt::from_str_radix(lhs, 10).unwrap();
     let rhs = BigInt::from_str_radix(rhs, 10).unwrap();
-    let mut expected = bigint_op(lhs, rhs) % prime;
+    let mut expected = bigint_op(lhs, rhs) % &prime;
     let two = BigInt::from(2).pow(return_value.bits() as u32);
-    expected = expected.modpow(&BigInt::from(1), &two);
+    expected = expected.modpow(&BigInt::one(), &two);
+    return_value =
+        if return_value > prime { (return_value - &two).modpow(&BigInt::one(), &prime) } else { return_value };
     prop_assert_eq!(return_value, expected);
     Ok(())
 }
 
 #[test]
 fn simple_addition() {
-    test_binary_op("add", "9223372036854775807", "9223372036854775807", BigInt::add).unwrap();
+    test_binary_op("add", "0", "-2", BigInt::add).unwrap();
 }
 
 #[test]
@@ -82,7 +83,12 @@ fn substraction_negative_result() {
 
 #[test]
 fn simple_division() {
-    test_binary_op("div", "7", "2", BigInt::div).unwrap();
+    test_binary_op("div", "6", "2", BigInt::div).unwrap();
+}
+
+#[test]
+fn complicated_division() {
+    test_binary_op("div", "1728053247", "-949187772416", divmod).unwrap();
 }
 
 proptest! {
@@ -130,5 +136,38 @@ proptest! {
             &b,
         ) % &prime;
         test_binary_op("mul", &lhs.to_str_radix(10), &rhs.to_str_radix(10), BigInt::mul)?;
+    }
+
+    #[test]
+    fn proptest_div(a: Vec<u8>, b: Vec<u8>) {
+        let prime = get_prime();
+
+        let lhs = BigInt::from_bytes_be(
+            if a.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+            &a,
+        ) % &prime;
+        let rhs = BigInt::from_bytes_be(
+            if b.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
+            &b,
+        ) % &prime;
+        test_binary_op("div", &lhs.to_str_radix(10), &rhs.to_str_radix(10), divmod)?;
+    }
+}
+
+fn divmod(lhs: BigInt, rhs: BigInt) -> BigInt {
+    lhs * modinverse(rhs, get_prime())
+}
+fn modinverse(a: BigInt, m: BigInt) -> BigInt {
+    let (g, x, _) = egcd(a, m.clone());
+    assert_eq!(g, BigInt::one());
+    (&x % &m + &m) % &m
+}
+
+fn egcd(a: BigInt, b: BigInt) -> (BigInt, BigInt, BigInt) {
+    if a == BigInt::zero() {
+        (b, BigInt::zero(), BigInt::one())
+    } else {
+        let (g, x, y) = egcd(&b % &a, a.clone());
+        (g, y - (&b / &a) * &x, x)
     }
 }
