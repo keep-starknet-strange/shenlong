@@ -30,7 +30,6 @@ pub fn operation(case: &str) {
             if data.1.len() % 2 == 0 { num_bigint::Sign::Plus } else { num_bigint::Sign::Minus },
             data.1,
         ) % &prime;
-
         let mut expected = match case {
             "add" => BigInt::add,
             "sub" => BigInt::sub,
@@ -59,11 +58,13 @@ pub fn operation(case: &str) {
         let output = cmd.wait_with_output().unwrap();
         let output = std::str::from_utf8(&output.stdout).unwrap().trim();
 
-        let two = BigInt::from(2).pow(253 as u32);
-        expected = expected.modpow(&BigInt::one(), &two) % &prime;
         assert!(output.starts_with("Return value: "));
         let output = &output["Return value: ".len()..];
+
         let mut return_value = BigInt::from_str_radix(output, 16).unwrap();
+
+        let two = BigInt::from(2).pow(return_value.bits() as u32);
+        expected = expected.modpow(&BigInt::one(), &prime) % &prime;
         return_value -= if return_value > prime { two } else { BigInt::zero() };
         assert_eq!(return_value.modpow(&BigInt::one(), &prime), expected.modpow(&BigInt::one(), &prime));
     });
