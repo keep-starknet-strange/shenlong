@@ -23,7 +23,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         scope: DIScope<'ctx>,
     ) -> CompilerResult<()> {
         // The felt to check.
-        let lhs = self.variables.get(&invocation.args[0].id.to_string()).expect("Variable should exist");
+        let lhs = self.variables.get(&invocation.args[0].id).expect("Variable should exist");
         // felt == 0
         let comparison = self.builder.build_int_compare(
             EQ,

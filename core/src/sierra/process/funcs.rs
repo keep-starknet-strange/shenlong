@@ -135,7 +135,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-            let scope = self.debug.create_function(
+            let debug_function = self.debug.create_function(
                 func_name,
                 &func,
                 return_info.map(|x| x.1),
@@ -147,15 +147,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // function.
             for (var_id, _) in args.iter().enumerate() {
                 // Save the function arguments in the variables map to be able to use them in the function body.
-                self.variables.insert(
-                    var_id.to_string(),
-                    func.get_nth_param(var_id as u32).expect("Function should have enough parameters"),
-                );
+                let variable = func.get_nth_param(var_id as u32).expect("Function should have enough parameters");
+                self.variables.insert(var_id as u64, variable);
             }
 
             // process statements from the line stated in the function definition until the return instruction.
             // ex: fib_caller::fib_caller::main@21() -> (Unit); the function main starts at the statement 21.
-            self.process_statements_from(func_declaration.entry_point.0, scope)?;
+            self.process_statements_from(func_declaration.entry_point.0, debug_function.scope)?;
+
+            // The function has been processed. Valid functions have always 1 block and atleast 1 instruction.
+            let first_instruction = func.get_first_basic_block().unwrap().get_first_instruction().unwrap();
+            for (i, var) in func.get_param_iter().enumerate() {
+                self.debug.insert_dbg_value(
+                    var,
+                    debug_function.params_local_vars[i],
+                    debug_function.location,
+                    first_instruction,
+                );
+            }
+
             self.debug.next_line();
         }
         // Move to the next state.

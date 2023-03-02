@@ -1,5 +1,6 @@
 use cairo_lang_sierra::program::LibfuncDeclaration;
 use inkwell::types::BasicType;
+use inkwell::values::BasicValue;
 
 use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
@@ -28,7 +29,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
 
-        self.debug.create_function(func_name, &func, Some(debug_felt_type), &[debug_felt_type, debug_felt_type], None);
+        let debug_func = self.debug.create_function(
+            func_name,
+            &func,
+            Some(debug_felt_type),
+            &[debug_felt_type, debug_felt_type],
+            None,
+        );
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
@@ -41,6 +48,22 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             double_felt,
             "extended_a",
         );
+
+        // Debug parameter values
+        self.debug.insert_dbg_value(
+            func.get_last_param().unwrap(),
+            debug_func.params_local_vars[1],
+            self.builder.get_current_debug_location().unwrap(),
+            lhs.as_instruction_value().unwrap(),
+        );
+
+        self.debug.insert_dbg_value(
+            func.get_first_param().unwrap(),
+            debug_func.params_local_vars[0],
+            self.builder.get_current_debug_location().unwrap(),
+            lhs.as_instruction_value().unwrap(),
+        );
+
         // Extend right hand side.
         // We just defined the function so it shouldn't panic.
         let rhs =

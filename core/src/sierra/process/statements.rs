@@ -2,7 +2,7 @@ use cairo_lang_sierra::ids::VarId;
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
 use inkwell::debug_info::DIScope;
-use inkwell::values::{AnyValue, BasicMetadataValueEnum, BasicValue, BasicValueEnum, StructValue};
+use inkwell::values::{BasicValue, BasicValueEnum, StructValue};
 use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
@@ -90,17 +90,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .left()
                             .expect("Call should have worked");
 
+                        // Create the debug info for the function call.
                         let real_fn_name = function.get_name().to_string_lossy();
                         let debug_function = self.debug.functions.get(&*real_fn_name).unwrap();
-                        for (i, dbg_arg) in debug_function.params.iter().enumerate() {
-                            let value = args[i];
-                            self.debug.debug_builder.insert_dbg_value_before(
-                                value,
-                                *dbg_arg,
-                                None,
-                                debug_location,
-                                res.as_instruction_value().unwrap(),
-                            );
+                        let call_instruction = res.as_instruction_value().unwrap();
+                        for (value, debug_local_var) in
+                            args.iter().zip(self.debug.create_function_call_local_vars(debug_function, scope))
+                        {
+                            self.debug.insert_dbg_value(*value, debug_local_var, debug_location, call_instruction);
                         }
 
                         if res.is_struct_value()
@@ -111,7 +108,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             self.unpack_tuple(&invocation.branches[0].results, res.into_struct_value())
                         } else {
                             // Just save the result.
-                            self.variables.insert(invocation.branches[0].results[0].id.to_string(), res);
+                            self.variables.insert(invocation.branches[0].results[0].id, res);
                         }
                         // If the next instruction is a destination of a jump.
                         if self.jump_dests.contains(&(statement_id + 1)) {
@@ -145,7 +142,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                         // Get the types and values to return.
                         for ret_var in ret.iter() {
-                            let value = self.variables.get(&ret_var.id.to_string()).unwrap();
+                            let value = self.variables.get(&ret_var.id).unwrap();
                             values.push(value);
                             types.push(value.get_type());
                         }
@@ -290,7 +287,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let mut args = vec![];
         if !invocation.args.is_empty() {
             for argument in invocation.args.iter() {
-                args.push(*self.variables.get(&argument.id.to_string()).unwrap_or_else(|| {
+                args.push(*self.variables.get(&argument.id).unwrap_or_else(|| {
                     panic!("Variable {:} passed as argument should have been declared first", argument.id)
                 }));
             }
@@ -314,14 +311,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let res_ptr = self.builder.build_alloca(res_type, "res_ptr");
         self.builder.build_store(res_ptr, res);
         for (field_index, VarId { id, debug_name: _ }) in results.iter().enumerate() {
-            let id = id.to_string();
             let field_type = res_type.get_field_type_at_index(field_index as u32).expect("Field type should exist");
             let field_ptr = self
                 .builder
                 .build_struct_gep(res_type, res_ptr, field_index as u32, format!("{id}_ptr").as_str())
                 .expect("Pointer should be valid");
-            let field = self.builder.build_load(field_type, field_ptr, id.as_str());
-            self.variables.insert(id, field);
+            let field = self.builder.build_load(field_type, field_ptr, &id.to_string());
+            self.variables.insert(*id, field);
         }
     }
 }
