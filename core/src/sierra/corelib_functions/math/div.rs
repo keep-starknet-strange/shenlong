@@ -50,14 +50,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let r = self.builder.build_alloca(double_felt, "r");
         let s = self.builder.build_alloca(double_felt, "s");
 
+        // Get the value of s
         let param_s = func.get_last_param().unwrap().into_int_value();
 
+        // s < 0
         let is_s_neg = self.builder.build_int_compare(
             IntPredicate::SLT,
             param_s,
             felt_type.const_zero().into_int_value(),
             "is_s_neg",
         );
+        // s = if s < 0 { s + prime } else { s }
         let s_val = self
             .builder
             .build_select(
@@ -90,43 +93,51 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.build_conditional_branch(is_divisor_zero, body_loop, exit_loop);
         self.builder.position_at_end(body_loop);
+        // Load r.
         let r_val = self.builder.build_load(double_felt, r, "r").into_int_value();
+        // Load s.
         let s_val = self.builder.build_load(double_felt, s, "s").into_int_value();
         let q = self.builder.build_int_signed_div(r_val, s_val, "q");
-
+        // q_mul_s_mod = q * s % prime
         let q_mul_s = self.builder.build_int_signed_rem(
             self.builder.build_int_mul(q, s_val, "q_mul_s"),
             prime_val,
             "q_mul_s_mod",
         );
+        // s = (r - q_mul_s_mod) % prime
         let new_s = self.builder.build_int_signed_rem(
             self.builder.build_int_sub(r_val, q_mul_s, "new_s"),
             prime_val,
             "new_s_mod",
         );
-
+        // r = s
         let new_r = self.builder.build_load(double_felt, s, "new_r");
-
+        // Store new s.
         self.builder.build_store(s, new_s);
+        // Store new r.
         self.builder.build_store(r, new_r);
 
+        // Load x.
         let x_val = self.builder.build_load(double_felt, x, "x").into_int_value();
+        // Load y.
         let y_val = self.builder.build_load(double_felt, y, "y").into_int_value();
+        // q_mul_y_mod = (q * y) % prime
         let q_mul_y = self.builder.build_int_signed_rem(
             self.builder.build_int_mul(q, y_val, "q_mul_y"),
             prime_val,
             "q_mul_y_mod",
         );
+        // y = x - q_mul_y_mod
         let new_y = self.builder.build_int_sub(x_val, q_mul_y, "new_y");
+        // x = s
         let new_x = self.builder.build_load(double_felt, y, "new_x");
 
+        // Store new y.
         self.builder.build_store(y, new_y);
+        // Store new x.
         self.builder.build_store(x, new_x);
 
         self.builder.build_unconditional_branch(while_loop);
-
-        // At this point, t holds the inverse of b.
-
         self.builder.position_at_end(exit_loop);
 
         // Extend left hand side.
@@ -135,8 +146,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             double_felt,
             "extended_a",
         );
+        // Load the inverse of the rhs.
         let inv = self.builder.build_load(double_felt, x, "inverse").into_int_value();
-
+        // inverse % prime
         let rhs = self.builder.build_int_signed_rem(inv, prime_val, "inv_mod");
 
         let mul = self.builder.build_int_mul(lhs, rhs, "res");
