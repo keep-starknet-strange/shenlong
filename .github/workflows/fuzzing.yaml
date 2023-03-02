@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        case: [add, sub, mul]
+        case: [add, sub, mul, div]
     env:
       LLVM_SYS_150_PREFIX: /usr/lib/llvm-16
       LLI_PATH: /usr/lib/llvm-16/bin/lli
