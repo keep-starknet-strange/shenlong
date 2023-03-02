@@ -69,13 +69,13 @@
                 // everything is provable but in LLVM IR we&#39;re not proving anything so we can consider `NonZero&lt;T&gt;`
                 // to be just `T`).
                 </span><span class="kw">let </span>inner_type = <span class="kw-2">*</span><span class="self">self</span>.types_by_id.get(id).unwrap();
-                <span class="kw">let </span>debug_inner_type = <span class="kw-2">*</span><span class="self">self</span>.debug_types_by_id.get(id).unwrap();
+                <span class="kw">let </span>debug_inner_type = <span class="kw-2">*</span><span class="self">self</span>.debug.types_by_id.get(id).unwrap();
 
                 <span class="self">self</span>.types_by_id.insert(type_declaration.id.id, inner_type);
                 <span class="self">self</span>.types_by_name.insert(type_declaration.id.debug_name.as_ref().unwrap().to_string(), inner_type);
 
                 <span class="kw">let </span>debug_name = type_declaration.id.debug_name.as_ref().unwrap().to_string();
-                <span class="self">self</span>.create_debug_type(type_declaration.id.id, <span class="kw-2">&amp;</span>debug_name, debug_inner_type.get_size_in_bits());
+                <span class="self">self</span>.debug.create_type(type_declaration.id.id, <span class="kw-2">&amp;</span>debug_name, debug_inner_type.get_size_in_bits());
             }
             GenericArg::UserType(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(),
             _val =&gt; {

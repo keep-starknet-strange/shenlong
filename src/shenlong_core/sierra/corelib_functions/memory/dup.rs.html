@@ -102,14 +102,14 @@
         <span class="kw">let </span>func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
 
         <span class="kw">let </span>arg_type = <span class="kw-2">*</span><span class="self">self</span>.types_by_id.get(<span class="kw-2">&amp;</span>arg_type_id).unwrap();
-        <span class="kw">let </span>debug_arg_type = <span class="kw-2">*</span><span class="self">self</span>.debug_types_by_id.get(<span class="kw-2">&amp;</span>arg_type_id).unwrap();
+        <span class="kw">let </span>debug_arg_type = <span class="kw-2">*</span><span class="self">self</span>.debug.types_by_id.get(<span class="kw-2">&amp;</span>arg_type_id).unwrap();
 
         <span class="comment">// Return a 2 element struct that have the same value. Ex: dup&lt;felt&gt;(1) -&gt; { i252 1, i252 1 }
         </span><span class="kw">let </span>return_type = <span class="self">self</span>.context.struct_type(<span class="kw-2">&amp;</span>[arg_type, arg_type], <span class="bool-val">false</span>);
 
-        <span class="kw">let </span>debug_return_type = <span class="self">self</span>.create_debug_type_struct(
-            <span class="self">Self</span>::get_debug_function_return_struct_type_id(libfunc_declaration.id.id),
-            <span class="kw-2">&amp;</span><span class="self">Self</span>::get_debug_function_return_struct_type_name(func_name),
+        <span class="kw">let </span>debug_return_type = <span class="self">self</span>.debug.create_struct(
+            <span class="self">self</span>.debug.get_fn_struct_type_id(libfunc_declaration.id.id),
+            <span class="kw-2">&amp;</span><span class="self">self</span>.debug.get_fn_struct_type_name(func_name),
             <span class="kw-2">&amp;</span>return_type,
             <span class="kw-2">&amp;</span>[debug_arg_type],
         );
@@ -121,7 +121,7 @@
             <span class="prelude-val">None</span>,
         );
 
-        <span class="self">self</span>.create_function_debug(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_return_type), <span class="kw-2">&amp;</span>[debug_arg_type]);
+        <span class="self">self</span>.debug.create_function(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_return_type), <span class="kw-2">&amp;</span>[debug_arg_type], <span class="prelude-val">None</span>);
 
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
         <span class="comment">// We just defined dup to have an input parameter so it shouldn&#39;t panic.

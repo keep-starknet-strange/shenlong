@@ -93,6 +93,9 @@
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
 <a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
 </pre><pre class="rust"><code><span class="kw">use </span>inkwell::module::Linkage;
 <span class="kw">use </span>inkwell::types::BasicType;
 <span class="kw">use </span>inkwell::AddressSpace;
@@ -138,7 +141,7 @@
 
         <span class="comment">// Iterate over the libfunc declarations in the Sierra program.
         </span><span class="kw">for </span>libfunc_declaration <span class="kw">in </span><span class="self">self</span>.program.libfunc_declarations.iter() {
-            <span class="self">self</span>.current_line_estimate += <span class="number">1</span>;
+            <span class="self">self</span>.debug.next_line();
 
             <span class="comment">// Get the debug name of the function.
             </span><span class="kw">let </span>libfunc_name = libfunc_declaration.long_id.generic_id.<span class="number">0</span>.as_str();
@@ -184,6 +187,9 @@
                 <span class="kw">_ </span>=&gt; <span class="macro">debug!</span>(libfunc_name, <span class="string">&quot;not implemented&quot;</span>),
             }
         }
+
+        <span class="self">self</span>.debug.next_line();
+
         <span class="comment">// Move to the next state.
         </span><span class="self">self</span>.move_to(CompilationState::CoreLibFunctionsProcessed)
     }

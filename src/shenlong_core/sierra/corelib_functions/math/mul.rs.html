@@ -77,10 +77,10 @@
     ///
     /// Panics if the felt type has not been declared previously or if the module felt function has
     /// not been declared previously.
-    </span><span class="kw">pub fn </span>felt_mul(<span class="kw-2">&amp;</span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
+    </span><span class="kw">pub fn </span>felt_mul(<span class="kw-2">&amp;mut </span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
         <span class="comment">// We could hardcode the LLVM IR type for felt but this adds a check.
         </span><span class="kw">let </span>felt_type = <span class="self">self</span>.types_by_name.get(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
-        <span class="kw">let </span>debug_felt_type = <span class="kw-2">*</span><span class="self">self</span>.debug_types_by_name.get(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
+        <span class="kw">let </span>debug_felt_type = <span class="kw-2">*</span><span class="self">self</span>.debug.types_by_name.get(<span class="string">&quot;felt&quot;</span>).expect(<span class="string">&quot;Can&#39;t get felt from name&quot;</span>);
         <span class="comment">// fn felt_mul(a: felt, b: felt) -&gt; felt
         </span><span class="kw">let </span>func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
         <span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
@@ -90,7 +90,7 @@
         );
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
 
-        <span class="self">self</span>.create_function_debug(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_felt_type), <span class="kw-2">&amp;</span>[debug_felt_type, debug_felt_type]);
+        <span class="self">self</span>.debug.create_function(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_felt_type), <span class="kw-2">&amp;</span>[debug_felt_type, debug_felt_type], <span class="prelude-val">None</span>);
 
         <span class="comment">// The maximum value of a multiplication is (prime - 1)² which is 503 bits.
         </span><span class="kw">let </span>double_felt = <span class="self">self</span>.context.custom_width_int_type(<span class="number">512</span>);

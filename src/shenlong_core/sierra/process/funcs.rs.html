@@ -155,6 +155,13 @@
 <a href="#155" id="155">155</a>
 <a href="#156" id="156">156</a>
 <a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::Param;
 <span class="kw">use </span>inkwell::types::{BasicMetadataTypeEnum, BasicType};
@@ -196,7 +203,7 @@
                 // declared at the beginning of the sierra file.
                 </span><span class="kw">let </span>ty = <span class="kw-2">*</span><span class="self">self</span>.types_by_id.get(type_id).expect(<span class="string">&quot;Function argument type should have been declared&quot;</span>);
                 args.push(ty);
-                <span class="kw">let </span>debug_type = <span class="self">self</span>.debug_types_by_id.get(type_id).unwrap();
+                <span class="kw">let </span>debug_type = <span class="self">self</span>.debug.types_by_id.get(type_id).unwrap();
                 args_debug_types.push(<span class="kw-2">*</span>debug_type);
             }
 
@@ -206,7 +213,7 @@
                 <span class="comment">// If the function returns a single value, return it directly.
                 </span><span class="kw">if </span>func_declaration.signature.ret_types.len() == <span class="number">1 </span>{
                     <span class="kw">let </span>ty = <span class="kw-2">*</span><span class="self">self</span>.types_by_id.get(<span class="kw-2">&amp;</span>func_declaration.signature.ret_types[<span class="number">0</span>].id).unwrap();
-                    <span class="kw">let </span>debug_ty = <span class="kw-2">*</span><span class="self">self</span>.debug_types_by_id.get(<span class="kw-2">&amp;</span>func_declaration.signature.ret_types[<span class="number">0</span>].id).unwrap();
+                    <span class="kw">let </span>debug_ty = <span class="kw-2">*</span><span class="self">self</span>.debug.types_by_id.get(<span class="kw-2">&amp;</span>func_declaration.signature.ret_types[<span class="number">0</span>].id).unwrap();
                     <span class="prelude-val">Some</span>((ty, debug_ty))
                 } <span class="kw">else </span>{
                     <span class="comment">// In case the function returns multiple values collect all the types into a struct.
@@ -220,15 +227,15 @@
                                 .get(<span class="kw-2">&amp;</span>ret_type.id)
                                 .expect(<span class="string">&quot;Type should have been declared before function&quot;</span>),
                         );
-                        ret_debug_types.push(<span class="kw-2">*</span><span class="self">self</span>.debug_types_by_id.get(<span class="kw-2">&amp;</span>ret_type.id).unwrap());
+                        ret_debug_types.push(<span class="kw-2">*</span><span class="self">self</span>.debug.types_by_id.get(<span class="kw-2">&amp;</span>ret_type.id).unwrap());
                     }
                     <span class="kw">let </span>generated_return_struct_type = <span class="self">self</span>.context.struct_type(<span class="kw-2">&amp;</span>ret_types, <span class="bool-val">false</span>);
                     <span class="comment">// Arbitrarely decided generated struct return types have id = the function id + 100_000.
                     // Arbitrarely decided generated struct return types have name = &quot;return_type_{}&quot; where {} is the
                     // function name.
-                    </span><span class="kw">let </span>debug_type = <span class="self">self</span>.create_debug_type_struct(
-                        <span class="self">Self</span>::get_debug_function_return_struct_type_id(func_declaration.id.id),
-                        <span class="kw-2">&amp;</span><span class="self">Self</span>::get_debug_function_return_struct_type_name(func_name),
+                    </span><span class="kw">let </span>debug_type = <span class="self">self</span>.debug.create_struct(
+                        <span class="self">self</span>.debug.get_fn_struct_type_id(func_declaration.id.id),
+                        <span class="kw-2">&amp;</span><span class="self">self</span>.debug.get_fn_struct_type_name(func_name),
                         <span class="kw-2">&amp;</span>generated_return_struct_type,
                         <span class="kw-2">&amp;</span>ret_debug_types,
                     );
@@ -292,7 +299,13 @@
 
             <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
 
-            <span class="self">self</span>.create_function_debug(func_name, <span class="kw-2">&amp;</span>func, return_info.map(|x| x.<span class="number">1</span>), <span class="kw-2">&amp;</span>args_debug_types);
+            <span class="kw">let </span>scope = <span class="self">self</span>.debug.create_function(
+                func_name,
+                <span class="kw-2">&amp;</span>func,
+                return_info.map(|x| x.<span class="number">1</span>),
+                <span class="kw-2">&amp;</span>args_debug_types,
+                <span class="prelude-val">Some</span>(func_declaration.entry_point.<span class="number">0</span>),
+            );
 
             <span class="comment">// Loop through the arguments of the function. The variable id counter always starts from zero for a
             // function.
@@ -303,10 +316,11 @@
                     func.get_nth_param(var_id <span class="kw">as </span>u32).expect(<span class="string">&quot;Function should have enough parameters&quot;</span>),
                 );
             }
+
             <span class="comment">// process statements from the line stated in the function definition until the return instruction.
             // ex: fib_caller::fib_caller::main@21() -&gt; (Unit); the function main starts at the statement 21.
-            </span><span class="self">self</span>.process_statements_from(func_declaration.entry_point.<span class="number">0</span>)<span class="question-mark">?</span>;
-            <span class="self">self</span>.current_line_estimate += <span class="number">1</span>;
+            </span><span class="self">self</span>.process_statements_from(func_declaration.entry_point.<span class="number">0</span>, scope)<span class="question-mark">?</span>;
+            <span class="self">self</span>.debug.next_line();
         }
         <span class="comment">// Move to the next state.
         </span><span class="self">self</span>.move_to(CompilationState::FunctionsProcessed)

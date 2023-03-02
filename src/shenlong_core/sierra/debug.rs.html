@@ -120,19 +120,54 @@
 <a href="#120" id="120">120</a>
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
-</pre><pre class="rust"><code><span class="kw">use </span>inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DIScope, DISubprogram, DIType};
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+</pre><pre class="rust"><code><span class="kw">use </span>std::borrow::Cow;
+
+<span class="kw">use </span>inkwell::debug_info::{AsDIScope, DIFlags, DIFlagsConstants, DIScope, DISubprogram, DIType};
 <span class="kw">use </span>inkwell::types::StructType;
 <span class="kw">use </span>inkwell::values::FunctionValue;
+<span class="kw">use </span>regex::Regex;
 
-<span class="kw">use </span><span class="kw">super</span>::llvm_compiler::Compiler;
+<span class="kw">use </span><span class="kw">super</span>::llvm_compiler::{DebugCompiler, FunctionDebugInfo};
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; Compiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; DebugCompiler&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;ctx</span>&gt; {
     <span class="doccomment">/// Create and set the current debug location.
     </span><span class="attr">#[inline]
     </span><span class="kw">pub fn </span>debug_location(<span class="kw-2">&amp;</span><span class="self">self</span>, scope: <span class="prelude-ty">Option</span>&lt;DIScope&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt;) {
-        <span class="kw">let </span>location = <span class="self">self</span>.dibuilder.create_debug_location(
+        <span class="kw">let </span>location = <span class="self">self</span>.debug_builder.create_debug_location(
             <span class="self">self</span>.context,
-            <span class="self">self</span>.current_line_estimate,
+            <span class="self">self</span>.get_line(),
             <span class="number">0</span>,
             scope.unwrap_or_else(|| <span class="self">self</span>.compile_unit.as_debug_info_scope()),
             <span class="prelude-val">None</span>,
@@ -144,53 +179,73 @@
     ///
     /// Sets the current debug location too, so you don&#39;t have to call debug_location with the
     /// returned scope.
-    </span><span class="kw">pub fn </span>create_function_debug(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    </span><span class="kw">pub fn </span>create_function(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         func_name: <span class="kw-2">&amp;</span>str,
         func: <span class="kw-2">&amp;</span>FunctionValue&lt;<span class="lifetime">&#39;ctx</span>&gt;,
         return_type: <span class="prelude-ty">Option</span>&lt;DIType&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt;,
         parameter_types: <span class="kw-2">&amp;</span>[DIType&lt;<span class="lifetime">&#39;ctx</span>&gt;],
+        scope_line: <span class="prelude-ty">Option</span>&lt;usize&gt;,
     ) -&gt; DIScope&lt;<span class="lifetime">&#39;ctx</span>&gt; {
-        <span class="kw">let </span>subroutine_type = <span class="self">self</span>.dibuilder.create_subroutine_type(
+        <span class="kw">let </span>debug_func_name = <span class="self">self</span>.clear_function_name(func_name);
+        <span class="kw">let </span>subroutine_type = <span class="self">self</span>.debug_builder.create_subroutine_type(
             <span class="self">self</span>.compile_unit.get_file(),
             return_type,
             parameter_types,
             DIFlags::PUBLIC,
         );
-        <span class="kw">let </span>func_scope: DISubprogram&lt;<span class="lifetime">&#39;_</span>&gt; = <span class="self">self</span>.dibuilder.create_function(
+        <span class="kw">let </span>func_scope: DISubprogram&lt;<span class="lifetime">&#39;_</span>&gt; = <span class="self">self</span>.debug_builder.create_function(
             <span class="self">self</span>.compile_unit.as_debug_info_scope(),
-            func_name,
-            <span class="prelude-val">None</span>,
+            <span class="kw-2">&amp;</span>debug_func_name,
+            <span class="prelude-val">Some</span>(func_name),
             <span class="self">self</span>.compile_unit.get_file(),
-            <span class="self">self</span>.current_line_estimate, <span class="comment">// line number
+            <span class="self">self</span>.get_line(), <span class="comment">// line number
             </span>subroutine_type,
             <span class="bool-val">true</span>,
             <span class="bool-val">true</span>,
-            <span class="number">0</span>, <span class="comment">// scope line
+            scope_line.map(|x| x <span class="kw">as </span>u32).unwrap_or_else(|| <span class="self">self</span>.get_line()), <span class="comment">// scope line
             </span>DIFlags::PUBLIC,
             <span class="bool-val">false</span>,
         );
         func.set_subprogram(func_scope);
         <span class="kw">let </span>scope = func_scope.as_debug_info_scope();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>params = Vec::with_capacity(parameter_types.len());
+
+        <span class="kw">for </span>(i, param) <span class="kw">in </span>parameter_types.iter().enumerate() {
+            <span class="kw">let </span>local_var = <span class="self">self</span>.debug_builder.create_parameter_variable(
+                scope,
+                <span class="kw-2">&amp;</span>i.to_string(),
+                i <span class="kw">as </span>u32 + <span class="number">1</span>,
+                <span class="self">self</span>.compile_unit.get_file(),
+                <span class="self">self</span>.get_line(),
+                <span class="kw-2">*</span>param,
+                <span class="bool-val">true</span>,
+                DIFlags::PUBLIC,
+            );
+            params.push(local_var);
+        }
+
+        <span class="kw">let </span>info = FunctionDebugInfo { function: func_scope, params };
+
+        <span class="self">self</span>.functions.insert(func_name.to_string(), info);
+
         <span class="self">self</span>.debug_location(<span class="prelude-val">Some</span>(scope));
         scope
     }
 
     <span class="doccomment">/// Creates a type debug info by name.
-    </span><span class="kw">pub fn </span>create_debug_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: u64, name: <span class="kw-2">&amp;</span>str, size_in_bits: u64) -&gt; DIType&lt;<span class="lifetime">&#39;ctx</span>&gt; {
-        <span class="kw">let </span>debug_type = <span class="self">self
-            </span>.dibuilder
-            .create_basic_type(name, size_in_bits, <span class="number">0x00</span>, inkwell::debug_info::DIFlags::PUBLIC)
-            .unwrap()
-            .as_type();
+    </span><span class="kw">pub fn </span>create_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: u64, name: <span class="kw-2">&amp;</span>str, size_in_bits: u64) -&gt; DIType&lt;<span class="lifetime">&#39;ctx</span>&gt; {
+        <span class="kw">let </span>debug_type =
+            <span class="self">self</span>.debug_builder.create_basic_type(name, size_in_bits, <span class="number">0x00</span>, DIFlags::PUBLIC).unwrap().as_type();
 
-        <span class="self">self</span>.debug_types_by_id.insert(id, debug_type);
-        <span class="self">self</span>.debug_types_by_name.insert(name.to_string(), debug_type);
+        <span class="self">self</span>.types_by_id.insert(id, debug_type);
+        <span class="self">self</span>.types_by_name.insert(name.to_string(), debug_type);
         debug_type
     }
 
     <span class="doccomment">/// Creates a struct debug type.
-    </span><span class="kw">pub fn </span>create_debug_type_struct(
+    </span><span class="kw">pub fn </span>create_struct(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         id: u64,
         name: <span class="kw-2">&amp;</span>str,
@@ -206,11 +261,11 @@
             bits += arg.get_size_in_bits();
         }
 
-        <span class="kw">let </span>debug_struct_type = <span class="self">self</span>.dibuilder.create_struct_type(
+        <span class="kw">let </span>debug_struct_type = <span class="self">self</span>.debug_builder.create_struct_type(
             <span class="self">self</span>.compile_unit.as_debug_info_scope(),
             name,
             <span class="self">self</span>.compile_unit.get_file(),
-            <span class="self">self</span>.current_line_estimate,
+            <span class="self">self</span>.get_line(),
             bits,
             align_bits,
             inkwell::debug_info::DIFlags::PUBLIC,
@@ -221,8 +276,8 @@
             name,
         );
 
-        <span class="self">self</span>.debug_types_by_id.insert(id, debug_struct_type.as_type());
-        <span class="self">self</span>.debug_types_by_name.insert(name.to_string(), debug_struct_type.as_type());
+        <span class="self">self</span>.types_by_id.insert(id, debug_struct_type.as_type());
+        <span class="self">self</span>.types_by_name.insert(name.to_string(), debug_struct_type.as_type());
         debug_struct_type.as_type()
     }
 
@@ -230,7 +285,7 @@
     ///
     /// Arbitrarily the decided function generated struct return types have id = the function id +
     /// 100_000.
-    </span><span class="kw">pub const fn </span>get_debug_function_return_struct_type_id(func_id: u64) -&gt; u64 {
+    </span><span class="kw">pub const fn </span>get_fn_struct_type_id(<span class="kw-2">&amp;</span><span class="self">self</span>, func_id: u64) -&gt; u64 {
         func_id + <span class="number">100_000
     </span>}
 
@@ -238,8 +293,17 @@
     ///
     /// Arbitrarily decided the generated struct return types have name = &quot;return_type_{}&quot; where {}
     /// is the function name.
-    </span><span class="kw">pub fn </span>get_debug_function_return_struct_type_name(func_debug_name: <span class="kw-2">&amp;</span>str) -&gt; String {
+    </span><span class="kw">pub fn </span>get_fn_struct_type_name(<span class="kw-2">&amp;</span><span class="self">self</span>, func_debug_name: <span class="kw-2">&amp;</span>str) -&gt; String {
         <span class="macro">format!</span>(<span class="string">&quot;return_type_{}&quot;</span>, func_debug_name)
+    }
+
+    <span class="doccomment">/// User defined functions in sierra have a namespace before, it&#39;s not really useful for
+    /// debugging.
+    ///
+    /// a::a::fn_name -&gt; fn_name
+    </span><span class="kw">pub fn </span>clear_function_name&lt;<span class="lifetime">&#39;s</span>&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span>str) -&gt; Cow&lt;<span class="lifetime">&#39;s</span>, str&gt; {
+        <span class="kw">let </span>regex = Regex::new(<span class="string">r#&quot;.*::&quot;#</span>).unwrap();
+        regex.replace(name, <span class="string">&quot;&quot;</span>)
     }
 }
 </code></pre></div>

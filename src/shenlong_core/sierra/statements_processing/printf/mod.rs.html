@@ -97,7 +97,7 @@
     <span class="doccomment">/// Defines a function that wraps printf to print a value of type `ty`.
     /// Useful for debugging, specially for integers with a size &gt; 64bit.
     /// Requires printf to be declared beforehand.
-    </span><span class="kw">pub fn </span>printf_for_type(<span class="kw-2">&amp;</span><span class="self">self</span>, ty: BasicMetadataTypeEnum&lt;<span class="lifetime">&#39;ctx</span>&gt;, func_name: <span class="kw-2">&amp;</span>str, type_name: <span class="kw-2">&amp;</span>str) {
+    </span><span class="kw">pub fn </span>printf_for_type(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ty: BasicMetadataTypeEnum&lt;<span class="lifetime">&#39;ctx</span>&gt;, func_name: <span class="kw-2">&amp;</span>str, type_name: <span class="kw-2">&amp;</span>str) {
         <span class="kw">if </span><span class="self">self</span>.module.get_function(func_name).is_some() {
             <span class="macro">warn!</span>(<span class="string">&quot;Tried to redefine {} printf function.&quot;</span>, func_name);
             <span class="kw">return</span>;
@@ -109,7 +109,7 @@
         </span><span class="kw">let </span>func = <span class="self">self</span>.module.add_function(func_name, void_type.fn_type(<span class="kw-2">&amp;</span>[ty], <span class="bool-val">false</span>), <span class="prelude-val">None</span>);
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
 
-        <span class="self">self</span>.create_function_debug(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>[<span class="kw-2">*</span><span class="self">self</span>.debug_types_by_name.get(type_name).unwrap()]);
+        <span class="self">self</span>.debug.create_function(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>[<span class="kw-2">*</span><span class="self">self</span>.debug.types_by_name.get(type_name).unwrap()], <span class="prelude-val">None</span>);
 
         <span class="comment">// For now we only allow printing int types.
         </span><span class="kw">let </span>value = func.get_first_param().expect(<span class="string">&quot;Function should have exactly 1 param&quot;</span>).into_int_value();

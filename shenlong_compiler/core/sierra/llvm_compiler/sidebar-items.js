@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CompilationState"],"struct":["Compiler"],"type":["CompilationStateTransition"]};
+window.SIDEBAR_ITEMS = {"enum":["CompilationState"],"struct":["Compiler","DebugCompiler","FunctionDebugInfo"],"type":["CompilationStateTransition"]};

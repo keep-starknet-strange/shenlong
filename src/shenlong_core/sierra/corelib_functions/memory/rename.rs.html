@@ -67,7 +67,7 @@
     ///
     /// Panics if the type T has not been declared previously as all types should be declared at the
     /// beginning of the sierra file.
-    </span><span class="kw">pub fn </span>rename(<span class="kw-2">&amp;</span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
+    </span><span class="kw">pub fn </span>rename(<span class="kw-2">&amp;mut </span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
         <span class="comment">// This function just dumbly returns its input value. When it&#39;s called it just stores the value in
         // the next variable. Not sure how relevant it is in LLVM but might be useful later for branching.
         // Get the type that this rename function has to handle
@@ -83,7 +83,7 @@
 
         <span class="comment">// Panics if the type has not been declared.
         </span><span class="kw">let </span>func_and_arg_type = <span class="self">self</span>.types_by_id.get(<span class="kw-2">&amp;</span>type_id).unwrap().as_basic_type_enum();
-        <span class="kw">let </span>debug_func_and_arg_type = <span class="kw-2">*</span><span class="self">self</span>.debug_types_by_id.get(<span class="kw-2">&amp;</span>type_id).unwrap();
+        <span class="kw">let </span>debug_func_and_arg_type = <span class="kw-2">*</span><span class="self">self</span>.debug.types_by_id.get(<span class="kw-2">&amp;</span>type_id).unwrap();
 
         <span class="kw">let </span>func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
 
@@ -91,7 +91,7 @@
         </span><span class="kw">let </span>func =
             <span class="self">self</span>.module.add_function(func_name, func_and_arg_type.fn_type(<span class="kw-2">&amp;</span>[func_and_arg_type.into()], <span class="bool-val">false</span>), <span class="prelude-val">None</span>);
 
-        <span class="self">self</span>.create_function_debug(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_func_and_arg_type), <span class="kw-2">&amp;</span>[debug_func_and_arg_type]);
+        <span class="self">self</span>.debug.create_function(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_func_and_arg_type), <span class="kw-2">&amp;</span>[debug_func_and_arg_type], <span class="prelude-val">None</span>);
 
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
         <span class="comment">// We just defined rename to have an input parameter so it shouldn&#39;t panic.

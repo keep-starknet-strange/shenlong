@@ -320,9 +320,12 @@
 <a href="#320" id="320">320</a>
 <a href="#321" id="321">321</a>
 <a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::VarId;
 <span class="doccomment">/// This file contains everything related to sierra statement processing.
 </span><span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
+<span class="kw">use </span>inkwell::debug_info::DIScope;
 <span class="kw">use </span>inkwell::values::{BasicMetadataValueEnum, StructValue};
 <span class="kw">use </span>tracing::debug;
 
@@ -337,18 +340,19 @@
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    </span><span class="kw">pub fn </span>process_statements_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: usize) -&gt; CompilerResult&lt;()&gt; {
+    </span><span class="kw">pub fn </span>process_statements_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: usize, scope: DIScope&lt;<span class="lifetime">&#39;ctx</span>&gt;) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// Check that the current state is valid.
         </span><span class="kw">for </span>(<span class="kw-2">mut </span>statement_id, statement) <span class="kw">in </span><span class="self">self</span>.program.statements.iter().skip(from).enumerate() {
             <span class="comment">// Set the statement number to the absolute statement number.
             </span>statement_id += from;
-            <span class="kw">let </span>current_line_estimate = <span class="self">self</span>.current_line_estimate + statement_id <span class="kw">as </span>u32;
+            <span class="self">self</span>.debug.set_statement_line(statement_id);
+            <span class="self">self</span>.debug.debug_location(<span class="prelude-val">Some</span>(scope));
             <span class="kw">match </span>statement {
                 <span class="comment">// If the statement is a sierra function call.
                 </span>GenStatement::Invocation(invocation) =&gt; {
                     <span class="comment">// Get core lib function called by this instruction.
                     </span><span class="kw">let </span>fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
-                    <span class="macro">debug!</span>(fn_name, current_line_estimate, <span class="string">&quot;processing statement: invocation&quot;</span>);
+                    <span class="macro">debug!</span>(fn_name, line = <span class="self">self</span>.debug.get_line(), <span class="string">&quot;processing statement: invocation&quot;</span>);
                     <span class="comment">// Function has only one branch and doesn&#39;t return anything.
                     </span><span class="kw">if </span>invocation.branches.len() == <span class="number">1 </span>&amp;&amp; invocation.branches[<span class="number">0</span>].results.is_empty() {
                         <span class="kw">match </span>fn_name.as_str() {
@@ -358,7 +362,7 @@
                                     GenBranchTarget::Statement(id) =&gt; id.<span class="number">0</span>,
                                     <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Jump should have genbranchinfo&quot;</span>),
                                 };
-                                <span class="self">self</span>.jump(to);
+                                <span class="self">self</span>.jump(to, scope);
                                 <span class="kw">break</span>;
                             }
                             <span class="comment">// Sierra functions have no side effect so we can ignore the function if it doesn&#39;t return
@@ -370,7 +374,7 @@
                     </span><span class="kw">if </span>invocation.branches.len() &gt; <span class="number">1 </span>{
                         <span class="kw">match </span>fn_name.as_str() {
                             <span class="string">&quot;felt_is_zero&quot; </span>=&gt; {
-                                <span class="self">self</span>.felt_is_zero(invocation, statement_id)<span class="question-mark">?</span>;
+                                <span class="self">self</span>.felt_is_zero(invocation, statement_id, scope)<span class="question-mark">?</span>;
                                 <span class="comment">// In the felt_is_zero func we process the other statements so we have to break not to
                                 // duplicate everything.
                                 </span><span class="kw">break</span>;
@@ -451,7 +455,7 @@
                         .unwrap()
                         .to_string();
 
-                    <span class="macro">debug!</span>(func_name, current_line_estimate, <span class="string">&quot;processing statement: return&quot;</span>);
+                    <span class="macro">debug!</span>(func_name, line = <span class="self">self</span>.debug.get_line(), <span class="string">&quot;processing statement: return&quot;</span>);
                     <span class="comment">// If there is actually something to return.
                     </span><span class="kw">if </span>!ret.is_empty() {
                         <span class="kw">let </span><span class="kw-2">mut </span>types = <span class="macro">vec!</span>[];

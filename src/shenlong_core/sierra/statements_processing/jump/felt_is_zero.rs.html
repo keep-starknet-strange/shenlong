@@ -58,7 +58,14 @@
 <a href="#58" id="58">58</a>
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, Invocation, StatementIdx};
+<span class="kw">use </span>inkwell::debug_info::DIScope;
 <span class="kw">use </span>inkwell::IntPredicate::EQ;
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::CompilerResult;
@@ -75,7 +82,12 @@
     /// # Error
     ///
     /// Returns an error if the processing of the branches statements fails.
-    </span><span class="kw">pub fn </span>felt_is_zero(<span class="kw-2">&amp;mut </span><span class="self">self</span>, invocation: <span class="kw-2">&amp;</span>Invocation, invocation_nb: usize) -&gt; CompilerResult&lt;()&gt; {
+    </span><span class="kw">pub fn </span>felt_is_zero(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        invocation: <span class="kw-2">&amp;</span>Invocation,
+        invocation_nb: usize,
+        scope: DIScope&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// The felt to check.
         </span><span class="kw">let </span>lhs = <span class="self">self</span>.variables.get(<span class="kw-2">&amp;</span>invocation.args[<span class="number">0</span>].id.to_string()).expect(<span class="string">&quot;Variable should exist&quot;</span>);
         <span class="comment">// felt == 0
@@ -100,20 +112,20 @@
         </span><span class="kw">match </span>invocation.branches[<span class="number">0</span>].target {
             <span class="comment">// if then is fallthrough
             </span>GenBranchTarget::Fallthrough =&gt; {
-                <span class="self">self</span>.process_statements_from(invocation_nb + <span class="number">1</span>)<span class="question-mark">?</span>;
+                <span class="self">self</span>.process_statements_from(invocation_nb + <span class="number">1</span>, scope)<span class="question-mark">?</span>;
             }
             <span class="comment">// then branch is a jump so we process from the jump until a return instruction.
-            </span>GenBranchTarget::Statement(StatementIdx(id)) =&gt; <span class="self">self</span>.jump(id),
+            </span>GenBranchTarget::Statement(StatementIdx(id)) =&gt; <span class="self">self</span>.jump(id, scope),
         };
 
         <span class="self">self</span>.builder.position_at_end(else_bb);
         <span class="kw">match </span>invocation.branches[<span class="number">1</span>].target {
             <span class="comment">// else is fallthrough
             </span>GenBranchTarget::Fallthrough =&gt; {
-                <span class="self">self</span>.process_statements_from(invocation_nb + <span class="number">1</span>)<span class="question-mark">?</span>;
+                <span class="self">self</span>.process_statements_from(invocation_nb + <span class="number">1</span>, scope)<span class="question-mark">?</span>;
             }
             <span class="comment">// else branch is a jump so we process from the jump until a return instruction.
-            </span>GenBranchTarget::Statement(StatementIdx(id)) =&gt; <span class="self">self</span>.jump(id),
+            </span>GenBranchTarget::Statement(StatementIdx(id)) =&gt; <span class="self">self</span>.jump(id, scope),
         };
         <span class="prelude-val">Ok</span>(())
     }
