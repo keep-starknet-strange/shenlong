@@ -63,6 +63,7 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
         types_by_name: HashMap::new(),
         basic_blocks: HashMap::new(),
         jump_dests: HashSet::new(),
+        user_functions: HashMap::new(),
         debug,
     };
 

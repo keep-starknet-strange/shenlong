@@ -25,20 +25,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Clear the variables map in case a previous function has been processed.
             self.variables.clear();
             self.debug.variables.clear();
+            self.basic_blocks.clear();
 
-            // Arguments of the function.
-            let FunctionInfo { func, args, args_debug_types, debug_return_type } =
+            // Get or generate the function
+            let FunctionInfo { func, args, debug: debug_function } =
                 self.generate_function_definition(func_declaration);
 
             self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
-
-            let debug_function = self.debug.create_function(
-                func_name,
-                &func,
-                debug_return_type,
-                &args_debug_types,
-                Some(func_declaration.entry_point.0),
-            );
 
             // Loop through the arguments of the function. The variable id counter always starts from zero for a
             // function.
@@ -49,13 +42,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
 
             // Loop through arguments of the function, storing their debug info.
-            for (var_id, ty) in args_debug_types.iter().enumerate() {
+            for (var_id, ty) in debug_function.params.iter().enumerate() {
                 self.debug.variables.insert(var_id as u64, *ty);
             }
 
             // process statements from the line stated in the function definition until the return instruction.
             // ex: fib_caller::fib_caller::main@21() -> (Unit); the function main starts at the statement 21.
-            self.process_statements_from(func_declaration.entry_point.0, debug_function.scope)?;
+            self.process_statements_from(func, func_declaration.entry_point.0, debug_function.scope)?;
 
             // The function has been processed. Valid functions have always 1 block and atleast 1 instruction.
             let first_instruction = func.get_first_basic_block().unwrap().get_first_instruction().unwrap();

@@ -47,7 +47,7 @@ use inkwell::module::Module;
 use inkwell::targets::TargetTriple;
 use inkwell::types::BasicTypeEnum;
 use inkwell::values::{BasicValueEnum, FunctionValue};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use super::errors::CompilerResult;
 use crate::sierra::errors::CompilerError;
@@ -56,8 +56,7 @@ use crate::sierra::errors::CompilerError;
 pub struct FunctionInfo<'ctx> {
     pub func: FunctionValue<'ctx>,
     pub args: Vec<BasicTypeEnum<'ctx>>,
-    pub args_debug_types: Vec<DIType<'ctx>>,
-    pub debug_return_type: Option<DIType<'ctx>>,
+    pub debug: FunctionDebugInfo<'ctx>,
 }
 
 /// Compiler is the main entry point for the LLVM backend.
@@ -407,7 +406,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // // Write the module to the output path.
         self.module.print_to_file(&self.llvm_output_path)?;
         // Ensure that the current module is valid
-        self.module.verify()?;
+
+        for f in self.user_functions.values() {
+            let func_name = f.func.get_name().to_string_lossy();
+            debug!("verifying function {}", func_name);
+            if !f.func.verify(true) {
+                error!("function {func_name} had verification errors!");
+            }
+        }
+
+        let err = self.module.verify();
+        if let Err(err) = self.module.verify() {
+            error!("Verification errors:\n{}", err.to_string());
+        }
+        err?;
 
         // Move to the next state.
         self.move_to(CompilationState::Finalized)

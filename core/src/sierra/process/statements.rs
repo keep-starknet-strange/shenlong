@@ -2,7 +2,7 @@ use cairo_lang_sierra::ids::VarId;
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
 use inkwell::debug_info::DIScope;
-use inkwell::values::{BasicValueEnum, StructValue};
+use inkwell::values::{BasicValueEnum, FunctionValue, StructValue};
 use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
@@ -16,7 +16,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    pub fn process_statements_from(&mut self, from: usize, scope: DIScope<'ctx>) -> CompilerResult<()> {
+    pub fn process_statements_from(
+        &mut self,
+        func: FunctionValue<'ctx>,
+        from: usize,
+        scope: DIScope<'ctx>,
+    ) -> CompilerResult<()> {
         // Check that the current state is valid.
         for (mut statement_id, statement) in self.program.statements.iter().skip(from).enumerate() {
             // Set the statement number to the absolute statement number.
@@ -38,7 +43,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                     GenBranchTarget::Statement(id) => id.0,
                                     _ => panic!("Jump should have genbranchinfo"),
                                 };
-                                self.jump(to, scope);
+                                self.jump(func, to, scope);
                                 break;
                             }
                             // Sierra functions have no side effect so we can ignore the function if it doesn't return
@@ -50,7 +55,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                     if invocation.branches.len() > 1 {
                         match fn_name.as_str() {
                             "felt_is_zero" => {
-                                self.felt_is_zero(invocation, statement_id, scope)?;
+                                self.felt_is_zero(func, invocation, statement_id, scope)?;
                                 // In the felt_is_zero func we process the other statements so we have to break not to
                                 // duplicate everything.
                                 break;
@@ -102,10 +107,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         }
                         // If the next instruction is a destination of a jump.
                         if self.jump_dests.contains(&(statement_id + 1)) {
-                            // Get the current function.
-                            let curr_func = self.module.get_last_function().unwrap();
                             // Add a new basic block.
-                            let basic_block = self.context.append_basic_block(curr_func, "dest");
+                            let basic_block = self.context.append_basic_block(func, "dest");
                             // Save the new basic block.
                             self.basic_blocks.insert(statement_id + 1, basic_block);
                             // Branch unconditionally to this block (equivalent of jump)
