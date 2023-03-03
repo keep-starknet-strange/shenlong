@@ -155,7 +155,6 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
 
     /// Creates a type debug info by name.
     pub fn create_type(&mut self, id: u64, name: &str, size_in_bits: u64) -> DIType<'ctx> {
-        dbg!(size_in_bits);
         // 5 = signed integer https://llvm.org/docs/LangRef.html#dibasictype
         // lldb wont print the value if its more than 128 bits...
         let debug_type =
