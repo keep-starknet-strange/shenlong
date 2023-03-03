@@ -16,13 +16,24 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the felt type has not been declared previously.
-    pub fn felt_div(&self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn felt_div(&mut self, libfunc_declaration: &LibfuncDeclaration) {
         // We could hardcode the LLVM IR type for felt but this adds a check.
         let felt_type = self.types_by_name.get("felt").unwrap();
+        let debug_felt_type = *self.debug.types_by_name.get("felt").expect("Can't get felt from name");
+        let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
+
         // fn felt_div(a: felt, b: felt) -> felt
         let func = self.module.add_function(
-            libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
+            func_name,
             felt_type.fn_type(&[felt_type.as_basic_type_enum().into(), felt_type.as_basic_type_enum().into()], false),
+            None,
+        );
+
+        let debug_func = self.debug.create_function(
+            func_name,
+            &func,
+            Some(debug_felt_type),
+            &[debug_felt_type, debug_felt_type],
             None,
         );
 
@@ -167,5 +178,21 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .left()
             .expect("Should have a left return value");
         self.builder.build_return(Some(&res));
+
+        // Debug parameter values
+        let first_inst = func.get_first_basic_block().unwrap().get_first_instruction().unwrap();
+        self.debug.insert_dbg_value(
+            func.get_last_param().unwrap(),
+            debug_func.params_local_vars[1],
+            self.builder.get_current_debug_location().unwrap(),
+            first_inst,
+        );
+
+        self.debug.insert_dbg_value(
+            func.get_first_param().unwrap(),
+            debug_func.params_local_vars[0],
+            self.builder.get_current_debug_location().unwrap(),
+            first_inst,
+        );
     }
 }
