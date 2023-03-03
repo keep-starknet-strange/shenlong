@@ -46,11 +46,19 @@ use inkwell::debug_info::{
 use inkwell::module::Module;
 use inkwell::targets::TargetTriple;
 use inkwell::types::BasicTypeEnum;
-use inkwell::values::BasicValueEnum;
+use inkwell::values::{BasicValueEnum, FunctionValue};
 use tracing::{debug, info};
 
 use super::errors::CompilerResult;
 use crate::sierra::errors::CompilerError;
+
+#[derive(Debug, Clone)]
+pub struct FunctionInfo<'ctx> {
+    pub func: FunctionValue<'ctx>,
+    pub args: Vec<BasicTypeEnum<'ctx>>,
+    pub args_debug_types: Vec<DIType<'ctx>>,
+    pub debug_return_type: Option<DIType<'ctx>>,
+}
 
 /// Compiler is the main entry point for the LLVM backend.
 /// It is responsible for compiling a Sierra program to LLVM IR.
@@ -65,6 +73,8 @@ pub struct Compiler<'a, 'ctx> {
     pub module: Module<'ctx>,
     /// The variables of the current function.
     pub variables: HashMap<u64, BasicValueEnum<'ctx>>,
+    /// User functions generated from libfunc func_call.
+    pub user_functions: HashMap<String, FunctionInfo<'ctx>>,
     /// The LLVM IR output path.
     pub llvm_output_path: PathBuf,
     /// The current compilation state.
@@ -346,6 +356,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             builder: &builder,
             module,
             variables: HashMap::new(),
+            user_functions: HashMap::new(),
             llvm_output_path: llvm_output_path.to_owned(),
             state: CompilationState::NotStarted,
             valid_state_transitions,
