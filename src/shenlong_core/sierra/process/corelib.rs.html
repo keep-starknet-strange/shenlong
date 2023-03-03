@@ -171,7 +171,7 @@
                 <span class="comment">// Division for the felt type. `felt / NonZero&lt;felt&gt;`
                 </span><span class="string">&quot;felt_div&quot; </span>=&gt; <span class="self">self</span>.felt_div(libfunc_declaration),
                 <span class="comment">// Calls a user defined sierra function. `function_call&lt;user@fib_caller::fib_caller::fib&gt;`
-                </span><span class="string">&quot;function_call&quot; </span>=&gt; <span class="macro">debug!</span>(libfunc_name, <span class="string">&quot;treated in the statements&quot;</span>),
+                </span><span class="string">&quot;function_call&quot; </span>=&gt; <span class="self">self</span>.function_call(libfunc_declaration),
                 <span class="comment">// Boxes a value of type T.
                 </span><span class="string">&quot;into_box&quot; </span>=&gt; <span class="self">self</span>.into_box(libfunc_declaration),
                 <span class="comment">// Jumps to the specified sierra statement number.

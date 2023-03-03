@@ -314,19 +314,11 @@
 <a href="#314" id="314">314</a>
 <a href="#315" id="315">315</a>
 <a href="#316" id="316">316</a>
-<a href="#317" id="317">317</a>
-<a href="#318" id="318">318</a>
-<a href="#319" id="319">319</a>
-<a href="#320" id="320">320</a>
-<a href="#321" id="321">321</a>
-<a href="#322" id="322">322</a>
-<a href="#323" id="323">323</a>
-<a href="#324" id="324">324</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::VarId;
 <span class="doccomment">/// This file contains everything related to sierra statement processing.
 </span><span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
 <span class="kw">use </span>inkwell::debug_info::DIScope;
-<span class="kw">use </span>inkwell::values::{BasicMetadataValueEnum, StructValue};
+<span class="kw">use </span>inkwell::values::{BasicValueEnum, FunctionValue, StructValue};
 <span class="kw">use </span>tracing::debug;
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
@@ -340,7 +332,12 @@
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    </span><span class="kw">pub fn </span>process_statements_from(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: usize, scope: DIScope&lt;<span class="lifetime">&#39;ctx</span>&gt;) -&gt; CompilerResult&lt;()&gt; {
+    </span><span class="kw">pub fn </span>process_statements_from(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        func: FunctionValue&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+        from: usize,
+        scope: DIScope&lt;<span class="lifetime">&#39;ctx</span>&gt;,
+    ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// Check that the current state is valid.
         </span><span class="kw">for </span>(<span class="kw-2">mut </span>statement_id, statement) <span class="kw">in </span><span class="self">self</span>.program.statements.iter().skip(from).enumerate() {
             <span class="comment">// Set the statement number to the absolute statement number.
@@ -351,7 +348,7 @@
                 <span class="comment">// If the statement is a sierra function call.
                 </span>GenStatement::Invocation(invocation) =&gt; {
                     <span class="comment">// Get core lib function called by this instruction.
-                    </span><span class="kw">let </span>fn_name = invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
+                    </span><span class="kw">let </span>fn_name = invocation.libfunc_id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).to_string();
                     <span class="macro">debug!</span>(fn_name, line = <span class="self">self</span>.debug.get_line(), <span class="string">&quot;processing statement: invocation&quot;</span>);
                     <span class="comment">// Function has only one branch and doesn&#39;t return anything.
                     </span><span class="kw">if </span>invocation.branches.len() == <span class="number">1 </span>&amp;&amp; invocation.branches[<span class="number">0</span>].results.is_empty() {
@@ -362,7 +359,7 @@
                                     GenBranchTarget::Statement(id) =&gt; id.<span class="number">0</span>,
                                     <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Jump should have genbranchinfo&quot;</span>),
                                 };
-                                <span class="self">self</span>.jump(to, scope);
+                                <span class="self">self</span>.jump(func, to, scope);
                                 <span class="kw">break</span>;
                             }
                             <span class="comment">// Sierra functions have no side effect so we can ignore the function if it doesn&#39;t return
@@ -374,7 +371,7 @@
                     </span><span class="kw">if </span>invocation.branches.len() &gt; <span class="number">1 </span>{
                         <span class="kw">match </span>fn_name.as_str() {
                             <span class="string">&quot;felt_is_zero&quot; </span>=&gt; {
-                                <span class="self">self</span>.felt_is_zero(invocation, statement_id, scope)<span class="question-mark">?</span>;
+                                <span class="self">self</span>.felt_is_zero(func, invocation, statement_id, scope)<span class="question-mark">?</span>;
                                 <span class="comment">// In the felt_is_zero func we process the other statements so we have to break not to
                                 // duplicate everything.
                                 </span><span class="kw">break</span>;
@@ -388,22 +385,13 @@
                     // Those 2 instructions have only 1 branch and the target is fallthrough (which means next
                     // instruction).
                     </span><span class="kw">if </span>invocation.branches.len() == <span class="number">1 </span>&amp;&amp; invocation.branches[<span class="number">0</span>].target == GenBranchTarget::Fallthrough {
-                        <span class="kw">let </span>function = <span class="kw">if </span>invocation.libfunc_id.debug_name.clone().unwrap().starts_with(<span class="string">&quot;function_call&quot;</span>)
-                        {
+                        <span class="kw">let </span>function = <span class="kw">if </span>fn_name.starts_with(<span class="string">&quot;function_call&quot;</span>) {
                             <span class="comment">// Case where the invocation is a function call (it&#39;s probably not possible to process it
                             // before the statements because it needs the called function to
                             // be defined to call it).
                             </span><span class="self">self</span>.module
                                 .get_function(
-                                    invocation
-                                        .libfunc_id
-                                        .debug_name
-                                        .clone()
-                                        .unwrap()
-                                        .strip_prefix(<span class="string">&quot;function_call&lt;user@&quot;</span>)
-                                        .unwrap()
-                                        .strip_suffix(<span class="string">&#39;&gt;&#39;</span>)
-                                        .unwrap(),
+                                    fn_name.strip_prefix(<span class="string">&quot;function_call&lt;user@&quot;</span>).unwrap().strip_suffix(<span class="string">&#39;&gt;&#39;</span>).unwrap(),
                                 )
                                 .unwrap()
                         } <span class="kw">else </span>{
@@ -414,13 +402,15 @@
                         };
                         <span class="comment">// Get the arguments for the function call.
                         </span><span class="kw">let </span>args = <span class="self">self</span>.process_args(invocation);
+
                         <span class="comment">// Call the function.
                         </span><span class="kw">let </span>res = <span class="self">self
                             </span>.builder
-                            .build_call(function, <span class="kw-2">&amp;</span>args, <span class="string">&quot;&quot;</span>)
+                            .build_call(function, <span class="kw-2">&amp;</span>args.iter().map(|x| (<span class="kw-2">*</span>x).into()).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(), <span class="string">&quot;&quot;</span>)
                             .try_as_basic_value()
                             .left()
                             .expect(<span class="string">&quot;Call should have worked&quot;</span>);
+
                         <span class="kw">if </span>res.is_struct_value()
                             &amp;&amp; res.into_struct_value().get_type().count_fields() &gt; <span class="number">0
                             </span>&amp;&amp; !fn_name.starts_with(<span class="string">&quot;store_temp&quot;</span>)
@@ -429,14 +419,12 @@
                             <span class="self">self</span>.unpack_tuple(<span class="kw-2">&amp;</span>invocation.branches[<span class="number">0</span>].results, res.into_struct_value())
                         } <span class="kw">else </span>{
                             <span class="comment">// Just save the result.
-                            </span><span class="self">self</span>.variables.insert(invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id.to_string(), res);
+                            </span><span class="self">self</span>.variables.insert(invocation.branches[<span class="number">0</span>].results[<span class="number">0</span>].id, res);
                         }
                         <span class="comment">// If the next instruction is a destination of a jump.
                         </span><span class="kw">if </span><span class="self">self</span>.jump_dests.contains(<span class="kw-2">&amp;</span>(statement_id + <span class="number">1</span>)) {
-                            <span class="comment">// Get the current function.
-                            </span><span class="kw">let </span>curr_func = <span class="self">self</span>.module.get_last_function().unwrap();
                             <span class="comment">// Add a new basic block.
-                            </span><span class="kw">let </span>basic_block = <span class="self">self</span>.context.append_basic_block(curr_func, <span class="string">&quot;dest&quot;</span>);
+                            </span><span class="kw">let </span>basic_block = <span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;dest&quot;</span>);
                             <span class="comment">// Save the new basic block.
                             </span><span class="self">self</span>.basic_blocks.insert(statement_id + <span class="number">1</span>, basic_block);
                             <span class="comment">// Branch unconditionally to this block (equivalent of jump)
@@ -463,7 +451,7 @@
 
                         <span class="comment">// Get the types and values to return.
                         </span><span class="kw">for </span>ret_var <span class="kw">in </span>ret.iter() {
-                            <span class="kw">let </span>value = <span class="self">self</span>.variables.get(<span class="kw-2">&amp;</span>ret_var.id.to_string()).unwrap();
+                            <span class="kw">let </span>value = <span class="self">self</span>.variables.get(<span class="kw-2">&amp;</span>ret_var.id).unwrap();
                             values.push(value);
                             types.push(value.get_type());
                         }
@@ -604,19 +592,16 @@
     /// # Errors
     ///
     /// Panics if the argument needed is not found.
-    </span><span class="kw">fn </span>process_args(<span class="kw-2">&amp;</span><span class="self">self</span>, invocation: <span class="kw-2">&amp;</span>Invocation) -&gt; Vec&lt;BasicMetadataValueEnum&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>args = <span class="macro">vec!</span>[];
-        <span class="kw">if </span>!invocation.args.is_empty() {
-            <span class="kw">for </span>argument <span class="kw">in </span>invocation.args.iter() {
-                args.push(
-                    (<span class="kw-2">*</span><span class="self">self</span>.variables.get(<span class="kw-2">&amp;</span>argument.id.to_string()).unwrap_or_else(|| {
-                        <span class="macro">panic!</span>(<span class="string">&quot;Variable {:} passed as argument should have been declared first&quot;</span>, argument.id)
-                    }))
-                    .into(),
-                );
-            }
-        }
-        args
+    </span><span class="kw">fn </span>process_args(<span class="kw-2">&amp;</span><span class="self">self</span>, invocation: <span class="kw-2">&amp;</span>Invocation) -&gt; Vec&lt;BasicValueEnum&lt;<span class="lifetime">&#39;ctx</span>&gt;&gt; {
+        invocation
+            .args
+            .iter()
+            .map(|arg| {
+                <span class="kw-2">*</span><span class="self">self</span>.variables.get(<span class="kw-2">&amp;</span>arg.id).unwrap_or_else(|| {
+                    <span class="macro">panic!</span>(<span class="string">&quot;Variable {:} passed as argument should have been declared first&quot;</span>, arg.id)
+                })
+            })
+            .collect()
     }
 
     <span class="doccomment">/// Unpack a struct into several values.
@@ -635,14 +620,13 @@
         <span class="kw">let </span>res_ptr = <span class="self">self</span>.builder.build_alloca(res_type, <span class="string">&quot;res_ptr&quot;</span>);
         <span class="self">self</span>.builder.build_store(res_ptr, res);
         <span class="kw">for </span>(field_index, VarId { id, debug_name: <span class="kw">_ </span>}) <span class="kw">in </span>results.iter().enumerate() {
-            <span class="kw">let </span>id = id.to_string();
             <span class="kw">let </span>field_type = res_type.get_field_type_at_index(field_index <span class="kw">as </span>u32).expect(<span class="string">&quot;Field type should exist&quot;</span>);
             <span class="kw">let </span>field_ptr = <span class="self">self
                 </span>.builder
                 .build_struct_gep(res_type, res_ptr, field_index <span class="kw">as </span>u32, <span class="macro">format!</span>(<span class="string">&quot;{id}_ptr&quot;</span>).as_str())
                 .expect(<span class="string">&quot;Pointer should be valid&quot;</span>);
-            <span class="kw">let </span>field = <span class="self">self</span>.builder.build_load(field_type, field_ptr, id.as_str());
-            <span class="self">self</span>.variables.insert(id, field);
+            <span class="kw">let </span>field = <span class="self">self</span>.builder.build_load(field_type, field_ptr, <span class="kw-2">&amp;</span>id.to_string());
+            <span class="self">self</span>.variables.insert(<span class="kw-2">*</span>id, field);
         }
     }
 }

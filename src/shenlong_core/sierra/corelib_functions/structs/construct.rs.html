@@ -54,6 +54,26 @@
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::{GenericArg, LibfuncDeclaration};
 <span class="kw">use </span>inkwell::types::BasicMetadataTypeEnum;
@@ -73,19 +93,25 @@
     /// Panics if the type T has not been declared previously as all types should be declared at the
     /// beginning of the sierra file.
     /// Panics if the sierra file doesn&#39;t have the debug infos.
-    </span><span class="kw">pub fn </span>struct_construct(<span class="kw-2">&amp;</span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
+    </span><span class="kw">pub fn </span>struct_construct(<span class="kw-2">&amp;mut </span><span class="self">self</span>, libfunc_declaration: <span class="kw-2">&amp;</span>LibfuncDeclaration) {
         <span class="comment">// Type of the struct that we have to construct.
-        </span><span class="kw">let </span>return_type = <span class="kw">match </span><span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_args[<span class="number">0</span>] {
-            GenericArg::Type(ConcreteTypeId { id, debug_name: <span class="kw">_ </span>}) =&gt; {
-                <span class="self">self</span>.types_by_id.get(id).unwrap().into_struct_type()
-            }
+
+        </span><span class="kw">let </span>func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
+
+        <span class="kw">let </span>type_id = <span class="kw">match </span><span class="kw-2">&amp;</span>libfunc_declaration.long_id.generic_args[<span class="number">0</span>] {
+            GenericArg::Type(ConcreteTypeId { id, debug_name: <span class="kw">_ </span>}) =&gt; <span class="kw-2">*</span>id,
             _val =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Struct construct only takes predefined structs&quot;</span>)
             }
         };
+
+        <span class="kw">let </span>return_type = <span class="self">self</span>.types_by_id.get(<span class="kw-2">&amp;</span>type_id).unwrap().into_struct_type();
+        <span class="kw">let </span>debug_arg_types = <span class="self">self</span>.debug.struct_types_by_id.get(<span class="kw-2">&amp;</span>type_id).unwrap().clone();
+        <span class="kw">let </span>debug_return_type = <span class="kw-2">*</span><span class="self">self</span>.debug.types_by_id.get(<span class="kw-2">&amp;</span>type_id).unwrap();
+
         <span class="comment">// fn StructConstruct&lt;T&gt;(field_1: t1, field2: t2 ...) -&gt; T
         </span><span class="kw">let </span>func = <span class="self">self</span>.module.add_function(
-            libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
+            func_name,
             return_type.fn_type(
                 <span class="kw-2">&amp;</span>return_type
                     .get_field_types()
@@ -96,6 +122,9 @@
             ),
             <span class="prelude-val">None</span>,
         );
+
+        <span class="kw">let </span>debug_func = <span class="self">self</span>.debug.create_function(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_return_type), <span class="kw-2">&amp;</span>debug_arg_types, <span class="prelude-val">None</span>);
+
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
         <span class="comment">// Allocate memory for the struct.
         </span><span class="kw">let </span>struct_ptr = <span class="self">self</span>.builder.build_alloca(return_type, <span class="string">&quot;res_ptr&quot;</span>);
@@ -108,6 +137,17 @@
             <span class="self">self</span>.builder.build_store(tuple_ptr, <span class="kw-2">*</span>param);
         }
         <span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.builder.build_load(return_type, struct_ptr, <span class="string">&quot;res&quot;</span>)));
+
+        <span class="comment">// Debug values
+        </span><span class="kw">for </span>(i, (value, arg_ty)) <span class="kw">in </span>func.get_params().iter().zip(debug_arg_types).enumerate() {
+            <span class="kw">let </span>debug_local_var = <span class="self">self</span>.debug.create_local_variable(<span class="kw-2">&amp;</span>i.to_string(), debug_func.scope, arg_ty, <span class="prelude-val">None</span>);
+            <span class="self">self</span>.debug.insert_dbg_value(
+                <span class="kw-2">*</span>value,
+                debug_local_var,
+                <span class="self">self</span>.builder.get_current_debug_location().unwrap(),
+                func.get_first_basic_block().unwrap().get_first_instruction().unwrap(),
+            );
+        }
     }
 }
 </code></pre></div>

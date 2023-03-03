@@ -66,6 +66,7 @@
 <a href="#66" id="66">66</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::program::{GenBranchTarget, Invocation, StatementIdx};
 <span class="kw">use </span>inkwell::debug_info::DIScope;
+<span class="kw">use </span>inkwell::values::FunctionValue;
 <span class="kw">use </span>inkwell::IntPredicate::EQ;
 
 <span class="kw">use </span><span class="kw">crate</span>::sierra::errors::CompilerResult;
@@ -84,12 +85,13 @@
     /// Returns an error if the processing of the branches statements fails.
     </span><span class="kw">pub fn </span>felt_is_zero(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        func: FunctionValue&lt;<span class="lifetime">&#39;ctx</span>&gt;,
         invocation: <span class="kw-2">&amp;</span>Invocation,
         invocation_nb: usize,
         scope: DIScope&lt;<span class="lifetime">&#39;ctx</span>&gt;,
     ) -&gt; CompilerResult&lt;()&gt; {
         <span class="comment">// The felt to check.
-        </span><span class="kw">let </span>lhs = <span class="self">self</span>.variables.get(<span class="kw-2">&amp;</span>invocation.args[<span class="number">0</span>].id.to_string()).expect(<span class="string">&quot;Variable should exist&quot;</span>);
+        </span><span class="kw">let </span>lhs = <span class="self">self</span>.variables.get(<span class="kw-2">&amp;</span>invocation.args[<span class="number">0</span>].id).expect(<span class="string">&quot;Variable should exist&quot;</span>);
         <span class="comment">// felt == 0
         </span><span class="kw">let </span>comparison = <span class="self">self</span>.builder.build_int_compare(
             EQ,
@@ -97,8 +99,6 @@
             <span class="self">self</span>.types_by_name.get(<span class="string">&quot;felt&quot;</span>).unwrap().into_int_type().const_int(<span class="number">0</span>, <span class="bool-val">false</span>),
             <span class="string">&quot;check&quot;</span>,
         );
-        <span class="comment">// Get the current function.
-        </span><span class="kw">let </span>func = <span class="self">self</span>.module.get_last_function().unwrap();
         <span class="comment">// if then
         </span><span class="kw">let </span>then_bb = <span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;then&quot;</span>);
         <span class="comment">// else
@@ -112,20 +112,20 @@
         </span><span class="kw">match </span>invocation.branches[<span class="number">0</span>].target {
             <span class="comment">// if then is fallthrough
             </span>GenBranchTarget::Fallthrough =&gt; {
-                <span class="self">self</span>.process_statements_from(invocation_nb + <span class="number">1</span>, scope)<span class="question-mark">?</span>;
+                <span class="self">self</span>.process_statements_from(func, invocation_nb + <span class="number">1</span>, scope)<span class="question-mark">?</span>;
             }
             <span class="comment">// then branch is a jump so we process from the jump until a return instruction.
-            </span>GenBranchTarget::Statement(StatementIdx(id)) =&gt; <span class="self">self</span>.jump(id, scope),
+            </span>GenBranchTarget::Statement(StatementIdx(id)) =&gt; <span class="self">self</span>.jump(func, id, scope),
         };
 
         <span class="self">self</span>.builder.position_at_end(else_bb);
         <span class="kw">match </span>invocation.branches[<span class="number">1</span>].target {
             <span class="comment">// else is fallthrough
             </span>GenBranchTarget::Fallthrough =&gt; {
-                <span class="self">self</span>.process_statements_from(invocation_nb + <span class="number">1</span>, scope)<span class="question-mark">?</span>;
+                <span class="self">self</span>.process_statements_from(func, invocation_nb + <span class="number">1</span>, scope)<span class="question-mark">?</span>;
             }
             <span class="comment">// else branch is a jump so we process from the jump until a return instruction.
-            </span>GenBranchTarget::Statement(StatementIdx(id)) =&gt; <span class="self">self</span>.jump(id, scope),
+            </span>GenBranchTarget::Statement(StatementIdx(id)) =&gt; <span class="self">self</span>.jump(func, id, scope),
         };
         <span class="prelude-val">Ok</span>(())
     }

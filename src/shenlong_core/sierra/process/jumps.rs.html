@@ -43,7 +43,7 @@
         <span class="kw">for </span>statement <span class="kw">in </span><span class="self">self</span>.program.statements.iter() {
             <span class="kw">match </span>statement {
                 GenStatement::Invocation(invocation) =&gt; {
-                    <span class="kw">if </span>invocation.libfunc_id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).as_str() == <span class="string">&quot;jump&quot; </span>&amp;&amp; 
+                    <span class="kw">if </span>invocation.libfunc_id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str() == <span class="string">&quot;jump&quot; </span>&amp;&amp;
                     <span class="kw">let </span>GenBranchTarget::Statement(id) = <span class="kw-2">&amp;</span>invocation.branches[<span class="number">0</span>].target {
                         <span class="comment">// If it&#39;s a jump insert the destination of the jump in the map.
                         </span><span class="self">self</span>.jump_dests.insert(id.<span class="number">0</span>);

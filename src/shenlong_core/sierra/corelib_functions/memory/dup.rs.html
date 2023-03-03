@@ -68,6 +68,15 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
 </pre><pre class="rust"><code><span class="kw">use </span>cairo_lang_sierra::ids::ConcreteTypeId;
 <span class="kw">use </span>cairo_lang_sierra::program::{GenericArg, LibfuncDeclaration};
 
@@ -121,7 +130,7 @@
             <span class="prelude-val">None</span>,
         );
 
-        <span class="self">self</span>.debug.create_function(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_return_type), <span class="kw-2">&amp;</span>[debug_arg_type], <span class="prelude-val">None</span>);
+        <span class="kw">let </span>debug_func = <span class="self">self</span>.debug.create_function(func_name, <span class="kw-2">&amp;</span>func, <span class="prelude-val">Some</span>(debug_return_type), <span class="kw-2">&amp;</span>[debug_arg_type], <span class="prelude-val">None</span>);
 
         <span class="self">self</span>.builder.position_at_end(<span class="self">self</span>.context.append_basic_block(func, <span class="string">&quot;entry&quot;</span>));
         <span class="comment">// We just defined dup to have an input parameter so it shouldn&#39;t panic.
@@ -136,6 +145,15 @@
         </span><span class="kw">let </span>tuple_ptr_2 = <span class="self">self</span>.builder.build_struct_gep(return_type, tuple, <span class="number">1</span>, <span class="string">&quot;tuple_ptr_2&quot;</span>).unwrap();
         <span class="self">self</span>.builder.build_store(tuple_ptr_2, arg);
         <span class="self">self</span>.builder.build_return(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.builder.build_load(return_type, tuple, <span class="string">&quot;res&quot;</span>)));
+
+        <span class="comment">// Debug values
+        </span><span class="kw">let </span>debug_local_var = <span class="self">self</span>.debug.create_local_variable(func_name, debug_func.scope, debug_arg_type, <span class="prelude-val">None</span>);
+        <span class="self">self</span>.debug.insert_dbg_value(
+            arg,
+            debug_local_var,
+            <span class="self">self</span>.builder.get_current_debug_location().unwrap(),
+            tuple.as_instruction().unwrap(),
+        );
     }
 }
 </code></pre></div>
