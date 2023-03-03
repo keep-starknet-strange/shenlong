@@ -105,6 +105,8 @@ pub struct DebugCompiler<'a, 'ctx> {
     pub compile_unit: DICompileUnit<'ctx>,
     pub types_by_id: HashMap<u64, DIType<'ctx>>,
     pub types_by_name: HashMap<String, DIType<'ctx>>,
+    /// We need to know the field types mapped to a given struct.
+    pub struct_types_by_id: HashMap<u64, Vec<DIType<'ctx>>>,
     /// The debug info variables of the current function.
     pub variables: HashMap<String, DIType<'ctx>>,
     pub functions: HashMap<String, FunctionDebugInfo<'ctx>>,
@@ -128,6 +130,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             types_by_name: HashMap::new(),
             variables: HashMap::new(),
             functions: HashMap::new(),
+            struct_types_by_id: HashMap::new(),
             current_line: 0,
             current_statement_line: 0,
             context,
@@ -311,7 +314,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         let (dibuilder, compile_unit) = module.create_debug_info_builder(
             true,
-            inkwell::debug_info::DWARFSourceLanguage::CPlusPlus,
+            inkwell::debug_info::DWARFSourceLanguage::CPlusPlus14,
             &program_path.to_string_lossy(),
             &parent,
             "shenlong",

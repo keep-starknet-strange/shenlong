@@ -17,19 +17,25 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Panics if the type T has not been declared previously as all types should be declared at the
     /// beginning of the sierra file.
     /// Panics if the sierra file doesn't have the debug infos.
-    pub fn struct_construct(&self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn struct_construct(&mut self, libfunc_declaration: &LibfuncDeclaration) {
         // Type of the struct that we have to construct.
-        let return_type = match &libfunc_declaration.long_id.generic_args[0] {
-            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
-                self.types_by_id.get(id).unwrap().into_struct_type()
-            }
+
+        let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
+
+        let type_id = match &libfunc_declaration.long_id.generic_args[0] {
+            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => *id,
             _val => {
                 panic!("Struct construct only takes predefined structs")
             }
         };
+
+        let return_type = self.types_by_id.get(&type_id).unwrap().into_struct_type();
+        let debug_arg_types = self.debug.struct_types_by_id.get(&type_id).unwrap().clone();
+        let debug_return_type = *self.debug.types_by_id.get(&type_id).unwrap();
+
         // fn StructConstruct<T>(field_1: t1, field2: t2 ...) -> T
         let func = self.module.add_function(
-            libfunc_declaration.id.debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string().as_str(),
+            func_name,
             return_type.fn_type(
                 &return_type
                     .get_field_types()
@@ -40,6 +46,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             ),
             None,
         );
+
+        let debug_func = self.debug.create_function(func_name, &func, Some(debug_return_type), &debug_arg_types, None);
+
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // Allocate memory for the struct.
         let struct_ptr = self.builder.build_alloca(return_type, "res_ptr");
@@ -52,5 +61,16 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.builder.build_store(tuple_ptr, *param);
         }
         self.builder.build_return(Some(&self.builder.build_load(return_type, struct_ptr, "res")));
+
+        // Debug values
+        for (i, (value, arg_ty)) in func.get_params().iter().zip(debug_arg_types).enumerate() {
+            let debug_local_var = self.debug.create_local_variable(&i.to_string(), debug_func.scope, arg_ty, None);
+            self.debug.insert_dbg_value(
+                *value,
+                debug_local_var,
+                self.builder.get_current_debug_location().unwrap(),
+                func.get_first_basic_block().unwrap().get_first_instruction().unwrap(),
+            );
+        }
     }
 }

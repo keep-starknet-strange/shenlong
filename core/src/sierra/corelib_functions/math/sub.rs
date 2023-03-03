@@ -1,5 +1,6 @@
 use cairo_lang_sierra::program::LibfuncDeclaration;
 use inkwell::types::BasicType;
+use inkwell::values::BasicValue;
 
 use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
@@ -28,7 +29,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.debug.create_function(func_name, &func, Some(debug_felt_type), &[debug_felt_type, debug_felt_type], None);
+        let debug_func = self.debug.create_function(
+            func_name,
+            &func,
+            Some(debug_felt_type),
+            &[debug_felt_type, debug_felt_type],
+            None,
+        );
 
         // Return a - b
         // Panics if the function doesn't have enough arguments but it should happen since we just defined
@@ -38,6 +45,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             func.get_last_param().unwrap().into_int_value(),
             "res",
         );
+
         let arg = self.builder.build_int_s_extend(sub, self.context.custom_width_int_type(512), "arg");
         let res = self
             .builder
@@ -50,5 +58,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .left()
             .expect("Should have a left return value");
         self.builder.build_return(Some(&res));
+
+        // Debug parameter values
+        self.debug.insert_dbg_value(
+            func.get_last_param().unwrap(),
+            debug_func.params_local_vars[1],
+            self.builder.get_current_debug_location().unwrap(),
+            sub.as_instruction_value().unwrap(),
+        );
+
+        self.debug.insert_dbg_value(
+            func.get_first_param().unwrap(),
+            debug_func.params_local_vars[0],
+            self.builder.get_current_debug_location().unwrap(),
+            sub.as_instruction_value().unwrap(),
+        );
     }
 }

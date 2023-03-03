@@ -40,12 +40,23 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func =
             self.module.add_function(func_name, func_and_arg_type.fn_type(&[func_and_arg_type.into()], false), None);
 
-        self.debug.create_function(func_name, &func, Some(debug_func_and_arg_type), &[debug_func_and_arg_type], None);
+        let debug_func = self.debug.create_function(
+            func_name,
+            &func,
+            Some(debug_func_and_arg_type),
+            &[debug_func_and_arg_type],
+            None,
+        );
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined rename to have an input parameter so it shouldn't panic.
         let arg = func.get_first_param().unwrap();
         // Return the input value.
-        self.builder.build_return(Some(&arg));
+        let inst = self.builder.build_return(Some(&arg));
+
+        // Debug values
+        let debug_local_var =
+            self.debug.create_local_variable(func_name, debug_func.scope, debug_func_and_arg_type, None);
+        self.debug.insert_dbg_value(arg, debug_local_var, self.builder.get_current_debug_location().unwrap(), inst);
     }
 }

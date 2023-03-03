@@ -49,21 +49,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             "extended_a",
         );
 
-        // Debug parameter values
-        self.debug.insert_dbg_value(
-            func.get_last_param().unwrap(),
-            debug_func.params_local_vars[1],
-            self.builder.get_current_debug_location().unwrap(),
-            lhs.as_instruction_value().unwrap(),
-        );
-
-        self.debug.insert_dbg_value(
-            func.get_first_param().unwrap(),
-            debug_func.params_local_vars[0],
-            self.builder.get_current_debug_location().unwrap(),
-            lhs.as_instruction_value().unwrap(),
-        );
-
         // Extend right hand side.
         // We just defined the function so it shouldn't panic.
         let rhs =
@@ -86,5 +71,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .left()
             .expect("Should have a left return value");
         self.builder.build_return(Some(&res));
+
+        // Debug parameter values
+        self.debug.insert_dbg_value(
+            func.get_last_param().unwrap(),
+            debug_func.params_local_vars[1],
+            self.builder.get_current_debug_location().unwrap(),
+            lhs.as_instruction_value().unwrap(),
+        );
+
+        self.debug.insert_dbg_value(
+            func.get_first_param().unwrap(),
+            debug_func.params_local_vars[0],
+            self.builder.get_current_debug_location().unwrap(),
+            lhs.as_instruction_value().unwrap(),
+        );
     }
 }

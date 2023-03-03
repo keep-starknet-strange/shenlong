@@ -25,10 +25,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func = self.module.add_function(func_name, return_type.fn_type(&[], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.debug.create_function(func_name, &func, Some(debug_return_type), &[], None);
+        let debug_func = self.debug.create_function(func_name, &func, Some(debug_return_type), &[], None);
 
         // Convert the bigint value of the constant into an LLVM IR const int value. Panics if the constant
         // value is not a decimal value.
+
         let ret = if let Value(val) = &libfunc_declaration.long_id.generic_args[0] {
             return_type
                 .as_basic_type_enum()
@@ -39,6 +40,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // If the constant doesn't have any value it panics because a constant should have a value.
             panic!("No value for felt constant")
         };
-        self.builder.build_return(Some(&ret));
+        let inst = self.builder.build_return(Some(&ret));
+
+        // Debug values
+        let debug_local_var = self.debug.create_local_variable(func_name, debug_func.scope, debug_return_type, None);
+        self.debug.insert_dbg_value(
+            ret.into(),
+            debug_local_var,
+            self.builder.get_current_debug_location().unwrap(),
+            inst,
+        );
     }
 }
