@@ -1,5 +1,6 @@
 use cairo_lang_sierra::program::{GenBranchTarget, Invocation, StatementIdx};
 use inkwell::debug_info::DIScope;
+use inkwell::values::FunctionValue;
 use inkwell::IntPredicate::EQ;
 
 use crate::sierra::errors::CompilerResult;
@@ -18,6 +19,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// Returns an error if the processing of the branches statements fails.
     pub fn felt_is_zero(
         &mut self,
+        func: FunctionValue<'ctx>,
         invocation: &Invocation,
         invocation_nb: usize,
         scope: DIScope<'ctx>,
@@ -31,8 +33,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.types_by_name.get("felt").unwrap().into_int_type().const_int(0, false),
             "check",
         );
-        // Get the current function.
-        let func = self.module.get_last_function().unwrap();
         // if then
         let then_bb = self.context.append_basic_block(func, "then");
         // else
@@ -46,20 +46,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         match invocation.branches[0].target {
             // if then is fallthrough
             GenBranchTarget::Fallthrough => {
-                self.process_statements_from(invocation_nb + 1, scope)?;
+                self.process_statements_from(func, invocation_nb + 1, scope)?;
             }
             // then branch is a jump so we process from the jump until a return instruction.
-            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id, scope),
+            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(func, id, scope),
         };
 
         self.builder.position_at_end(else_bb);
         match invocation.branches[1].target {
             // else is fallthrough
             GenBranchTarget::Fallthrough => {
-                self.process_statements_from(invocation_nb + 1, scope)?;
+                self.process_statements_from(func, invocation_nb + 1, scope)?;
             }
             // else branch is a jump so we process from the jump until a return instruction.
-            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(id, scope),
+            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(func, id, scope),
         };
         Ok(())
     }

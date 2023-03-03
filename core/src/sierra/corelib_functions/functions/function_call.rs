@@ -41,6 +41,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         debug!(func_name, "generating function definition");
 
+        self.debug.debug_location(None);
+
         // Arguments of the function.
         let mut args = vec![];
         let mut args_debug_types = vec![];
@@ -142,7 +144,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 )
             };
 
-        let info = FunctionInfo { func, args, args_debug_types, debug_return_type: return_info.map(|x| x.1) };
+        let debug_function = self.debug.create_function(
+            func_name,
+            &func,
+            return_info.map(|x| x.1),
+            &args_debug_types,
+            Some(func_declaration.entry_point.0),
+        );
+
+        let info = FunctionInfo { func, args, debug: debug_function };
 
         self.user_functions.insert(func_name.to_string(), info.clone());
 

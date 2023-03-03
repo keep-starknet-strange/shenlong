@@ -1,4 +1,5 @@
 use inkwell::debug_info::DIScope;
+use inkwell::values::FunctionValue;
 
 use crate::sierra::llvm_compiler::Compiler;
 
@@ -13,10 +14,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the processing of the branches statements fails.
-    pub fn jump(&mut self, dest_nb: usize, scope: DIScope<'ctx>) {
-        // Get the function that's currently processed.
-        // It shouldn't panic as if we're there at least a function has to have been declared
-        let func = self.module.get_last_function().unwrap();
+    pub fn jump(&mut self, func: FunctionValue<'ctx>, dest_nb: usize, scope: DIScope<'ctx>) {
         // Check if we defined the basic block we want to jump to. Can be useful if several jumps lead to
         // the same block or if we jump backward.
         let destination = match self.basic_blocks.get(&dest_nb) {
@@ -29,6 +27,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.basic_blocks.insert(dest_nb, destination);
         self.builder.position_at_end(destination);
         // Keep processing the statements.
-        self.process_statements_from(dest_nb, scope).unwrap();
+        self.process_statements_from(func, dest_nb, scope).unwrap();
     }
 }
