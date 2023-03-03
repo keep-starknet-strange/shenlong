@@ -42,4 +42,6 @@ jobs:
           sudo apt-get install libunwind-dev
       - name: fuzzing
         working-directory: fuzzing
-        run: cargo hfuzz run fuzzing ${{ matrix.case }}
+        run: |
+          cargo hfuzz run fuzzing ${{ matrix.case }}
+          ./check_crash.sh
