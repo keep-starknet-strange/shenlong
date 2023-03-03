@@ -2,7 +2,7 @@ use cairo_lang_sierra::ids::VarId;
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
 use inkwell::debug_info::DIScope;
-use inkwell::values::{BasicValue, BasicValueEnum, StructValue};
+use inkwell::values::{BasicValueEnum, StructValue};
 use tracing::debug;
 
 use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
@@ -22,7 +22,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Set the statement number to the absolute statement number.
             statement_id += from;
             self.debug.set_statement_line(statement_id);
-            let debug_location = self.debug.debug_location(Some(scope));
+            self.debug.debug_location(Some(scope));
             match statement {
                 // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
@@ -89,16 +89,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             .try_as_basic_value()
                             .left()
                             .expect("Call should have worked");
-
-                        // Create the debug info for the function call.
-                        let real_fn_name = function.get_name().to_string_lossy();
-                        let debug_function = self.debug.functions.get(&*real_fn_name).unwrap();
-                        let call_instruction = res.as_instruction_value().unwrap();
-                        for (value, debug_local_var) in
-                            args.iter().zip(self.debug.create_function_call_local_vars(debug_function, scope))
-                        {
-                            self.debug.insert_dbg_value(*value, debug_local_var, debug_location, call_instruction);
-                        }
 
                         if res.is_struct_value()
                             && res.into_struct_value().get_type().count_fields() > 0
@@ -284,15 +274,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Panics if the argument needed is not found.
     fn process_args(&self, invocation: &Invocation) -> Vec<BasicValueEnum<'ctx>> {
-        let mut args = vec![];
-        if !invocation.args.is_empty() {
-            for argument in invocation.args.iter() {
-                args.push(*self.variables.get(&argument.id).unwrap_or_else(|| {
-                    panic!("Variable {:} passed as argument should have been declared first", argument.id)
-                }));
-            }
-        }
-        args
+        invocation
+            .args
+            .iter()
+            .map(|arg| {
+                *self.variables.get(&arg.id).unwrap_or_else(|| {
+                    panic!("Variable {:} passed as argument should have been declared first", arg.id)
+                })
+            })
+            .collect()
     }
 
     /// Unpack a struct into several values.

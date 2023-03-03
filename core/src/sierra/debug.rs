@@ -120,10 +120,10 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
     /// Creates local variables for a function call.
     pub fn create_function_call_local_vars(
         &self,
-        func: &FunctionDebugInfo<'ctx>,
+        params: &[DIType<'ctx>],
         scope: DIScope<'ctx>,
     ) -> Vec<DILocalVariable<'ctx>> {
-        func.params
+        params
             .iter()
             .enumerate()
             .map(|(i, param)| {
