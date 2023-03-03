@@ -24,21 +24,17 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func_declaration =
             self.program.funcs.iter().find(|x| x.id.id == func_def.id).expect("function should exist in sierra funcs");
 
-        let func = self.generate_function_definition(func_declaration, Some(libfunc_declaration.id.id));
-        self.functions.insert(func_declaration.id.id, func);
+        self.generate_function_definition(func_declaration);
+        // self.functions.insert(func_declaration.id.id, func);
     }
 
     /// Generates the function "definition".
     ///
     /// libfunc_id is the real libfunc_id, used in invocations.
-    pub fn generate_function_definition(
-        &mut self,
-        func_declaration: &GenFunction<StatementIdx>,
-        libfunc_id: Option<u64>,
-    ) -> FunctionInfo<'ctx> {
+    pub fn generate_function_definition(&mut self, func_declaration: &GenFunction<StatementIdx>) -> FunctionInfo<'ctx> {
         let func_name = func_declaration.id.debug_name.as_ref().unwrap().as_str();
 
-        if let Some(info) = self.functions.get(&func_declaration.id.id) {
+        if let Some(info) = self.user_functions.get(func_name) {
             debug!(func_name, "returning pre-generated function definition");
             return info.clone();
         }
@@ -146,13 +142,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 )
             };
 
-        // If a libfunc id was passed, it's probably a user defined function,
-        // we need to store the debug args because the function may be called by another
-        // before it is implemented (and it's debug info generated).
-        if let Some(libfunc_id) = libfunc_id {
-            self.debug.function_args.insert(libfunc_id, args_debug_types.clone());
-        }
+        let info = FunctionInfo { func, args, args_debug_types, debug_return_type: return_info.map(|x| x.1) };
 
-        FunctionInfo { func, args, args_debug_types, debug_return_type: return_info.map(|x| x.1) }
+        self.user_functions.insert(func_name.to_string(), info.clone());
+
+        info
     }
 }
