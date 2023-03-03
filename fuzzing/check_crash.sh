@@ -1,0 +1,1 @@
+exit $(ls hfuzz_workspace/fuzzing/ | grep SIGABRT -c)
