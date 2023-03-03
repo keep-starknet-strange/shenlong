@@ -108,7 +108,7 @@ pub struct DebugCompiler<'a, 'ctx> {
     /// We need to know the field types mapped to a given struct.
     pub struct_types_by_id: HashMap<u64, Vec<DIType<'ctx>>>,
     /// The debug info variables of the current function.
-    pub variables: HashMap<String, DIType<'ctx>>,
+    pub variables: HashMap<u64, DIType<'ctx>>,
     pub functions: HashMap<String, FunctionDebugInfo<'ctx>>,
     current_line: u32,
     current_statement_line: u32,

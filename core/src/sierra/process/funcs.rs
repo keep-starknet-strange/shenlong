@@ -28,6 +28,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
             // Clear the variables map in case a previous function has been processed.
             self.variables.clear();
+            self.debug.variables.clear();
 
             // Arguments of the function.
             let mut args = vec![];
@@ -149,6 +150,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // Save the function arguments in the variables map to be able to use them in the function body.
                 let variable = func.get_nth_param(var_id as u32).expect("Function should have enough parameters");
                 self.variables.insert(var_id as u64, variable);
+            }
+
+            // Loop through arguments of the function, storing their debug info.
+            for (var_id, ty) in args_debug_types.iter().enumerate() {
+                self.debug.variables.insert(var_id as u64, *ty);
             }
 
             // process statements from the line stated in the function definition until the return instruction.
