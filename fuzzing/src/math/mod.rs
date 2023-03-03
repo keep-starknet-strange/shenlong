@@ -20,7 +20,6 @@ pub struct BinaryContext {
 #[inline(always)]
 pub fn operation(case: &str) {
     fuzz!(|data: (&[u8], &[u8])| {
-        panic!("a");
         let prime = get_prime();
 
         let lhs = BigInt::from_bytes_be(
