@@ -1,4 +1,5 @@
 use inkwell::types::BasicType;
+use inkwell::values::BasicValue;
 
 use super::DEFAULT_PRIME;
 use crate::sierra::llvm_compiler::Compiler;
@@ -22,7 +23,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let func = self.module.add_function("modulo", felt_type.fn_type(&[big_felt_type.into()], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
-        self.debug.create_function("modulo", &func, Some(debug_felt_type), &[debug_double_felt_type], None);
+        let debug_func =
+            self.debug.create_function("modulo", &func, Some(debug_felt_type), &[debug_double_felt_type], None);
 
         let prime = big_felt_type.const_int_from_string(DEFAULT_PRIME, inkwell::types::StringRadix::Decimal).unwrap();
         // smod
@@ -31,6 +33,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // As we performed smod on the value it is now 0 < |res| < PRIME so it's less than 252 and we can
         // truncate the high bits
         let res = self.builder.build_int_truncate(modu, felt_type.into_int_type(), "res");
+
         self.builder.build_return(Some(&res));
+
+        // Debug parameter values
+        self.debug.insert_dbg_value(
+            func.get_first_param().unwrap(),
+            debug_func.params_local_vars[0],
+            self.builder.get_current_debug_location().unwrap(),
+            modu.as_instruction_value().unwrap(),
+        );
     }
 }

@@ -51,7 +51,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             None,
         );
 
-        self.debug.create_function(func_name, &func, Some(debug_return_type), &[debug_arg_type], None);
+        let debug_func = self.debug.create_function(func_name, &func, Some(debug_return_type), &[debug_arg_type], None);
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // We just defined dup to have an input parameter so it shouldn't panic.
@@ -66,5 +66,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let tuple_ptr_2 = self.builder.build_struct_gep(return_type, tuple, 1, "tuple_ptr_2").unwrap();
         self.builder.build_store(tuple_ptr_2, arg);
         self.builder.build_return(Some(&self.builder.build_load(return_type, tuple, "res")));
+
+        // Debug values
+        let debug_local_var = self.debug.create_local_variable(func_name, debug_func.scope, debug_arg_type, None);
+        self.debug.insert_dbg_value(
+            arg,
+            debug_local_var,
+            self.builder.get_current_debug_location().unwrap(),
+            tuple.as_instruction().unwrap(),
+        );
     }
 }
