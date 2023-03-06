@@ -51,6 +51,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // Each core lib function is known
             match libfunc_name {
                 "array_new" => self.array_new(libfunc_declaration),
+                "array_append" => self.array_append(libfunc_declaration),
                 // Align branches after a match/if else or anything that creates branches.
                 "branch_align" => debug!(libfunc_name, "ignored for now"),
                 // Drops a variables (in sierra everything has to be used exactly once so if a variable is created and

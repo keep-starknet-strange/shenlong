@@ -15,7 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Panics if the type T has not been declared previously as all types should be declared at the
     /// beginning of the sierra file.
-    pub fn push(&self, libfunc_declaration: &LibfuncDeclaration) {
+    pub fn array_append(&self, libfunc_declaration: &LibfuncDeclaration) {
         // dup<T> can only duplicate the type T. If several types need the dup instruction it'll be defined
         // multiple times. Ex: dup<felt>; dup<i128>;
         // Get the type that this dup function has to handle
