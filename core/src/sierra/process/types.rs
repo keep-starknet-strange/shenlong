@@ -21,6 +21,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.debug.next_line();
             // All those types are known in advance. A struct is a combination of multiple "primitive" types
             let type_name = type_declaration.long_id.generic_id.0.as_str();
+            println!("{:}", type_declaration);
             match type_name {
                 // Regular felt
                 "felt" => self.felt(type_declaration),

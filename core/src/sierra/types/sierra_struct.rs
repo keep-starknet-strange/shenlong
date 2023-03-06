@@ -16,14 +16,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         for generic_arg in type_declaration.long_id.generic_args.iter() {
             match generic_arg {
-                GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
+                GenericArg::Type(ConcreteTypeId { id, debug_name }) => {
                     args.push(
                         self.types_by_id
                             .get(id)
                             .expect("Type should have been defined before struct")
                             .as_basic_type_enum(),
                     );
-                    debug_args.push(*self.debug.types_by_id.get(id).unwrap());
+                    println!("struct {id:?}, {debug_name:?}, \n {:?}", self.types_by_name);
+                    debug_args.push(*self.debug.types_by_name.get(&debug_name.clone().unwrap().to_string()).unwrap());
                 }
                 // Ignore the user type as it is not a struct field.
                 GenericArg::UserType(_) => continue,
