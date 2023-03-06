@@ -5,7 +5,7 @@ use tracing::debug;
 
 use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
-use crate::sierra::types::felt::DOUBLE_FELT_INT_WIDTH;
+use crate::sierra::types::math::felt::DOUBLE_FELT_INT_WIDTH;
 
 pub const PRINT_FELT_FUNC: &str = "print_felt";
 pub const PRINT_DOUBLE_FELT_FUNC: &str = "print_double_felt";
