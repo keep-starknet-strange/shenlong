@@ -8,5 +8,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         let ty = self.context.custom_width_int_type(32).as_basic_type_enum();
         self.types_by_name.insert("u32".to_owned(), ty);
         self.types_by_id.insert(type_declaration.id.id, ty);
+        self.debug.create_type(type_declaration.id.id, "u32", 32);
     }
 }
