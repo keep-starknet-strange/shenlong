@@ -92,7 +92,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "unbox" => self.unbox(libfunc_declaration),
                 _ => debug!(libfunc_name, "not implemented"),
             }
-            self.module.print_to_file("core/tests/test_data/llvm/test.ll").unwrap()
         }
 
         self.debug.next_line();
