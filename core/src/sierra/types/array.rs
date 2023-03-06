@@ -15,7 +15,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 let debug_name = debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string();
                 let array_debug_name = format!("Array<{:#}>", debug_name);
                 // Array capacity and len are felts for now. The reason for that is that there is no specific
-                // reason.
+                // reason. Array { ptr: T*, len: felt, capacity: felt }
                 let felt_type = *self.types_by_name.get("felt").unwrap();
                 let ty = self
                     .context
