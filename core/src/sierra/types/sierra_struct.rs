@@ -16,7 +16,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         for generic_arg in type_declaration.long_id.generic_args.iter() {
             match generic_arg {
-                GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => {
+                GenericArg::Type(ConcreteTypeId { id, debug_name: _debug_name }) => {
                     args.push(
                         self.types_by_id
                             .get(id)

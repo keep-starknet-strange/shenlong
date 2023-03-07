@@ -2,7 +2,7 @@ use tracing::debug;
 
 use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
-use crate::sierra::types::felt::DOUBLE_FELT_INT_WIDTH;
+use crate::sierra::types::math::felt::DOUBLE_FELT_INT_WIDTH;
 
 /// Implementation for the type processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {

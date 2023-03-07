@@ -6,22 +6,21 @@ use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    /// Implementation of the LLVM IR conversion of a felt constant.
+    /// Implementation of the LLVM IR conversion of an int constant.
     ///
     /// # Arguments
     ///
-    /// * `libfunc_declaration` - The corelib function declaration of felt_const.
+    /// * `libfunc_declaration` - The corelib function declaration of {un|felt}_const.
     ///
     /// # Error
     ///
-    /// Panics if the felt type has not been declared previously.
-    pub fn felt_const(&mut self, libfunc_declaration: &LibfuncDeclaration) {
-        // We could hardcode the LLVM IR type for felt but this adds a check.
+    /// Panics if the int type has not been declared previously.
+    pub fn int_const(&mut self, libfunc_declaration: &LibfuncDeclaration, int_ty: &str) {
         let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
-        let return_type = self.types_by_name.get("felt").expect("Can't get felt from name");
-        let debug_return_type = *self.debug.types_by_name.get("felt").expect("Can't get felt from name");
+        let return_type = self.types_by_name.get(int_ty).expect("Can't get int type from name");
+        let debug_return_type = *self.debug.types_by_name.get(int_ty).expect("Can't get int type from name");
 
-        // fn felt_const() -> felt
+        // fn int_const() -> int
         let func = self.module.add_function(func_name, return_type.fn_type(&[], false), None);
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
 
@@ -35,10 +34,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 .as_basic_type_enum()
                 .into_int_type()
                 .const_int_from_string(val.to_string().as_str(), StringRadix::Decimal)
-                .expect("Couldn't convert to string the felt constant value")
+                .expect("Couldn't convert to string the int constant value")
         } else {
             // If the constant doesn't have any value it panics because a constant should have a value.
-            panic!("No value for felt constant")
+            panic!("No value for constant")
         };
         let inst = self.builder.build_return(Some(&ret));
 

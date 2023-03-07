@@ -22,7 +22,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Get the type that this store_temp function has to handle
 
         let type_id = match &libfunc_declaration.long_id.generic_args[0] {
-            GenericArg::Type(ConcreteTypeId { id, debug_name: _ }) => *id,
+            GenericArg::Type(ConcreteTypeId { id, debug_name: _debug_name }) => *id,
             // Not sure if store_temp can store_temp user defined types
             GenericArg::UserType(_) => todo!(),
             _val => {

@@ -5,7 +5,7 @@ use tracing::debug;
 
 use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler};
-use crate::sierra::types::felt::DOUBLE_FELT_INT_WIDTH;
+use crate::sierra::types::math::felt::DOUBLE_FELT_INT_WIDTH;
 
 pub const PRINT_FELT_FUNC: &str = "print_felt";
 pub const PRINT_DOUBLE_FELT_FUNC: &str = "print_double_felt";
@@ -50,6 +50,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             debug!(libfunc_name, "processing");
             // Each core lib function is known
             match libfunc_name {
+                "array_new" => self.array_new(libfunc_declaration),
+                "array_append" => self.array_append(libfunc_declaration),
                 // Align branches after a match/if else or anything that creates branches.
                 "branch_align" => debug!(libfunc_name, "ignored for now"),
                 // Drops a variables (in sierra everything has to be used exactly once so if a variable is created and
@@ -61,7 +63,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // Addition for felt type. `felt + felt`
                 "felt_add" => self.felt_add(libfunc_declaration),
                 // Define a constant of type felt. `const one = 1;`
-                "felt_const" => self.felt_const(libfunc_declaration),
+                "felt_const" => self.int_const(libfunc_declaration, "felt"),
                 // Check if a felt is zero. `felt == 0`
                 "felt_is_zero" => debug!(libfunc_name, "treated in the statements"),
                 // Multiplication for felt type. `felt * felt`
@@ -86,6 +88,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "struct_construct" => self.struct_construct(libfunc_declaration),
                 // Deconstruct a struct. (Get each struct field in its own variable).
                 "struct_deconstruct" => self.struct_deconstruct(libfunc_declaration),
+                "u32_const" => self.int_const(libfunc_declaration, "u32"),
                 // Converts a `Box<T>` to `T`.
                 "unbox" => self.unbox(libfunc_declaration),
                 _ => debug!(libfunc_name, "not implemented"),
