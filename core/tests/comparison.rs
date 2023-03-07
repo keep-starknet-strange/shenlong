@@ -11,7 +11,7 @@ use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra_generator::db::SierraGenGroup;
 use cairo_lang_sierra_generator::replace_ids::replace_sierra_ids_in_program;
 use num_bigint::BigUint;
-use num_traits::Num;
+use num_traits::{FromPrimitive, Num};
 use shenlong_core::sierra::corelib_functions::math::DEFAULT_PRIME;
 use shenlong_core::sierra::llvm_compiler::Compiler;
 use test_case::test_case;
@@ -97,8 +97,6 @@ fn run_cairo_via_casm(sierra_program: Program) -> Result<RunResult, anyhow::Erro
 
 // Runs the test file via compiling to llir then invoking lli to run it
 fn run_cairo_via_llvm(sierra_program: &Program, test_name: &str) -> Vec<BigUint> {
-    let sierra_program = compile_to_sierra(test_name).unwrap();
-
     let tmp = tempdir::TempDir::new("test_comparison").unwrap();
     let file = tmp.into_path().join("output.ll");
 
@@ -123,11 +121,22 @@ fn parse_llvm_result(res: &str) -> Vec<BigUint> {
         return res
             .split('\n')
             .map(|line| &line[line.find("value: ").unwrap() + "value: ".len()..])
-            .map(|line| {
-                println!("{line}");
-                line
+            // .map(|line| {
+            //     println!("{line}");
+            //     line
+            // })
+            .map(|val: &str| {
+                // The output from the llvm ir can include values in the range (-PRIME, 0), which need to be wrapped around
+                // Because the number of bits is rounded up to 256, positive numbers start with 0 and negatives start with 1
+                if val.starts_with('1') {
+                    let prime = DEFAULT_PRIME.parse::<BigUint>().unwrap();
+                    let pos = BigUint::from_str_radix(val.strip_prefix('1').unwrap(), 16).unwrap();
+                    let neg = BigUint::from_u32(2).unwrap().pow((4*(val.chars().count()-1)).try_into().unwrap());
+                    prime - (neg - pos)
+                } else {
+                    BigUint::from_str_radix(val, 16).unwrap()
+                }
             })
-            .map(|val| BigUint::from_str_radix(val, 16).unwrap())
             .collect();
     } else {
         panic!("Unexpected output from running via llvm:\n{res}");
