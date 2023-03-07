@@ -2,7 +2,7 @@ use cairo_lang_sierra::ids::ConcreteTypeId;
 use cairo_lang_sierra::program::{GenericArg, LibfuncDeclaration};
 use inkwell::types::BasicType;
 use inkwell::AddressSpace;
-use inkwell::IntPredicate::ULT;
+use inkwell::IntPredicate::EQ;
 
 use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
@@ -55,23 +55,30 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         );
         // Get the array current length.
         let len_ptr = self.builder.build_struct_gep(array_ty, array_ptr, 1, "len_ptr").unwrap();
-        let len = self.builder.build_load(felt_type.ptr_type(AddressSpace::default()), len_ptr, "len");
+        let len = self.builder.build_load(felt_type, len_ptr, "len").into_int_value();
         // Get the array current capacity.
         let capacity_ptr = self.builder.build_struct_gep(array_ty, array_ptr, 2, "capacity_ptr").unwrap();
-        let capacity = self.builder.build_load(felt_type.ptr_type(AddressSpace::default()), capacity_ptr, "capacity");
+        let capacity = self.builder.build_load(felt_type, capacity_ptr, "capacity").into_int_value();
 
         // Check if the array has enough capacity to add a new value.
-        let check_array_cap =
-            self.builder.build_int_compare(ULT, len.into_int_value(), capacity.into_int_value(), "is_array_big_enough");
-
+        let check_array_cap = self.builder.build_int_compare(EQ, len, capacity, "is_array_big_enough");
         // if then
         let then_bb = self.context.append_basic_block(func, "then");
-        // else
-        let else_bb = self.context.append_basic_block(func, "else");
+        // finally
+        let finally_bb = self.context.append_basic_block(func, "finally");
 
-        self.builder.build_conditional_branch(check_array_cap, then_bb, else_bb);
+        self.builder.build_conditional_branch(check_array_cap, then_bb, finally_bb);
         self.builder.position_at_end(then_bb);
-        let empty_cell_id = len.into_int_value().const_add(felt_type.into_int_type().const_int(1, false));
+        let new_cap = capacity.const_mul(capacity.get_type().const_int(2, false));
+        let dest = self.builder.build_array_malloc(val_ty, new_cap, "new_arr").unwrap();
+        self.builder.build_memcpy(dest, 2, ptr.into_pointer_value(), 2, capacity).unwrap();
+        self.builder.build_store(capacity_ptr, new_cap);
+        self.builder.build_unconditional_branch(finally_bb);
+
+        self.builder.position_at_end(finally_bb);
+
+        let empty_cell_id = len.const_add(len.get_type().const_int(1, false));
+        self.builder.build_store(len_ptr, empty_cell_id);
         let empty_cell;
         unsafe {
             empty_cell = self.builder.build_gep(
@@ -82,5 +89,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             );
         }
         self.builder.build_store(empty_cell, func.get_last_param().unwrap());
+        self.builder.build_return(Some(&self.builder.build_load(array_ty, array_ptr, "res")));
     }
 }
