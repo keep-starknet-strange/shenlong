@@ -23,6 +23,7 @@ use test_case::test_case;
 #[test_case("felt_subtraction")]
 #[test_case("felt_multiplication")]
 #[test_case("felt_negation")]
+#[test_case("enum_flow")]
 fn comparison_test(test_name: &str) {
     let sierra_program = compile_to_sierra(test_name).unwrap();
     let llvm_result = run_cairo_via_llvm(&sierra_program, test_name);
