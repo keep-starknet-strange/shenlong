@@ -58,6 +58,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // As everything has to be used exactly once, if we need to use twice the same value we need to
                 // duplicate it.
                 "dup" => self.dup(libfunc_declaration),
+                // Constructor for enums
+                "enum_init" => self.enum_init(libfunc_declaration),
                 // Addition for felt type. `felt + felt`
                 "felt_add" => self.felt_add(libfunc_declaration),
                 // Define a constant of type felt. `const one = 1;`

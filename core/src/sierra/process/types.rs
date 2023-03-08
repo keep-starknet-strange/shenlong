@@ -30,6 +30,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "Box" => self.sierra_box(type_declaration),
                 // Regular struct
                 "Struct" => self.sierra_struct(type_declaration),
+                // Custom Enum
+                "Enum" => self.sierra_enum(type_declaration),
                 _ => debug!(type_name, "unimplemented type"),
             }
         }

@@ -28,6 +28,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Now that we have the unique type ids, we can get the associated types and debug information, and
         // package them with the index into a struct
+        // TODO this works because HashMap::iter is stable between uses here, but is not *technically*
+        // guaranteed to be by the spec, could improve, likely also when having a debug type for the
+        // index is solved
         let unique_arg_types = unique_arg_type_ids.iter().map(|type_id| {
             self.types_by_id.get(type_id).expect("Type should have been defined before enum").as_basic_type_enum()
         });
@@ -40,15 +43,20 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // We do also need to keep a record of every possible subtype in order so that enum_init and
         // enum_match can be implemented
-        let enum_member_types = get_arg_type_ids(type_declaration)
+        let enum_packing_indices = get_arg_type_ids(type_declaration)
             .map(|type_id| self.types_by_id.get(&type_id).expect("Type should have been defined before enum"))
-            .cloned()
+            .map(|enum_member_type| {
+                struct_args
+                    .iter()
+                    .position(|struct_arg_type| *struct_arg_type == *enum_member_type)
+                    .expect("Unable to find enum data type in struct representation")
+            })
             .collect();
 
         self.types_by_id.insert(type_declaration.id.id, struct_type.as_basic_type_enum());
         self.types_by_name.insert(type_name.clone(), struct_type.as_basic_type_enum());
         self.debug.create_struct(type_declaration.id.id, &type_name, &struct_type, &debug_args);
-        self.enum_member_types_by_id.insert(type_declaration.id.id, enum_member_types);
+        self.enum_packing_index_by_id.insert(type_declaration.id.id, enum_packing_indices);
     }
 }
 
