@@ -84,9 +84,8 @@ pub struct Compiler<'a, 'ctx> {
     pub types_by_id: HashMap<u64, BasicTypeEnum<'ctx>>,
     /// The types by debug name
     pub types_by_name: HashMap<String, BasicTypeEnum<'ctx>>,
-    /// Stores the datatype of each subtype of enum, since the struct representation does not hold
-    /// this
-    pub enum_member_types_by_id: HashMap<u64, Vec<BasicTypeEnum<'ctx>>>,
+    /// Stores the index in the packed struct at which the payload of each subtype of enum is stored
+    pub enum_packing_index_by_id: HashMap<u64, Vec<usize>>,
     /// Calls in the main function.
     pub basic_blocks: HashMap<usize, BasicBlock<'ctx>>,
     pub jump_dests: HashSet<usize>,
@@ -364,7 +363,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             valid_state_transitions,
             types_by_id: HashMap::new(),
             types_by_name: HashMap::new(),
-            enum_member_types_by_id: HashMap::new(),
+            enum_packing_index_by_id: HashMap::new(),
             basic_blocks: HashMap::new(),
             jump_dests: HashSet::new(),
             debug: DebugCompiler::new(dibuilder, &builder, compile_unit, &context),
