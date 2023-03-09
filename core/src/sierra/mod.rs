@@ -1,5 +1,5 @@
 //! Sierra related modules.
-mod corelib_functions;
+pub mod corelib_functions;
 mod debug;
 pub mod errors;
 pub mod llvm_compiler;

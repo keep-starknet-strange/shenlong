@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::Path;
 
@@ -55,14 +55,13 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
         context: &context,
         builder: &builder,
         module,
-        variables: HashMap::new(),
         llvm_output_path: Path::new("").to_path_buf(),
         state: CompilationState::NotStarted,
         valid_state_transitions: Compiler::init_state_transitions(),
         types_by_id: HashMap::new(),
         types_by_name: HashMap::new(),
-        basic_blocks: HashMap::new(),
-        jump_dests: HashSet::new(),
+        enum_packing_index_by_name: HashMap::new(),
+        basic_blocks: BTreeMap::new(),
         user_functions: HashMap::new(),
         debug,
     };
@@ -70,8 +69,9 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
     compiler.setup_debug().unwrap();
     compiler.process_types().unwrap();
     compiler.process_core_lib_functions().unwrap();
-    compiler.collect_jumps();
     compiler.process_funcs().unwrap();
+    compiler.process_blocks();
+    compiler.process_statements();
     let execution_engine = compiler.module.create_jit_execution_engine(OptimizationLevel::Aggressive).unwrap();
     c.bench_with_input(BenchmarkId::new("Llvm", 1), &(execution_engine), |b, execution_engine| {
         b.iter(|| {

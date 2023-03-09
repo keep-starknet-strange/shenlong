@@ -1,13 +1,16 @@
+use std::cmp::Ordering;
+use std::collections::HashSet;
+
 use cairo_lang_sierra::ids::VarId;
 /// This file contains everything related to sierra statement processing.
 use cairo_lang_sierra::program::{GenBranchTarget, GenStatement, Invocation};
-use inkwell::debug_info::DIScope;
-use inkwell::values::{BasicValueEnum, FunctionValue, StructValue};
+use inkwell::types::BasicTypeEnum;
+use inkwell::values::BasicMetadataValueEnum;
+use itertools::Itertools;
 use tracing::debug;
 
-use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
+use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::Compiler;
-use crate::sierra::process::corelib::PRINT_RETURN;
 
 /// Implementation of the statement processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -16,276 +19,198 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Errors
     ///
     /// If the processing of the sierra statements fails.
-    pub fn process_statements_from(
-        &mut self,
-        func: FunctionValue<'ctx>,
-        from: usize,
-        scope: DIScope<'ctx>,
-    ) -> CompilerResult<()> {
-        // Check that the current state is valid.
-        for (mut statement_id, statement) in self.program.statements.iter().skip(from).enumerate() {
-            // Set the statement number to the absolute statement number.
-            statement_id += from;
-            self.debug.set_statement_line(statement_id);
-            self.debug.debug_location(Some(scope));
+
+    pub fn process_statements(&mut self) {
+        let mut statements_to_process: HashSet<usize> = self.user_functions.values().map(|f| f.entry_point).collect();
+        let mut processed_statements: HashSet<usize> = HashSet::new();
+        while !statements_to_process.is_empty() {
+            let statement_idx = self
+                .get_next_statement_to_process(&statements_to_process, &processed_statements)
+                .expect("Expected statements to be serialisable");
+            let statement = &self.program.statements[statement_idx];
+            // Handling this now so we can safely use continue later
+            statements_to_process.remove(&statement_idx);
+            processed_statements.insert(statement_idx);
+
+            // Statements are either sierra function calls or returns
             match statement {
-                // If the statement is a sierra function call.
                 GenStatement::Invocation(invocation) => {
+                    // Add next statements to the set to process
+                    statements_to_process.extend(invocation.branches.iter().map(|b| match b.target {
+                        GenBranchTarget::Fallthrough => statement_idx + 1,
+                        GenBranchTarget::Statement(target_id) => target_id.0,
+                    }));
+
+                    // Find the block with the highest index below or equal to statement_idx
+                    let block_info = self.get_block_info_for_statement_id(statement_idx);
+
+                    self.builder.position_at_end(block_info.block);
+
                     // Get core lib function called by this instruction.
                     let fn_name = invocation.libfunc_id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).to_string();
                     debug!(fn_name, line = self.debug.get_line(), "processing statement: invocation");
-                    // Function has only one branch and doesn't return anything.
-                    if invocation.branches.len() == 1 && invocation.branches[0].results.is_empty() {
-                        match fn_name.as_str() {
-                            // Jump needs to be treated.
-                            "jump" => {
-                                let to = match &invocation.branches[0].target {
-                                    GenBranchTarget::Statement(id) => id.0,
-                                    _ => panic!("Jump should have genbranchinfo"),
-                                };
-                                self.jump(func, to, scope);
-                                break;
-                            }
-                            // Sierra functions have no side effect so we can ignore the function if it doesn't return
-                            // anything and it's not a jump
-                            _ => continue,
-                        }
-                    }
-                    // Function that have multiple branches and require conditional branches.
-                    if invocation.branches.len() > 1 {
-                        match fn_name.as_str() {
-                            "felt_is_zero" => {
-                                self.felt_is_zero(func, invocation, statement_id, scope)?;
-                                // In the felt_is_zero func we process the other statements so we have to break not to
-                                // duplicate everything.
-                                break;
-                            }
-                            _ => continue,
-                        }
-                    }
-                    // The instruction has 1 branch and the branch is just the flow of the instructions.
-                    // felt_const<2>() -> ([0]);
-                    // felt_const<4>() -> ([1]);
-                    // Those 2 instructions have only 1 branch and the target is fallthrough (which means next
-                    // instruction).
-                    if invocation.branches.len() == 1 && invocation.branches[0].target == GenBranchTarget::Fallthrough {
-                        let function = if fn_name.starts_with("function_call") {
-                            // Case where the invocation is a function call (it's probably not possible to process it
-                            // before the statements because it needs the called function to
-                            // be defined to call it).
-                            self.module
-                                .get_function(
-                                    fn_name.strip_prefix("function_call<user@").unwrap().strip_suffix('>').unwrap(),
-                                )
-                                .unwrap()
-                        } else {
-                            // Regular corelib called.
-                            self.module
-                                .get_function(fn_name.as_str())
-                                .unwrap_or_else(|| panic!("{fn_name} function is missing"))
-                        };
-                        // Get the arguments for the function call.
-                        let args = self.process_args(invocation);
+                    // Since the function has only one branch, we can use the generic method of ensuring flow moves to
+                    // the target
 
-                        // Call the function.
-                        let res = self
-                            .builder
-                            .build_call(function, &args.iter().map(|x| (*x).into()).collect::<Vec<_>>(), "")
-                            .try_as_basic_value()
-                            .left()
-                            .expect("Call should have worked");
+                    match invocation.branches.len().cmp(&1) {
+                        // A standard instruction with one followup
+                        Ordering::Equal => {
+                            // First get the function to call, either a user defined function, or corelib one
+                            let function = if fn_name.starts_with("function_call<") {
+                                self.module
+                                    .get_function(
+                                        fn_name.strip_prefix("function_call<user@").unwrap().strip_suffix('>').unwrap(),
+                                    )
+                                    .unwrap()
+                            } else {
+                                // Regular corelib called.
+                                self.module
+                                    .get_function(fn_name.as_str())
+                                    .unwrap_or_else(|| panic!("{fn_name} function is missing"))
+                            };
 
-                        if res.is_struct_value()
-                            && res.into_struct_value().get_type().count_fields() > 0
-                            && !fn_name.starts_with("store_temp")
-                            && !fn_name.starts_with("struct_construct")
-                        {
-                            self.unpack_tuple(&invocation.branches[0].results, res.into_struct_value())
-                        } else {
-                            // Just save the result.
-                            self.variables.insert(invocation.branches[0].results[0].id, res);
+                            // Next make sure any phis are in place such that all arguments are available in the current
+                            // block
+                            self.process_args(invocation, statement_idx, &function.get_type().get_param_types());
+
+                            let processed_args: Vec<_> = invocation
+                                .args
+                                .iter()
+                                .map(|arg| {
+                                    BasicMetadataValueEnum::from(
+                                        *self.get_processed_variable_at_statement(arg, statement_idx).unwrap(),
+                                    )
+                                })
+                                .collect();
+
+                            // Call the function.
+                            let res = self
+                                .builder
+                                .build_call(function, &processed_args, "")
+                                .try_as_basic_value()
+                                .left()
+                                .expect("Call should have worked");
+
+                            if res.is_struct_value()
+                                && res.into_struct_value().get_type().count_fields() > 0
+                                && !fn_name.starts_with("store_temp<")
+                                && !fn_name.starts_with("struct_construct<")
+                                && !fn_name.starts_with("enum_init<")
+                            {
+                                println!("Unpacking tuple");
+                                // self.unpack_tuple(&invocation.branches[0].results,
+                                // res.into_struct_value())
+                            } else {
+                                // Just save the result.
+                                println!("Not unpacking tuple");
+                                // self.get_block_info_for_statement_id(statement_idx)
+                                //     .variables
+                                //     .insert(invocation.branches[0].results[0].id, res);
+                                // self.register_variable_at_statement_id
+                            }
+
+                            self.insert_flow_control_if_necessary(statement_idx, &invocation.branches[0].target);
                         }
-                        // If the next instruction is a destination of a jump.
-                        if self.jump_dests.contains(&(statement_id + 1)) {
-                            // Add a new basic block.
-                            let basic_block = self.context.append_basic_block(func, "dest");
-                            // Save the new basic block.
-                            self.basic_blocks.insert(statement_id + 1, basic_block);
-                            // Branch unconditionally to this block (equivalent of jump)
-                            self.builder.build_unconditional_branch(basic_block);
-                            self.builder.position_at_end(basic_block);
+                        Ordering::Greater => {
+                            // When control flow branches, we need special handling for each case
+                            match fn_name.as_str() {
+                                "felt_is_zero" => {
+                                    self.felt_is_zero(invocation, statement_idx);
+                                }
+                                x if x.starts_with("enum_match<") => {
+                                    self.enum_match(invocation, statement_idx);
+                                }
+                                _ => todo!("Unimplemented branching function {}", fn_name.as_str()),
+                            }
+                        }
+                        Ordering::Less => {
+                            panic!("Non-return instruction should have some number of control flow targets");
                         }
                     }
                 }
-                GenStatement::Return(ret) => {
-                    let func_name = self
-                        .module
-                        .get_last_function()
-                        .expect("Current function should have been declared")
-                        .get_name()
-                        .to_str()
-                        .unwrap()
-                        .to_string();
-
-                    debug!(func_name, line = self.debug.get_line(), "processing statement: return");
-                    // If there is actually something to return.
-                    if !ret.is_empty() {
-                        let mut types = vec![];
-                        let mut values = vec![];
-
-                        // Get the types and values to return.
-                        for ret_var in ret.iter() {
-                            let value = self.variables.get(&ret_var.id).unwrap();
-                            values.push(value);
-                            types.push(value.get_type());
-                        }
-                        // Create a struct to simulate a tuple.
-                        // Ex:
-                        // fn foo() -> (felt, felt, felt)
-                        // Would be translated to
-                        // define { i253, i253, i253 } @foo()
-                        //
-                        // but fn foo() -> felt
-                        // define i253 @foo()
-
-                        // If the function is the main function.
-                        let return_value = if func_name == "main" {
-                            let return_struct_type = self.context.struct_type(&types, false);
-                            // Allocate a pointer for the return struct.
-                            let return_struct_ptr = self.builder.build_alloca(return_struct_type, "ret_struct_ptr");
-                            // Save each variable to return in the struct.
-                            for (index, value) in values.iter().enumerate() {
-                                let tuple_ptr = self
-                                    .builder
-                                    .build_struct_gep(
-                                        return_struct_type,
-                                        return_struct_ptr,
-                                        index.try_into().unwrap(),
-                                        format!("field_{index}_ptr").as_str(),
-                                    )
-                                    .expect("Pointer should be valid");
-                                self.builder.build_store(tuple_ptr, **value);
-                            }
-                            // Load the values to return in a variable.
-                            let mut return_value =
-                                self.builder.build_load(return_struct_type, return_struct_ptr, "return_struct_value");
-
-                            // Get the first field of the return type (we'll check that it's not the unit type)
-                            let field_ret_type =
-                                return_value.into_struct_value().get_type().get_field_type_at_index(0).unwrap();
-                            // The unit type is defined like this in our case { {} } which is a struct containing an
-                            // empty struct. So above we unpacked the first layer and now we're checking the second
-                            // layer.
-                            if field_ret_type.is_struct_type() && field_ret_type.into_struct_type().count_fields() == 0
-                            {
-                                // There's nothing to return we'll just return 0.
-                                return_value = self.context.i32_type().const_int(0, false).into();
-                            } else {
-                                // If there is something to return we print it (to keep the right main signature but
-                                // still see what happened).
-                                // The return value is always { x }, we need to get x first.
-                                let field_value_ptr = self
-                                    .builder
-                                    .build_struct_gep(return_struct_type, return_struct_ptr, 0, "return_value_ptr")
-                                    .unwrap();
-                                let field_value =
-                                    self.builder.build_load(field_ret_type, field_value_ptr, "return_value");
-
-                                // We have a int value, directly print it.
-                                if field_value.is_int_value() {
-                                    self.call_printf("Return value: ", &[]);
-                                    self.call_print_type(PRINT_RETURN, field_value.into());
-                                }
-                                // x is { y, y1... }, print each field (if they are ints for now).
-                                else if field_value.is_struct_value() {
-                                    let field = field_value.into_struct_value();
-                                    // Allocate a pointer for the field struct.
-                                    let field_struct_ptr =
-                                        self.builder.build_alloca(field.get_type(), "field_struct_ptr");
-                                    self.builder.build_store(field_struct_ptr, field);
-                                    // Prints the fields of a struct.
-                                    for i in 0..field.get_type().count_fields() {
-                                        let f = self
-                                            .builder
-                                            .build_struct_gep(
-                                                field.get_type(),
-                                                field_struct_ptr,
-                                                i,
-                                                &format!("field_struct_{i}_ptr"),
-                                            )
-                                            .unwrap();
-                                        let value = self.builder.build_load(
-                                            field.get_type().get_field_type_at_index(i).unwrap(),
-                                            f,
-                                            &format!("field_struct_{i}"),
-                                        );
-                                        self.call_printf(&format!("Return field {i} value: "), &[]);
-                                        self.call_print_type(PRINT_RETURN, value.into());
-                                    }
-                                }
-                                return_value = self.context.i32_type().const_int(0, false).into();
-                            }
-                            return_value
-                        }
-                        // if its not main, return the value directly if its only 1, otherwise create a struct.
-                        else if values.len() == 1 {
-                            *values[0]
-                        } else {
-                            let return_struct_type = self.context.struct_type(&types, false);
-                            // Allocate a pointer for the return struct.
-                            let return_struct_ptr = self.builder.build_alloca(return_struct_type, "ret_struct_ptr");
-                            // Save each variable to return in the struct.
-                            for (index, value) in values.iter().enumerate() {
-                                let tuple_ptr = self
-                                    .builder
-                                    .build_struct_gep(
-                                        return_struct_type,
-                                        return_struct_ptr,
-                                        index.try_into().unwrap(),
-                                        format!("field_{index}_ptr").as_str(),
-                                    )
-                                    .expect("Pointer should be valid");
-                                self.builder.build_store(tuple_ptr, **value);
-                            }
-                            // Load the values to return in a variable.
-                            let return_value =
-                                self.builder.build_load(return_struct_type, return_struct_ptr, "return_struct_value");
-                            return_value
-                        };
-                        // Return the specified value.
-                        self.builder.build_return(Some(&return_value));
-                    }
-
-                    break;
+                GenStatement::Return(_ret) => {
+                    todo!();
                 }
             }
         }
-        Ok(())
     }
 
-    /// Collect the arguments needed to call a function.
+    /// Ensures that all variables needed to be passed to a function are available at the current
+    /// block, inserting phi instructions as necessary.
     ///
     /// # Arguments
     ///
     /// * `invocation` - The function invocation.
-    ///
-    /// # Returns
-    ///
-    /// * `Vec<BasicMetadataValueEnum<'ctx>>` - The vector with the arguments.
+    /// * `invocation_nb` - The index of the statement containing the invocation.
+    /// * `types` - The types of the functions arguments
     ///
     /// # Errors
     ///
-    /// Panics if the argument needed is not found.
-    fn process_args(&self, invocation: &Invocation) -> Vec<BasicValueEnum<'ctx>> {
-        invocation
-            .args
-            .iter()
-            .map(|arg| {
-                *self.variables.get(&arg.id).unwrap_or_else(|| {
-                    panic!("Variable {:} passed as argument should have been declared first", arg.id)
-                })
-            })
-            .collect()
+    /// Panics if the number of types is not the same as the number of arguments the function
+    /// expects
+    pub fn process_args(&mut self, invocation: &Invocation, invocation_nb: usize, types: &[BasicTypeEnum<'ctx>]) {
+        // TODO could be made safer by ensuring it's only called when the builder is at the right block for
+        // the statement?
+        for (arg, arg_type) in invocation.args.iter().zip_eq(types.iter()) {
+            self.process_variable_at_statement(arg, invocation_nb, *arg_type)
+        }
+
+        self.builder.position_at_end(self.get_block_info_for_statement_id(invocation_nb).block);
+    }
+
+    fn process_variable_at_statement(&mut self, variable_id: &VarId, invocation_nb: usize, ty: BasicTypeEnum<'ctx>) {
+        let block_info = self.get_block_info_for_statement_id(invocation_nb);
+        let variable_needs_processing = block_info.variables.contains_key(&variable_id.id);
+
+        if variable_needs_processing {
+            match block_info.preds.len().cmp(&1) {
+                // If there is only one predecessor, process the variable there and retrieve it
+                Ordering::Equal => {
+                    let pred = *block_info.preds.get(&0).unwrap();
+                    self.process_variable_at_statement(variable_id, pred, ty);
+                    let previous_val = self.get_processed_variable_at_statement(variable_id, pred).unwrap();
+                    let new_val = previous_val.to_owned();
+                    self.basic_blocks
+                        .range_mut(0..invocation_nb)
+                        .next_back()
+                        .unwrap()
+                        .1
+                        .variables
+                        .insert(variable_id.id, new_val);
+                }
+                // If there are multiple predecessors, process the variable at each one, then create a phi node to unify
+                // them
+                Ordering::Greater => {
+                    for pred in block_info.preds.clone().into_iter() {
+                        self.process_variable_at_statement(variable_id, pred, ty);
+                    }
+
+                    let block_info = self.get_block_info_for_statement_id(invocation_nb);
+
+                    self.builder.position_before(
+                        &block_info
+                            .block
+                            .get_first_instruction()
+                            .expect("Previous block should have at least one instruction"),
+                    );
+                    let phi = self.builder.build_phi(ty, &format!("phi{}_", variable_id.id));
+
+                    for pred in block_info.preds.iter() {
+                        let processed_var = self.get_processed_variable_at_statement(variable_id, *pred).unwrap();
+                        let block = self.get_block_info_for_statement_id(*pred).block;
+                        phi.add_incoming(&[(processed_var, block)]);
+                    }
+                }
+                // If there are no predecessors and the variable needs processing, then something has gone wrong,
+                // as there's nowhere to obtain it from
+                Ordering::Less => {
+                    panic!(
+                        "Found path to root block from statement {} with variable {} undefined",
+                        invocation_nb, variable_id.id
+                    )
+                }
+            }
+        }
     }
 
     /// Unpack a struct into several values.
@@ -299,18 +224,35 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// Panics if there is not enough fields.
     /// Panics if the pointer to the struct field is not valid.
-    fn unpack_tuple(&mut self, results: &[VarId], res: StructValue<'ctx>) {
-        let res_type = res.get_type();
-        let res_ptr = self.builder.build_alloca(res_type, "res_ptr");
-        self.builder.build_store(res_ptr, res);
-        for (field_index, VarId { id, debug_name: _ }) in results.iter().enumerate() {
-            let field_type = res_type.get_field_type_at_index(field_index as u32).expect("Field type should exist");
-            let field_ptr = self
-                .builder
-                .build_struct_gep(res_type, res_ptr, field_index as u32, format!("{id}_ptr").as_str())
-                .expect("Pointer should be valid");
-            let field = self.builder.build_load(field_type, field_ptr, &id.to_string());
-            self.variables.insert(*id, field);
-        }
+    // fn unpack_tuple(&mut self, results: &[VarId], res: StructValue<'ctx>) {
+    //     let res_type = res.get_type();
+    //     let res_ptr = self.builder.build_alloca(res_type, "res_ptr");
+    //     self.builder.build_store(res_ptr, res);
+    //     for (field_index, VarId { id, debug_name: _ }) in results.iter().enumerate() {
+    //         let field_type = res_type.get_field_type_at_index(field_index as u32).expect("Field type
+    //     should exist");     let field_ptr = self
+    //             .builder
+    //             .build_struct_gep(res_type, res_ptr, field_index as u32,
+    // format!("{id}_ptr").as_str())             .expect("Pointer should be valid");
+    //         let field = self.builder.build_load(field_type, field_ptr, &id.to_string());
+    //         self.variables.insert(*id, field);
+    //     }
+    //     todo!();
+    // }
+
+    fn get_next_statement_to_process(
+        &self,
+        statements_to_process: &HashSet<usize>,
+        processed_statements: &HashSet<usize>,
+    ) -> Option<usize> {
+        statements_to_process
+            .iter()
+            .find(|idx| {
+                self.basic_blocks
+                    .get(idx)
+                    .map(|x| x.preds.iter().all(|p| processed_statements.contains(p)))
+                    .unwrap_or(true)
+            })
+            .copied()
     }
 }
