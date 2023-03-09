@@ -19,6 +19,7 @@ test-case = "3.0.0"
 tracing = "0.1.37"
 regex = "1.7.1"
 num-integer = "0.1.45"
+itertools = "0.10.5"
 
 [dev-dependencies]
 anyhow = "1.0.66"
