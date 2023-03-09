@@ -1,9 +1,6 @@
 use cairo_lang_sierra::program::{GenBranchTarget, Invocation, StatementIdx};
-use inkwell::debug_info::DIScope;
-use inkwell::values::FunctionValue;
 use inkwell::IntPredicate::EQ;
 
-use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::Compiler;
 
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -17,50 +14,45 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the processing of the branches statements fails.
-    pub fn felt_is_zero(
-        &mut self,
-        func: FunctionValue<'ctx>,
-        invocation: &Invocation,
-        invocation_nb: usize,
-        scope: DIScope<'ctx>,
-    ) -> CompilerResult<()> {
-        // The felt to check.
-        let lhs = self.variables.get(&invocation.args[0].id).expect("Variable should exist");
+    pub fn felt_is_zero(&mut self, invocation: &Invocation, invocation_nb: usize) {
+        // The felt to check
+        let felt_type = self
+            .types_by_name
+            .get("felt")
+            .expect("felt type should have been registered before felt_zero is processed")
+            .to_owned();
+        // if felt == 0 {} else {}
+        self.process_args(invocation, invocation_nb, &[felt_type]);
+
+        // Check the two branches
+        let then_bb = self
+            .get_block_info_for_statement_id(match invocation.branches[0].target {
+                // if then is fallthrough
+                GenBranchTarget::Fallthrough => invocation_nb + 1,
+                // then branch is a jump so we process from the jump until a return instruction.
+                GenBranchTarget::Statement(StatementIdx(id)) => id,
+            })
+            .block;
+
+        let else_bb = self
+            .get_block_info_for_statement_id(match invocation.branches[0].target {
+                // else is fallthrough
+                GenBranchTarget::Fallthrough => invocation_nb + 1,
+                // else branch is a jump
+                GenBranchTarget::Statement(StatementIdx(id)) => id,
+            })
+            .block;
+
+        let lhs = self
+            .get_processed_variable_at_statement(&invocation.args[0], invocation_nb)
+            .expect("Argument should be available as a variable after processing");
         // felt == 0
         let comparison = self.builder.build_int_compare(
             EQ,
             lhs.into_int_value(),
-            self.types_by_name.get("felt").unwrap().into_int_type().const_int(0, false),
+            felt_type.into_int_type().const_int(0, false),
             "check",
         );
-        // if then
-        let then_bb = self.context.append_basic_block(func, "then");
-        // else
-        let else_bb = self.context.append_basic_block(func, "else");
-
-        // if felt == 0 {} else {}
         self.builder.build_conditional_branch(comparison, then_bb, else_bb);
-
-        self.builder.position_at_end(then_bb);
-        // Check the two branches
-        match invocation.branches[0].target {
-            // if then is fallthrough
-            GenBranchTarget::Fallthrough => {
-                self.process_statements_from(func, invocation_nb + 1, scope)?;
-            }
-            // then branch is a jump so we process from the jump until a return instruction.
-            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(func, id, scope),
-        };
-
-        self.builder.position_at_end(else_bb);
-        match invocation.branches[1].target {
-            // else is fallthrough
-            GenBranchTarget::Fallthrough => {
-                self.process_statements_from(func, invocation_nb + 1, scope)?;
-            }
-            // else branch is a jump so we process from the jump until a return instruction.
-            GenBranchTarget::Statement(StatementIdx(id)) => self.jump(func, id, scope),
-        };
-        Ok(())
     }
 }

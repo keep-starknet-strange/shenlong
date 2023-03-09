@@ -20,16 +20,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn enum_init(&mut self, libfunc_declaration: &LibfuncDeclaration) {
         // Type of the enum that we have to construct.
         let func_name = libfunc_declaration.id.debug_name.as_ref().expect(DEBUG_NAME_EXPECTED).as_str();
-        println!("Processing enum init {func_name}");
-        println!("{:?}", libfunc_declaration);
-        let (full_enum_type_id, enum_index_type_name) = match &libfunc_declaration.long_id.generic_args[0] {
+        let (full_enum_type_id, enum_type_name) = match &libfunc_declaration.long_id.generic_args[0] {
             GenericArg::Type(ConcreteTypeId { id, debug_name }) => {
-                (id, format!("ut@{}", debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string()))
+                (id, debug_name.clone().expect(DEBUG_NAME_EXPECTED).to_string())
             }
             _val => {
                 panic!("Enum init only takes predefined enums")
             }
         };
+        let enum_index_type_name = format!("ut@{}", enum_type_name);
         let enum_index_parameter = match &libfunc_declaration.long_id.generic_args[1] {
             GenericArg::Value(val) => val.to_usize().unwrap(),
             _ => {
@@ -37,14 +36,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
         };
         let enum_index_type = self.types_by_name.get(&enum_index_type_name).unwrap().into_int_type();
-        println!("Enum index: {} of type {:?}", enum_index_parameter, enum_index_type);
         let return_type = self.types_by_id.get(full_enum_type_id).unwrap().into_struct_type();
-        println!("Return type: {:?}", return_type);
 
         // Find the location in the struct representation at which the payload is held
         let data_offset = self
-            .enum_packing_index_by_id
-            .get(full_enum_type_id)
+            .enum_packing_index_by_name
+            .get(&enum_type_name)
             .expect("Enum data packing locations should have been registered before processing of enum_init")
             [enum_index_parameter];
 
@@ -77,29 +74,29 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.builder.build_store(ptr_to_member, value_to_store);
 
         // Finally, return the enum
+        // Could potentially return the pointer here, likely won't make much difference though
         self.builder.build_return(Some(&self.builder.build_load(return_type, enum_ptr, "res")));
 
         // // Store each field in the struct.
         // for (i, param) in func.get_params().iter().enumerate() {
         //     let tuple_ptr = self
         //         .builder
-        //         .build_struct_gep(return_type, struct_ptr, i as u32, format!("field_{i}_ptr").as_str())
-        //         .unwrap();
+        //         .build_struct_gep(return_type, struct_ptr, i as u32,
+        // format!("field_{i}_ptr").as_str())         .unwrap();
         //     self.builder.build_store(tuple_ptr, *param);
         // }
-        // self.builder.build_return(Some(&self.builder.build_load(return_type, struct_ptr, "res")));
+        // self.builder.build_return(Some(&self.builder.build_load(return_type, struct_ptr,
+        // "res")));
 
         // // Debug values
         // for (i, (value, arg_ty)) in func.get_params().iter().zip([debug_arg_type]).enumerate() {
-        //     let debug_local_var = self.debug.create_local_variable(&i.to_string(), debug_func.scope,
-        // arg_ty, None);     self.debug.insert_dbg_value(
+        //     let debug_local_var = self.debug.create_local_variable(&i.to_string(),
+        // debug_func.scope, arg_ty, None);     self.debug.insert_dbg_value(
         //         *value,
         //         debug_local_var,
         //         self.builder.get_current_debug_location().unwrap(),
         //         func.get_first_basic_block().unwrap().get_first_instruction().unwrap(),
         //     );
         // }
-        println!("\n\n\n");
-        // panic!();
     }
 }

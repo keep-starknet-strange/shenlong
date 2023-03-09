@@ -30,7 +30,7 @@
 //! The state machine is used to ensure that the compilation steps are executed in the correct
 //! order. The state machine is also used to ensure that the compilation steps are executed only
 //! once.
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
@@ -55,8 +55,16 @@ use crate::sierra::errors::CompilerError;
 #[derive(Debug, Clone)]
 pub struct FunctionInfo<'ctx> {
     pub func: FunctionValue<'ctx>,
+    pub entry_point: usize,
     pub args: Vec<BasicTypeEnum<'ctx>>,
     pub debug: FunctionDebugInfo<'ctx>,
+}
+
+#[derive(Debug)]
+pub struct BasicBlockInfo<'ctx> {
+    pub block: BasicBlock<'ctx>,
+    pub preds: HashSet<usize>,
+    pub variables: HashMap<u64, BasicValueEnum<'ctx>>,
 }
 
 /// Compiler is the main entry point for the LLVM backend.
@@ -70,8 +78,6 @@ pub struct Compiler<'a, 'ctx> {
     pub builder: &'a Builder<'ctx>,
     /// The LLVM module.
     pub module: Module<'ctx>,
-    /// The variables of the current function.
-    pub variables: HashMap<u64, BasicValueEnum<'ctx>>,
     /// User functions generated from libfunc func_call.
     pub user_functions: HashMap<String, FunctionInfo<'ctx>>,
     /// The LLVM IR output path.
@@ -85,10 +91,9 @@ pub struct Compiler<'a, 'ctx> {
     /// The types by debug name
     pub types_by_name: HashMap<String, BasicTypeEnum<'ctx>>,
     /// Stores the index in the packed struct at which the payload of each subtype of enum is stored
-    pub enum_packing_index_by_id: HashMap<u64, Vec<usize>>,
-    /// Calls in the main function.
-    pub basic_blocks: HashMap<usize, BasicBlock<'ctx>>,
-    pub jump_dests: HashSet<usize>,
+    pub enum_packing_index_by_name: HashMap<String, Vec<usize>>,
+    /// All basic blocks required by the statements.
+    pub basic_blocks: BTreeMap<usize, BasicBlockInfo<'ctx>>,
     /// A struct holding all the debug info.
     pub debug: DebugCompiler<'a, 'ctx>,
 }
@@ -356,16 +361,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             context: &context,
             builder: &builder,
             module,
-            variables: HashMap::new(),
             user_functions: HashMap::new(),
             llvm_output_path: llvm_output_path.to_owned(),
             state: CompilationState::NotStarted,
             valid_state_transitions,
             types_by_id: HashMap::new(),
             types_by_name: HashMap::new(),
-            enum_packing_index_by_id: HashMap::new(),
-            basic_blocks: HashMap::new(),
-            jump_dests: HashSet::new(),
+            enum_packing_index_by_name: HashMap::new(),
+            basic_blocks: BTreeMap::new(),
             debug: DebugCompiler::new(dibuilder, &builder, compile_unit, &context),
         };
 
@@ -378,13 +381,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Process the core library functions in the Sierra program.
         compiler.process_core_lib_functions()?;
 
-        // Collect jumps.
-        compiler.collect_jumps();
-
         // Process the functions in the Sierra program.
         compiler.process_funcs()?;
+
+        // Build the basic block structure of each function.
+        compiler.process_blocks();
+
         // Process the statements in the Sierra program.
-        // compiler.process_statements()?;
+        compiler.process_statements();
 
         // Finalize the compilation.
         compiler.finalize_compilation()

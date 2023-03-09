@@ -60,6 +60,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "dup" => self.dup(libfunc_declaration),
                 // Constructor for enums
                 "enum_init" => self.enum_init(libfunc_declaration),
+                // Destructor for enums, branches depending on which type of enum was given
+                "enum_match" => debug!(libfunc_name, "treated in the statements"),
                 // Addition for felt type. `felt + felt`
                 "felt_add" => self.felt_add(libfunc_declaration),
                 // Define a constant of type felt. `const one = 1;`
