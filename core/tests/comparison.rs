@@ -11,7 +11,7 @@ use shenlong_core::sierra::corelib_functions::math::DEFAULT_PRIME;
 use shenlong_core::sierra::llvm_compiler::Compiler;
 use test_case::test_case;
 
-// Tests behaviour of the generated llir against the behaviour of starkware's own cairo runner
+// Tests behaviour of the generated llir against the behaviour of starkware's own sierra runner
 // Such tests must be an argumentless main function consisting of calls to the function in question
 
 #[test_case("felt_addition")]
