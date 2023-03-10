@@ -1,0 +1,2 @@
+// Adding this so cairo files can be (but don't have to be) used to manually create new comparison tests
+*.cairo
