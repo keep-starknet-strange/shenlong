@@ -1,15 +1,10 @@
+use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-use anyhow::{Context, Error};
-use cairo_lang_compiler::db::RootDatabase;
-use cairo_lang_compiler::diagnostics::DiagnosticsReporter;
-use cairo_lang_compiler::project::setup_project;
-use cairo_lang_diagnostics::ToOption;
+use anyhow::Context;
 use cairo_lang_runner::{RunResult, SierraCasmRunner};
-use cairo_lang_sierra::program::Program;
-use cairo_lang_sierra_generator::db::SierraGenGroup;
-use cairo_lang_sierra_generator::replace_ids::replace_sierra_ids_in_program;
+use cairo_lang_sierra::ProgramParser;
 use num_bigint::BigUint;
 use num_traits::{FromPrimitive, Num};
 use shenlong_core::sierra::corelib_functions::math::DEFAULT_PRIME;
@@ -24,9 +19,9 @@ use test_case::test_case;
 #[test_case("felt_multiplication")]
 #[test_case("felt_negation")]
 fn comparison_test(test_name: &str) {
-    let sierra_program = compile_to_sierra(test_name).unwrap();
-    let llvm_result = run_cairo_via_llvm(&sierra_program, test_name);
-    let casm_result = run_cairo_via_casm(sierra_program);
+    let sierra_code = fs::read_to_string(&format!("./tests/comparison/{test_name}.sierra")).unwrap();
+    let llvm_result = run_sierra_via_llvm(test_name, &sierra_code);
+    let casm_result = run_sierra_via_casm(&sierra_code);
 
     match casm_result {
         Ok(result) => match result.value {
@@ -70,37 +65,22 @@ fn comparison_test(test_name: &str) {
     }
 }
 
-// Given the file name of a comparison test (without folders or suffix),
-// compiles the cairo to sierra with replaced ids
-fn compile_to_sierra(test_name: &str) -> Result<Program, Error> {
-    let db = &mut RootDatabase::builder().detect_corelib().build().unwrap();
-
-    let main_crate_ids = setup_project(db, Path::new(&format!("./tests/comparison/{test_name}.cairo"))).unwrap();
-
-    if DiagnosticsReporter::stderr().check(db) {
-        anyhow::bail!("failed to compile: {}", test_name);
-    }
-
-    db.get_sierra_program(main_crate_ids)
-        .to_option()
-        .with_context(|| "Compilation failed without any diagnostics.")
-        .map(|p| replace_sierra_ids_in_program(db, &p))
-}
-
 // Invokes starkware's runner that compiles sierra to casm and runs it
 // This provides us with the intended results to compare against
-fn run_cairo_via_casm(sierra_program: Program) -> Result<RunResult, anyhow::Error> {
+fn run_sierra_via_casm(sierra_code: &str) -> Result<RunResult, anyhow::Error> {
+    let sierra_program = ProgramParser::new().parse(sierra_code).unwrap();
+
     let runner = SierraCasmRunner::new(sierra_program, false).with_context(|| "Failed setting up runner.")?;
 
     runner.run_function("::main", &[], None).with_context(|| "Failed to run the function.")
 }
 
 // Runs the test file via compiling to llir then invoking lli to run it
-fn run_cairo_via_llvm(sierra_program: &Program, test_name: &str) -> Vec<BigUint> {
+fn run_sierra_via_llvm(test_name: &str, sierra_code: &str) -> Vec<BigUint> {
     let tmp = tempdir::TempDir::new("test_comparison").unwrap();
     let file = tmp.into_path().join("output.ll");
 
-    Compiler::compile_from_code(&format!("{sierra_program}"), Path::new(test_name), &file, None).unwrap();
+    Compiler::compile_from_code(sierra_code, Path::new(test_name), &file, None).unwrap();
 
     let lli_path = std::env::var("LLI_PATH").expect("LLI_PATH must exist and point to the `lli` tool from llvm 16");
 
