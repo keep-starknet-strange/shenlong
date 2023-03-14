@@ -58,18 +58,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             self.dataflow_graph.claim_variable_for_branch(invocation_nb, target, &branch.results[0], value);
         }
 
-        // TODO At the destination of each branch, mark the variables associated with the other branches as
-        // used for (index_value, branch) in invocation.branches.iter().enumerate() {
-        //     let target = match branch.target {
-        //         cairo_lang_sierra::program::GenBranchTarget::Fallthrough => invocation_nb + 1,
-        //         cairo_lang_sierra::program::GenBranchTarget::Statement(id) => id.0,
-        //     };
-
-        //     for other in (0..invocation.branches.len()).filter(|x| *x != index_value) {
-        //         self.dataflow_graph.use_variable_at_statement(target,
-        // &invocation.branches[other].results[0]);     }
-        // }
-
         let targets: Vec<_> = invocation
             .branches
             .iter()
