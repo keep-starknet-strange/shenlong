@@ -17,12 +17,22 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// If the processing of the sierra statements fails.
 
     pub fn process_statements(&mut self) {
+        let debug_line_for_first_statement = self.debug.current_line;
+
         // For simplicity's sake we process one function at a time. The algorithm would work the same if we
         // took all basic blocks with no predecessors as our starting point, but this aids debugging
         for (user_func_name, FunctionInfo { func: user_func, entry_point, args: _, debug: _ }) in
             self.user_functions.clone().iter()
         {
             let processing_order = self.dataflow_graph.get_ordered_reachable_blocks_from(*entry_point);
+
+            // Point the debug compiler at the debug scope for this function
+            let function_debug_info = self
+                .debug
+                .functions
+                .get(user_func_name)
+                .expect("Debug information should have been registered for function");
+            self.debug.debug_location(Some(function_debug_info.scope));
 
             for (block_start, block_end) in processing_order {
                 // First, position the writer at the block we're processing
@@ -34,7 +44,9 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
                 // Process each statement from the block
                 for statement_idx in block_start..block_end {
-                    println!("--Processing statement {statement_idx}--\n");
+                    // Align the debugger to the current statement
+                    self.debug.current_line = debug_line_for_first_statement + statement_idx as u32;
+
                     match &self.program.statements[statement_idx] {
                         GenStatement::Invocation(invocation) => {
                             let lib_fn_name =
@@ -133,7 +145,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                         GenStatement::Return(ret_arg_ids) => {
                             println!("Processing return {statement_idx} for {user_func_name}");
 
-                            debug!(user_func_name, line = self.debug.get_line(), "processing statement: return");
+                            debug!(user_func_name, line = self.debug.current_line, "processing statement: return");
 
                             if ret_arg_ids.is_empty() {
                                 self.builder.build_return(None);

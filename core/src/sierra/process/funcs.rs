@@ -72,7 +72,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             // self.basic_blocks.insert(func_declaration.entry_point.0, start_block);
             // self.variables_by_block.insert(func_declaration.entry_point.0, variable_map);
 
-            self.debug.next_line();
+            self.debug.current_line += 1;
         }
         // Move to the next state.
         self.move_to(CompilationState::FunctionsProcessed)

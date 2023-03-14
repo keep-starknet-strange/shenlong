@@ -129,8 +129,8 @@ pub struct DebugCompiler<'a, 'ctx> {
     /// The debug info variables of the current function.
     pub variables: HashMap<u64, DIType<'ctx>>,
     pub functions: HashMap<String, FunctionDebugInfo<'ctx>>,
-    current_line: u32,
-    current_statement_line: u32,
+    /// Line of the sierra file being processed. 0 is the start of the types, not the statements
+    pub current_line: u32,
     pub context: &'ctx Context,
 }
 
@@ -151,25 +151,8 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             functions: HashMap::new(),
             struct_types_by_id: HashMap::new(),
             current_line: 0,
-            current_statement_line: 0,
             context,
         }
-    }
-
-    /// Increases the current line by 1.
-    pub fn next_line(&mut self) {
-        self.current_line += 1;
-        self.current_statement_line = self.current_line;
-    }
-
-    /// Sets the current statement line from a statement id.
-    pub fn set_statement_line(&mut self, statement_id: usize) {
-        self.current_statement_line = self.current_line + statement_id as u32;
-    }
-
-    // Gets the current line.
-    pub fn get_line(&self) -> u32 {
-        self.current_statement_line
     }
 }
 

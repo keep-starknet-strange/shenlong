@@ -43,7 +43,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
-            self.debug.next_line();
+            self.debug.current_line += 1;
 
             // Get the debug name of the function.
             let libfunc_name = libfunc_declaration.long_id.generic_id.0.as_str();
@@ -96,7 +96,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             }
         }
 
-        self.debug.next_line();
+        self.debug.current_line += 1;
 
         // Move to the next state.
         self.move_to(CompilationState::CoreLibFunctionsProcessed)

@@ -21,7 +21,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
     pub fn debug_location(&self, scope: Option<DIScope<'ctx>>) -> DILocation<'ctx> {
         let location = self.debug_builder.create_debug_location(
             self.context,
-            self.get_line(),
+            self.current_line,
             0,
             scope.unwrap_or_else(|| self.compile_unit.as_debug_info_scope()),
             None,
@@ -56,11 +56,11 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             &debug_func_name,
             Some(func_name),
             self.compile_unit.get_file(),
-            self.get_line(), // line number
+            self.current_line, // line number
             subroutine_type,
             true,
             true,
-            scope_line.map(|x| x as u32).unwrap_or_else(|| self.get_line()), // scope line
+            scope_line.map(|x| x as u32).unwrap_or_else(|| self.current_line), // scope line
             DIFlags::PUBLIC,
             false,
         );
@@ -76,7 +76,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
                     &i.to_string(),
                     i as u32 + 1,
                     self.compile_unit.get_file(),
-                    self.get_line(),
+                    self.current_line,
                     *param,
                     true,
                     DIFlags::ZERO,
@@ -110,7 +110,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             name,
             arg.unwrap_or(0),
             self.compile_unit.get_file(),
-            self.get_line(),
+            self.current_line,
             ty,
             true,
             DIFlags::ZERO,
@@ -133,7 +133,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
                     0, /* must be 0 here, since its not a subprogram parameter, but a variable passed to the
                         * subprogram. */
                     self.compile_unit.get_file(),
-                    self.get_line(),
+                    self.current_line,
                     *param,
                     true,
                     DIFlags::ZERO,
@@ -186,7 +186,7 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             self.compile_unit.as_debug_info_scope(),
             name,
             self.compile_unit.get_file(),
-            self.get_line(),
+            self.current_line,
             bits,
             align_bits,
             inkwell::debug_info::DIFlags::PUBLIC,
