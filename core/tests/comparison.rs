@@ -18,6 +18,8 @@ use test_case::test_case;
 #[test_case("felt_subtraction")]
 #[test_case("felt_multiplication")]
 #[test_case("felt_negation")]
+#[test_case("enum_flow")]
+#[test_case("fib_felt_is_zero")]
 fn comparison_test(test_name: &str) {
     let sierra_code = fs::read_to_string(&format!("./tests/comparison/{test_name}.sierra")).unwrap();
     let llvm_result = run_sierra_via_llvm(test_name, &sierra_code);
