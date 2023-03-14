@@ -1,4 +1,4 @@
-use cairo_lang_sierra::program::Invocation;
+use cairo_lang_sierra::program::{GenBranchTarget, Invocation, StatementIdx};
 
 use crate::sierra::llvm_compiler::Compiler;
 
@@ -13,48 +13,49 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// # Error
     ///
     /// Returns an error if the processing of the branches statements fails.
-    pub fn felt_is_zero(&mut self, _invocation: &Invocation, _invocation_nb: usize) {
-        todo!();
-        // The felt to check
-        // let felt_type = self
-        //     .types_by_name
-        //     .get("felt")
-        //     .expect("felt type should have been registered before felt_zero is processed")
-        //     .to_owned();
-        // // if felt == 0 {} else {}
-        // self.process_args(invocation, invocation_nb, &[felt_type]);
+    pub fn felt_is_zero(&mut self, invocation: &Invocation, invocation_nb: usize) {
+        // The llvm value for the value we're checking against 0
+        let arg_value = self.dataflow_graph.use_variable_at_statement(invocation_nb, &invocation.args[0]);
 
-        // // Check the two branches
-        // let then_bb = self
-        //     .get_block_info_for_statement_id(match invocation.branches[0].target {
-        //         // if then is fallthrough
-        //         GenBranchTarget::Fallthrough => invocation_nb + 1,
-        //         // then branch is a jump so we process from the jump until a return instruction.
-        //         GenBranchTarget::Statement(StatementIdx(id)) => id,
-        //     })
-        //     .block;
+        // First calculate the statement indices of each branch
+        // Branch 0 is if arg_value == 0
+        // Branch 1 is if arg_value != 0
+        let target_ids = invocation
+            .branches
+            .iter()
+            .map(|branch| match branch.target {
+                GenBranchTarget::Fallthrough => invocation_nb + 1,
+                GenBranchTarget::Statement(StatementIdx(id)) => id,
+            })
+            .collect::<Vec<_>>();
 
-        // let else_bb = self
-        //     .get_block_info_for_statement_id(match invocation.branches[0].target {
-        //         // else is fallthrough
-        //         GenBranchTarget::Fallthrough => invocation_nb + 1,
-        //         // else branch is a jump
-        //         GenBranchTarget::Statement(StatementIdx(id)) => id,
-        //     })
-        //     .block;
+        // The non-zero value is made available for branch 1
+        // Branch 0 does not have data forwarded as the argument's value is known at compile time to be zero
+        // so it's not necessary
+        self.dataflow_graph.claim_variable_for_branch(
+            invocation_nb,
+            target_ids[1],
+            &invocation.branches[1].results[0],
+            arg_value,
+        );
 
-        // // let lhs = self
-        // //     .get_processed_variable_at_statement(&invocation.args[0], invocation_nb)
-        // //     .expect("Argument should be available as a variable after processing");
+        // Now find the llvm basic blocks to jump to in each case
+        let target_blocks = target_ids
+            .into_iter()
+            .map(|target| {
+                self.dataflow_graph
+                    .get_block_for_entrypoint(target)
+                    .expect("Block should be defined for felt_is_zero target")
+            })
+            .collect::<Vec<_>>();
 
-        // let lhs = self.get_block_info_for_statement_id(invocation_nb).variables.get(&invocation.
-        // args[0].id).unwrap(); // felt == 0
-        // let comparison = self.builder.build_int_compare(
-        //     EQ,
-        //     lhs.into_int_value(),
-        //     felt_type.into_int_type().const_int(0, false),
-        //     "check",
-        // );
-        // self.builder.build_conditional_branch(comparison, then_bb, else_bb);
+        // Finally we write the comparison operation and the jump
+        let comparison = self.builder.build_int_compare(
+            inkwell::IntPredicate::EQ,
+            arg_value.into_int_value(),
+            arg_value.get_type().into_int_type().const_zero(),
+            "check",
+        );
+        self.builder.build_conditional_branch(comparison, target_blocks[0], target_blocks[1]);
     }
 }
