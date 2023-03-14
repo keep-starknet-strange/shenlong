@@ -16,14 +16,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     pub fn insert_flow_control_if_necessary(&mut self, from: usize, target: &GenBranchTarget<StatementIdx>) {
         let jump_target_block =
             match target {
-                GenBranchTarget::Fallthrough => self.basic_blocks.get(&(from + 1)),
-                GenBranchTarget::Statement(id) => Some(self.basic_blocks.get(&id.0).expect(
+                GenBranchTarget::Fallthrough => self.dataflow_graph.get_block_for_entrypoint(from + 1),
+                GenBranchTarget::Statement(id) => Some(self.dataflow_graph.get_block_for_entrypoint(id.0).expect(
                     "Basic block for jump target should have been created before processing of jump statement",
                 )),
             };
 
-        if let Some(block_info) = jump_target_block {
-            self.builder.build_unconditional_branch(block_info.block);
+        if let Some(block) = jump_target_block {
+            self.builder.build_unconditional_branch(block);
         }
     }
 }

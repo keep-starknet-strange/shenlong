@@ -30,7 +30,7 @@
 //! The state machine is used to ensure that the compilation steps are executed in the correct
 //! order. The state machine is also used to ensure that the compilation steps are executed only
 //! once.
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
@@ -50,6 +50,7 @@ use inkwell::values::{BasicValueEnum, FunctionValue};
 use tracing::{debug, error, info};
 
 use super::errors::CompilerResult;
+use super::process::dataflow::DataFlowGraph;
 use crate::sierra::errors::CompilerError;
 
 #[derive(Debug, Clone)]
@@ -65,6 +66,7 @@ pub struct BasicBlockInfo<'ctx> {
     pub block: BasicBlock<'ctx>,
     pub preds: HashSet<usize>,
     pub variables: HashMap<u64, BasicValueEnum<'ctx>>,
+    pub dropped_variables: HashSet<u64>,
 }
 
 /// Compiler is the main entry point for the LLVM backend.
@@ -93,7 +95,8 @@ pub struct Compiler<'a, 'ctx> {
     /// Stores the index in the packed struct at which the payload of each subtype of enum is stored
     pub enum_packing_index_by_name: HashMap<String, Vec<usize>>,
     /// All basic blocks required by the statements.
-    pub basic_blocks: BTreeMap<usize, BasicBlockInfo<'ctx>>,
+    // pub basic_blocks: BTreeMap<usize, BasicBlockInfo<'ctx>>,
+    pub dataflow_graph: DataFlowGraph<'ctx>,
     /// A struct holding all the debug info.
     pub debug: DebugCompiler<'a, 'ctx>,
 }
@@ -368,7 +371,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             types_by_id: HashMap::new(),
             types_by_name: HashMap::new(),
             enum_packing_index_by_name: HashMap::new(),
-            basic_blocks: BTreeMap::new(),
+            dataflow_graph: DataFlowGraph::new(),
             debug: DebugCompiler::new(dibuilder, &builder, compile_unit, &context),
         };
 
@@ -385,7 +388,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         compiler.process_funcs()?;
 
         // Build the basic block structure of each function.
-        compiler.process_blocks();
+        compiler.process_dataflow();
 
         // Process the statements in the Sierra program.
         compiler.process_statements();

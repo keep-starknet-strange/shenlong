@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -13,6 +13,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use inkwell::execution_engine::ExecutionEngine;
 use inkwell::OptimizationLevel;
 use shenlong_core::sierra::llvm_compiler::{CompilationState, Compiler, DebugCompiler};
+use shenlong_core::sierra::process::dataflow::DataFlowGraph;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     benchmark_llvm(c, "core/tests/test_data/sierra/fib_bench.sierra");
@@ -61,7 +62,7 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
         types_by_id: HashMap::new(),
         types_by_name: HashMap::new(),
         enum_packing_index_by_name: HashMap::new(),
-        basic_blocks: BTreeMap::new(),
+        dataflow_graph: DataFlowGraph::new(),
         user_functions: HashMap::new(),
         debug,
     };
@@ -70,7 +71,7 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
     compiler.process_types().unwrap();
     compiler.process_core_lib_functions().unwrap();
     compiler.process_funcs().unwrap();
-    compiler.process_blocks();
+    compiler.process_dataflow();
     compiler.process_statements();
     let execution_engine = compiler.module.create_jit_execution_engine(OptimizationLevel::Aggressive).unwrap();
     c.bench_with_input(BenchmarkId::new("Llvm", 1), &(execution_engine), |b, execution_engine| {
