@@ -41,10 +41,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC, "double_felt");
         self.modulo();
 
+        // Account for the whitespace between types block and libfunc block
+        // TODO: obtain actual line numbers for the sierra file to replace the whitespace assumptions being
+        // made here
+        self.debug.current_line += 1;
+
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
-            self.debug.current_line += 1;
-
             // Get the debug name of the function.
             let libfunc_name = libfunc_declaration.long_id.generic_id.0.as_str();
             debug!(libfunc_name, "processing");
@@ -94,9 +97,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "unbox" => self.unbox(libfunc_declaration),
                 _ => debug!(libfunc_name, "not implemented"),
             }
+            self.debug.current_line += 1;
         }
-
-        self.debug.current_line += 1;
 
         // Move to the next state.
         self.move_to(CompilationState::CoreLibFunctionsProcessed)

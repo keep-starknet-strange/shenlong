@@ -21,7 +21,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Check that the current state is valid.
         self.check_state(&CompilationState::ControlFlowProcessed)?;
 
-        let debug_line_for_first_statement = self.debug.current_line;
+        // Account for the whitespace between types block and libfunc block
+        // TODO: obtain actual line numbers for the sierra file to replace the whitespace assumptions being
+        // made here
+        let debug_line_for_first_statement = self.debug.current_line + 1;
 
         // For simplicity's sake we process one function at a time. The algorithm would work the same if we
         // took all basic blocks with no predecessors as our starting point, but this aids debugging
@@ -30,13 +33,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         {
             let processing_order = self.dataflow_graph.get_ordered_reachable_blocks_from(*entry_point);
 
-            // Point the debug compiler at the debug scope for this function
-            let function_debug_info = self
+            // Get the debug scope associated with the current function
+            let function_debug_scope = self
                 .debug
                 .functions
                 .get(user_func_name)
-                .expect("Debug information should have been registered for function");
-            self.debug.debug_location(Some(function_debug_info.scope));
+                .expect("Debug information should have been registered for function")
+                .scope;
 
             for (block_start, block_end) in processing_order {
                 // First, position the writer at the block we're processing
@@ -50,6 +53,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 for statement_idx in block_start..block_end {
                     // Align the debugger to the current statement
                     self.debug.current_line = debug_line_for_first_statement + statement_idx as u32;
+                    self.debug.debug_location(Some(function_debug_scope));
 
                     match &self.program.statements[statement_idx] {
                         GenStatement::Invocation(invocation) => {
@@ -147,8 +151,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             }
                         }
                         GenStatement::Return(ret_arg_ids) => {
-                            println!("Processing return {statement_idx} for {user_func_name}");
-
                             debug!(user_func_name, line = self.debug.current_line, "processing statement: return");
 
                             if ret_arg_ids.is_empty() {
