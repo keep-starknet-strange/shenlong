@@ -7,15 +7,15 @@ use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler, FunctionInfo};
 use crate::sierra::process::corelib::PRINT_RETURN;
 
-/// Implementation for the type processing for the compiler.
+/// Implementation for the function processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    /// Process types in the Sierra program.
-    /// For each type declaration in the Sierra program, create a corresponding type in the LLVM
-    /// context.
+    /// Process the user functions in the Sierra program.
+    /// For each function, creates an llvm function definition with no body.
     ///
     /// # Errors
     ///
-    /// If the processing of the sierra types fails.
+    /// If the types used in the function signatures haven't been processed or if the compiler's
+    /// state is not CoreLibFunctionsProcessed
     pub fn process_funcs(&mut self) -> CompilerResult<()> {
         debug!("processing funcs");
         // Check that the current state is valid.

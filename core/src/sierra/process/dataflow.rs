@@ -12,8 +12,19 @@ use tracing::debug;
 use crate::sierra::errors::CompilerResult;
 use crate::sierra::llvm_compiler::{CompilationState, Compiler, FunctionInfo};
 
-/// Implementation for the type processing for the compiler.
+/// Implementation for the dataflow processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
+    /// Process the control flow inside each user function.
+    /// For each function, creates the basic blocks and stores which ones precede and follow which.
+    /// The dataflow graph initialised with this structure will later be used to track the creation
+    /// and availability of variables during statement processing Other basic blocks can be
+    /// created later if necessary, but they will not be able to have sierra dataflow associated
+    /// with them so this should usually be avoided
+    ///
+    /// # Errors
+    ///
+    /// If the user function signatures haven't been processed or if the compiler's state is not
+    /// FunctionsProcessed
     pub fn process_dataflow(&mut self) -> CompilerResult<()> {
         debug!("processing dataflow");
         // Check that the current state is valid.
