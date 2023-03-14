@@ -178,8 +178,18 @@ impl<'ctx> DataFlowGraph<'ctx> {
         value: BasicValueEnum<'ctx>,
     ) {
         let entrypoint = self.get_entrypoint_for_statement(statement_idx);
-        self.assert_variable_nonexistant_at_entrypoint(entrypoint, variable_id.id);
-        self.blocks.get_mut(&entrypoint).unwrap().variables.insert(variable_id.id, value);
+        assert!(
+            !self.get_usable_variables_at_entrypoint(entrypoint).contains_key(&variable_id.id),
+            "Attempted to create variable {} at block {} when it was already available",
+            variable_id.id,
+            entrypoint
+        );
+        let block_info = self.blocks.get_mut(&entrypoint).unwrap();
+        block_info.variables.insert(variable_id.id, value);
+        // dup<felt>([2]) -> ([2], [4]); is valid sierra, so if the variable has been dropped in this block,
+        // we 'undrop' it if it was dropped in a previous block then we don't need to do anything
+        // because the collection algorithm starts at the earliest block and works forward
+        block_info.dropped_variables.remove(&variable_id.id);
     }
 
     /// Get the value and type of a sierra variable, and mark it as used. Sierra variables must be
@@ -200,7 +210,12 @@ impl<'ctx> DataFlowGraph<'ctx> {
     /// defined in some but not all predecessors, or if it's already been used
     pub fn use_variable_at_statement(&mut self, statement_idx: usize, variable_id: &VarId) -> BasicValueEnum<'ctx> {
         let entrypoint = self.get_entrypoint_for_statement(statement_idx);
-        self.assert_variable_usable_at_entrypoint(entrypoint, variable_id.id);
+        assert!(
+            self.get_usable_variables_at_entrypoint(entrypoint).contains_key(&variable_id.id),
+            "Attempted to use variable {} at block {} when it was not available",
+            variable_id.id,
+            entrypoint
+        );
         let block_info = self.blocks.get_mut(&entrypoint).unwrap();
         block_info.dropped_variables.insert(variable_id.id);
         let val = self.get_variable_at_block(entrypoint, variable_id);
@@ -217,7 +232,12 @@ impl<'ctx> DataFlowGraph<'ctx> {
         value: BasicValueEnum<'ctx>,
     ) {
         let entrypoint = self.get_entrypoint_for_statement(statement_idx);
-        self.assert_variable_nonexistant_at_entrypoint(branch_idx, variable_id.id);
+        assert!(
+            !self.get_usable_variables_at_entrypoint(entrypoint).contains_key(&variable_id.id),
+            "Attempted to create branch-specific variable {} at block {} when it was already available",
+            variable_id.id,
+            entrypoint
+        );
         self.create_variable_at_statement(statement_idx, variable_id, value);
         let successors = self.blocks.get(&entrypoint).unwrap().next.clone();
         for successor in successors {
@@ -315,50 +335,6 @@ impl<'ctx> DataFlowGraph<'ctx> {
     // given
     fn get_entrypoint_for_statement(&self, statement_idx: usize) -> usize {
         *self.blocks.range((Included(&0), Included(&statement_idx))).next_back().unwrap().0
-    }
-
-    // Used to ensure that variables are not created with duplicate ids along any control path
-    fn assert_variable_nonexistant_at_entrypoint(&self, entrypoint: usize, var_id: u64) {
-        let block_info = self.blocks.get(&entrypoint).unwrap();
-        assert!(
-            !block_info.variables.contains_key(&var_id),
-            "Attempted to provide second value for variable id {} in block {}",
-            var_id,
-            entrypoint
-        );
-        for block_id in block_info.preds.iter() {
-            self.assert_variable_nonexistant_at_entrypoint(*block_id, var_id);
-        }
-    }
-
-    // Asserts that the variable in question can be found either at the given block
-    // or unambiguously at a predecessor
-    fn assert_variable_usable_at_entrypoint(&self, entrypoint: usize, var_id: u64) {
-        let block_info = self.blocks.get(&entrypoint).unwrap();
-        assert!(
-            !block_info.dropped_variables.contains(&var_id),
-            "Attempted to use variable {} in block {} after it was dropped",
-            var_id,
-            entrypoint
-        );
-        if block_info.variables.contains_key(&var_id) {
-            return;
-        }
-
-        assert!(
-            !block_info.preds.is_empty(),
-            "Attempted to use variable {} before it was created at root block {}",
-            var_id,
-            entrypoint
-        );
-        assert!(
-            block_info.preds.len() == 1,
-            "Attempted to use variable {} before associated phi was written at block {}",
-            var_id,
-            entrypoint
-        );
-
-        self.assert_variable_usable_at_entrypoint(*block_info.preds.iter().next().unwrap(), var_id);
     }
 
     // Collects all variables defined since the last point of flow convergence, minus those that were
