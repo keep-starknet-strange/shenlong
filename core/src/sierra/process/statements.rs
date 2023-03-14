@@ -6,6 +6,7 @@ use tracing::debug;
 
 use crate::sierra::errors::DEBUG_NAME_EXPECTED;
 use crate::sierra::llvm_compiler::{Compiler, FunctionInfo};
+use crate::sierra::process::corelib::PRINT_RETURN;
 
 /// Implementation of the statement processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
@@ -133,114 +134,32 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                             println!("Processing return {statement_idx} for {user_func_name}");
 
                             debug!(user_func_name, line = self.debug.get_line(), "processing statement: return");
-                            // If there is actually something to return.
 
                             if ret_arg_ids.is_empty() {
                                 self.builder.build_return(None);
                             } else {
+                                // We need to extract the llvm function's name here rather than using `user_func_name`
+                                // because `user_func_name` is the scoped sierra function name
+                                let func_is_main = user_func.get_name().to_str().unwrap() == "main";
+
                                 let ret_args: Vec<_> = ret_arg_ids
                                     .iter()
                                     .map(|id| self.dataflow_graph.use_variable_at_statement(statement_idx, id))
                                     .collect();
 
-                                // Create a struct to simulate a tuple.
-                                // Ex:
-                                // fn foo() -> (felt, felt, felt)
-                                // Would be translated to
-                                // define { i253, i253, i253 } @foo()
-                                //
-                                // but fn foo() -> felt
-                                // define i253 @foo()
-
-                                // If the function is the main function.
-
-                                // if func_name == "main" {
-                                //     let return_struct_type = self.context.struct_type(&types, false);
-                                //     // Allocate a pointer for the return struct.
-                                //     let return_struct_ptr = self.builder.build_alloca(return_struct_type,
-                                // "ret_struct_ptr");     // Save each variable to
-                                // return in the struct.     for (index, value) in
-                                // values.iter().enumerate() {         let tuple_ptr =
-                                // self             .builder
-                                //             .build_struct_gep(
-                                //                 return_struct_type,
-                                //                 return_struct_ptr,
-                                //                 index.try_into().unwrap(),
-                                //                 format!("field_{index}_ptr").as_str(),
-                                //             )
-                                //             .expect("Pointer should be valid");
-                                //         self.builder.build_store(tuple_ptr, **value);
-                                //     }
-                                //     // Load the values to return in a variable.
-                                //     let mut return_value =
-                                //         self.builder.build_load(return_struct_type, return_struct_ptr,
-                                // "return_struct_value");
-
-                                //     // Get the first field of the return type (we'll check that it's not the unit
-                                // type)     let field_ret_type =
-                                //         return_value.into_struct_value().get_type().get_field_type_at_index(0).
-                                // unwrap();     // The unit type is defined like this
-                                // in our case { {} } which is a struct containing an
-                                //     // empty struct. So above we unpacked the first layer and now we're checking the
-                                // second     // layer.
-                                //     if field_ret_type.is_struct_type() &&
-                                // field_ret_type.into_struct_type().count_fields() == 0
-                                //     {
-                                //         // There's nothing to return we'll just return 0.
-                                //         return_value = self.context.i32_type().const_int(0, false).into();
-                                //     } else {
-                                //         // If there is something to return we print it (to keep the right main
-                                // signature but         // still see what happened).
-                                //         // The return value is always { x }, we need to get x first.
-                                //         let field_value_ptr = self
-                                //             .builder
-                                //             .build_struct_gep(return_struct_type, return_struct_ptr, 0,
-                                // "return_value_ptr")             .unwrap();
-                                //         let field_value =
-                                //             self.builder.build_load(field_ret_type, field_value_ptr, "return_value");
-
-                                //         // We have a int value, directly print it.
-                                //         if field_value.is_int_value() {
-                                //             self.call_printf("Return value: ", &[]);
-                                //             self.call_print_type(PRINT_RETURN, field_value.into());
-                                //         }
-                                //         // x is { y, y1... }, print each field (if they are ints for now).
-                                //         else if field_value.is_struct_value() {
-                                //             let field = field_value.into_struct_value();
-                                //             // Allocate a pointer for the field struct.
-                                //             let field_struct_ptr =
-                                //                 self.builder.build_alloca(field.get_type(), "field_struct_ptr");
-                                //             self.builder.build_store(field_struct_ptr, field);
-                                //             // Prints the fields of a struct.
-                                //             for i in 0..field.get_type().count_fields() {
-                                //                 let f = self
-                                //                     .builder
-                                //                     .build_struct_gep(
-                                //                         field.get_type(),
-                                //                         field_struct_ptr,
-                                //                         i,
-                                //                         &format!("field_struct_{i}_ptr"),
-                                //                     )
-                                //                     .unwrap();
-                                //                 let value = self.builder.build_load(
-                                //                     field.get_type().get_field_type_at_index(i).unwrap(),
-                                //                     f,
-                                //                     &format!("field_struct_{i}"),
-                                //                 );
-                                //                 self.call_printf(&format!("Return field {i} value: "), &[]);
-                                //                 self.call_print_type(PRINT_RETURN, value.into());
-                                //             }
-                                //         }
-                                //         return_value = self.context.i32_type().const_int(0, false).into();
-                                //     }
-                                //     return_value
-                                // }
-                                // // if its not main, return the value directly if its only 1, otherwise create a
-                                // struct. else
-                                // TODO: insert special handling of main
-                                let return_value = if ret_args.len() == 1 {
-                                    ret_args[0]
+                                // if its not main, return the value directly if its only 1, otherwise create a struct
+                                if ret_args.len() == 1 && !func_is_main {
+                                    // Return the specified value.
+                                    self.builder.build_return(Some(&ret_args[0]));
                                 } else {
+                                    // Create a struct to simulate a tuple.
+                                    // Ex:
+                                    // fn foo() -> (felt, felt, felt)
+                                    // Would be translated to
+                                    // define { i253, i253, i253 } @foo()
+                                    //
+                                    // but fn foo() -> felt
+                                    // define i253 @foo()
                                     let return_struct_type = self
                                         .context
                                         .struct_type(&ret_args.iter().map(|x| x.get_type()).collect::<Vec<_>>(), false);
@@ -266,10 +185,83 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                         return_struct_ptr,
                                         "return_struct_value",
                                     );
-                                    return_value
-                                };
-                                // Return the specified value.
-                                self.builder.build_return(Some(&return_value));
+
+                                    if !func_is_main {
+                                        // Return the constructed struct.
+                                        self.builder.build_return(Some(&return_value));
+                                    } else {
+                                        // Get the first field of the return type (we'll check that it's not the unit
+                                        // type)
+                                        let field_ret_type = return_value
+                                            .into_struct_value()
+                                            .get_type()
+                                            .get_field_type_at_index(0)
+                                            .unwrap();
+                                        // The unit type is defined like this in our case { {} } which is a struct
+                                        // containing an empty struct. So above we
+                                        // unpacked the first layer and now we're checking the second
+                                        // layer.
+                                        if field_ret_type.is_struct_type()
+                                            && field_ret_type.into_struct_type().count_fields() == 0
+                                        {
+                                            // There's nothing to return we'll just return 0.
+                                            self.builder.build_return(Some(&self.context.i32_type().const_zero()));
+                                        } else {
+                                            // If there is something to return we print it (to keep the right main
+                                            // signature but still see what
+                                            // happened). The return value
+                                            // is always { x }, we need to get x first.
+                                            let field_value_ptr = self
+                                                .builder
+                                                .build_struct_gep(
+                                                    return_struct_type,
+                                                    return_struct_ptr,
+                                                    0,
+                                                    "return_value_ptr",
+                                                )
+                                                .unwrap();
+                                            let field_value = self.builder.build_load(
+                                                field_ret_type,
+                                                field_value_ptr,
+                                                "return_value",
+                                            );
+
+                                            // We have a int value, directly print it.
+                                            if field_value.is_int_value() {
+                                                self.call_printf("Return value: ", &[]);
+                                                self.call_print_type(PRINT_RETURN, field_value.into());
+                                            }
+                                            // x is { y, y1... }, print each field (if they are ints for now).
+                                            else if field_value.is_struct_value() {
+                                                let field = field_value.into_struct_value();
+                                                // Allocate a pointer for the field struct.
+                                                let field_struct_ptr =
+                                                    self.builder.build_alloca(field.get_type(), "field_struct_ptr");
+                                                self.builder.build_store(field_struct_ptr, field);
+                                                // Prints the fields of a struct.
+                                                for i in 0..field.get_type().count_fields() {
+                                                    let f = self
+                                                        .builder
+                                                        .build_struct_gep(
+                                                            field.get_type(),
+                                                            field_struct_ptr,
+                                                            i,
+                                                            &format!("field_struct_{i}_ptr"),
+                                                        )
+                                                        .unwrap();
+                                                    let value = self.builder.build_load(
+                                                        field.get_type().get_field_type_at_index(i).unwrap(),
+                                                        f,
+                                                        &format!("field_struct_{i}"),
+                                                    );
+                                                    self.call_printf(&format!("Return field {i} value: "), &[]);
+                                                    self.call_print_type(PRINT_RETURN, value.into());
+                                                }
+                                            }
+                                            self.builder.build_return(Some(&self.context.i32_type().const_zero()));
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
