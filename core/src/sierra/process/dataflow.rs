@@ -207,6 +207,26 @@ impl<'ctx> DataFlowGraph<'ctx> {
         val
     }
 
+    // Creates a variable at statement_idx, but marks it dropped at every successor except for
+    // branch_idx
+    pub fn claim_variable_for_branch(
+        &mut self,
+        statement_idx: usize,
+        branch_idx: usize,
+        variable_id: &VarId,
+        value: BasicValueEnum<'ctx>,
+    ) {
+        let entrypoint = self.get_entrypoint_for_statement(statement_idx);
+        self.assert_variable_nonexistant_at_entrypoint(branch_idx, variable_id.id);
+        self.create_variable_at_statement(statement_idx, variable_id, value);
+        let successors = self.blocks.get(&entrypoint).unwrap().next.clone();
+        for successor in successors {
+            if successor != branch_idx {
+                self.blocks.get_mut(&successor).unwrap().dropped_variables.insert(variable_id.id);
+            }
+        }
+    }
+
     // Recursive function that searches back through the graph for the given variable.
     // Should only be used when there is a non-branching path back to the node holding the variable
     // (a.k.a) when assert_variable_usable_at_entrypoint holds
@@ -360,6 +380,25 @@ impl<'ctx> DataFlowGraph<'ctx> {
 
         // Finally remove those dropped at this block
         available_variables.into_iter().filter(|(var_id, _)| !block_info.dropped_variables.contains(var_id)).collect()
+    }
+
+    pub fn print_dataflow_trace_from_statement(&self, statement_idx: usize) {
+        let entrypoint = self.get_entrypoint_for_statement(statement_idx);
+        for (index, block_info) in self.blocks.iter() {
+            let usable = self.get_usable_variables_at_entrypoint(*index);
+            println!(
+                "block {index}: from: {:?} to: {:?} {}",
+                block_info.preds,
+                block_info.next,
+                if *index == entrypoint { "<----" } else { "" }
+            );
+            println!(
+                "    local vars: {:?} | local dropped: {:?} | available {:?}",
+                block_info.variables.keys().collect::<Vec<_>>(),
+                block_info.dropped_variables.iter().collect::<Vec<_>>(),
+                usable.keys().collect::<Vec<_>>()
+            );
+        }
     }
 }
 

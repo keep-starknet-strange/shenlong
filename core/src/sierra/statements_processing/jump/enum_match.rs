@@ -51,7 +51,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 payload_by_location.insert(payload_location, value);
                 value
             };
-            self.dataflow_graph.create_variable_at_statement(invocation_nb, &branch.results[0], value);
+            let target = match branch.target {
+                cairo_lang_sierra::program::GenBranchTarget::Fallthrough => invocation_nb + 1,
+                cairo_lang_sierra::program::GenBranchTarget::Statement(id) => id.0,
+            };
+            self.dataflow_graph.claim_variable_for_branch(invocation_nb, target, &branch.results[0], value);
         }
 
         // TODO At the destination of each branch, mark the variables associated with the other branches as
