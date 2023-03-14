@@ -87,7 +87,7 @@ pub struct Compiler<'a, 'ctx> {
     /// The current compilation state.
     pub state: CompilationState,
     /// The valid state transitions.
-    pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
+    pub valid_state_transitions: HashSet<CompilationStateTransition>,
     /// The types by sierra id.
     pub types_by_id: HashMap<u64, BasicTypeEnum<'ctx>>,
     /// The types by debug name
@@ -173,10 +173,13 @@ pub enum CompilationState {
     DebugSetup,
     /// The types have been processed.
     TypesProcessed,
-    /// The functions have been processed.
-    FunctionsProcessed,
     /// The core library functions have been processed.
     CoreLibFunctionsProcessed,
+    /// The functions have been processed.
+    FunctionsProcessed,
+    /// The control flow through each function has been processed.
+    /// Basic blocks to which data flow will be attached have been created.
+    ControlFlowProcessed,
     /// The statements have been processed.
     StatementsProcessed,
     /// The compilation has been finalized.
@@ -371,10 +374,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         compiler.process_funcs()?;
 
         // Build the basic block structure of each function.
-        compiler.process_dataflow();
+        compiler.process_dataflow()?;
 
         // Process the statements in the Sierra program.
-        compiler.process_statements();
+        compiler.process_statements()?;
 
         // Finalize the compilation.
         compiler.finalize_compilation()
@@ -389,7 +392,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     fn finalize_compilation(&mut self) -> CompilerResult<()> {
         debug!("finalizing compilation");
         // Check that the current state is valid.
-        self.check_state(&CompilationState::FunctionsProcessed)?;
+        self.check_state(&CompilationState::StatementsProcessed)?;
 
         self.debug.debug_builder.finalize();
         // let parent =
@@ -461,14 +464,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     #[inline]
     fn is_valid_transition(
         transition: CompilationStateTransition,
-        valid_transitions: &HashMap<(CompilationState, CompilationState), bool>,
+        valid_transitions: &HashSet<(CompilationState, CompilationState)>,
     ) -> CompilerResult<()> {
-        match valid_transitions.get(&transition) {
-            Some(valid) => match valid {
-                true => Ok(()),
-                false => Err(Compiler::err_invalid_state_transition(transition)),
-            },
-            None => Err(Compiler::err_invalid_state_transition(transition)),
+        if valid_transitions.contains(&transition) {
+            Ok(())
+        } else {
+            Err(Compiler::err_invalid_state_transition(transition))
         }
     }
 
@@ -479,13 +480,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Initialize valid state transitions.
-    pub fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
-        HashMap::from([
-            ((CompilationState::NotStarted, CompilationState::DebugSetup), true),
-            ((CompilationState::DebugSetup, CompilationState::TypesProcessed), true),
-            ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), true),
-            ((CompilationState::CoreLibFunctionsProcessed, CompilationState::FunctionsProcessed), true),
-            ((CompilationState::FunctionsProcessed, CompilationState::Finalized), true),
+    pub fn init_state_transitions() -> HashSet<(CompilationState, CompilationState)> {
+        HashSet::from([
+            (CompilationState::NotStarted, CompilationState::DebugSetup),
+            (CompilationState::DebugSetup, CompilationState::TypesProcessed),
+            (CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed),
+            (CompilationState::CoreLibFunctionsProcessed, CompilationState::FunctionsProcessed),
+            (CompilationState::FunctionsProcessed, CompilationState::ControlFlowProcessed),
+            (CompilationState::ControlFlowProcessed, CompilationState::StatementsProcessed),
+            (CompilationState::StatementsProcessed, CompilationState::Finalized),
         ])
     }
 

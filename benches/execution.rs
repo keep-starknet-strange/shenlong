@@ -71,8 +71,8 @@ fn benchmark_llvm(c: &mut Criterion, file_path: &str) {
     compiler.process_types().unwrap();
     compiler.process_core_lib_functions().unwrap();
     compiler.process_funcs().unwrap();
-    compiler.process_dataflow();
-    compiler.process_statements();
+    compiler.process_dataflow().unwrap();
+    compiler.process_statements().unwrap();
     let execution_engine = compiler.module.create_jit_execution_engine(OptimizationLevel::Aggressive).unwrap();
     c.bench_with_input(BenchmarkId::new("Llvm", 1), &(execution_engine), |b, execution_engine| {
         b.iter(|| {

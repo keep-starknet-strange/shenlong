@@ -7,13 +7,22 @@ use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::values::BasicValueEnum;
+use tracing::debug;
 
-use crate::sierra::llvm_compiler::{Compiler, FunctionInfo};
+use crate::sierra::errors::CompilerResult;
+use crate::sierra::llvm_compiler::{CompilationState, Compiler, FunctionInfo};
 
 /// Implementation for the type processing for the compiler.
 impl<'a, 'ctx> Compiler<'a, 'ctx> {
-    pub fn process_dataflow(&mut self) {
+    pub fn process_dataflow(&mut self) -> CompilerResult<()> {
+        debug!("processing dataflow");
+        // Check that the current state is valid.
+        self.check_state(&CompilationState::FunctionsProcessed)?;
+
         self.dataflow_graph = DataFlowGraph::create(self.program, self.context, &self.user_functions);
+
+        // Move to the next state.
+        self.move_to(CompilationState::ControlFlowProcessed)
     }
 }
 

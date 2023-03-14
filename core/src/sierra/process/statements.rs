@@ -4,8 +4,8 @@ use std::cmp::Ordering;
 use cairo_lang_sierra::program::GenStatement;
 use tracing::debug;
 
-use crate::sierra::errors::DEBUG_NAME_EXPECTED;
-use crate::sierra::llvm_compiler::{Compiler, FunctionInfo};
+use crate::sierra::errors::{CompilerResult, DEBUG_NAME_EXPECTED};
+use crate::sierra::llvm_compiler::{CompilationState, Compiler, FunctionInfo};
 use crate::sierra::process::corelib::PRINT_RETURN;
 
 /// Implementation of the statement processing for the compiler.
@@ -16,7 +16,11 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     ///
     /// If the processing of the sierra statements fails.
 
-    pub fn process_statements(&mut self) {
+    pub fn process_statements(&mut self) -> CompilerResult<()> {
+        debug!("processing statements");
+        // Check that the current state is valid.
+        self.check_state(&CompilationState::ControlFlowProcessed)?;
+
         let debug_line_for_first_statement = self.debug.current_line;
 
         // For simplicity's sake we process one function at a time. The algorithm would work the same if we
@@ -280,5 +284,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 }
             }
         }
+
+        // Move to the next state.
+        self.move_to(CompilationState::StatementsProcessed)
     }
 }
