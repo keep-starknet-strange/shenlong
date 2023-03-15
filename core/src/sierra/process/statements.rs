@@ -91,7 +91,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                                                 .unwrap_or_else(|| panic!("{lib_fn_name} function is missing"))
                                         };
 
-                                        // TODO check void user functions
+                                        // Cairo void functions become sierra functions that return an empty struct
+                                        // so this should always convert to a basic value
                                         let res = self
                                             .builder
                                             .build_call(lib_func, &args, "")
