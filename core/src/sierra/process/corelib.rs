@@ -78,7 +78,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // Division for the felt type. `felt / NonZero<felt>`
                 "felt_div" => self.felt_div(libfunc_declaration),
                 // Calls a user defined sierra function. `function_call<user@fib_caller::fib_caller::fib>`
-                "function_call" => self.function_call(libfunc_declaration),
+                "function_call" => debug!(libfunc_name, "treated in the statements"),
                 // Boxes a value of type T.
                 "into_box" => self.into_box(libfunc_declaration),
                 // Jumps to the specified sierra statement number.
