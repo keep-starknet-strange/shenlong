@@ -28,18 +28,24 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         // Now that we have the unique type ids, we can get the associated types and debug information, and
         // package them with the index into a struct
-        // TODO this works because HashMap::iter is stable between uses here, but is not *technically*
-        // guaranteed to be by the spec, could improve, likely also when having a debug type for the
-        // index is solved
-        let unique_arg_types = unique_arg_type_ids.iter().map(|type_id| {
-            self.types_by_id.get(type_id).expect("Type should have been defined before enum").as_basic_type_enum()
-        });
-        let unique_arg_debug_types = unique_arg_type_ids
+        let unique_arg_types = unique_arg_type_ids
             .iter()
-            .map(|type_id| *self.debug.types_by_id.get(type_id).expect("Type should have been defined before enum"));
-        let struct_args: Vec<_> = iter::once(index_type).chain(unique_arg_types).collect();
-        let debug_args: Vec<_> = unique_arg_debug_types.collect(); // TODO add index?
+            .map(|type_id| {
+                (
+                    self.types_by_id
+                        .get(type_id)
+                        .expect("Type should have been defined before enum")
+                        .as_basic_type_enum(),
+                    *self.debug.types_by_id.get(type_id).expect("Debug type should have been defined before enum"),
+                )
+            })
+            .collect::<Vec<_>>();
+        let struct_args = iter::once(index_type).chain(unique_arg_types.iter().map(|(t, _dt)| *t)).collect::<Vec<_>>();
         let struct_type = self.context.struct_type(&struct_args, false);
+        // Since the index is not a direct representation of a sierra type, there is no id for it
+        // Instead, the DebugCompiler::create_enum_struct method extracts it from the struct and creates a
+        // debug type for it
+        let debug_args: Vec<_> = unique_arg_types.iter().map(|(_t, dt)| *dt).collect();
 
         // We do also need to keep a record of every possible subtype in order so that enum_init and
         // enum_match can be implemented
@@ -55,7 +61,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
 
         self.types_by_id.insert(type_declaration.id.id, struct_type.as_basic_type_enum());
         self.types_by_name.insert(type_name.clone(), struct_type.as_basic_type_enum());
-        self.debug.create_struct(type_declaration.id.id, &type_name, &struct_type, &debug_args);
+        self.debug.create_enum_struct(type_declaration.id.id, &type_name, &struct_type, &debug_args);
         self.enum_packing_index_by_name.insert(type_name, enum_packing_indices);
     }
 }

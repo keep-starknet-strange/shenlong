@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::iter;
 
 use inkwell::debug_info::{
     AsDIScope, DIFlags, DIFlagsConstants, DILocalVariable, DILocation, DIScope, DISubprogram, DIType,
@@ -200,6 +201,56 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
         self.types_by_id.insert(id, debug_struct_type.as_type());
         self.types_by_name.insert(name.to_string(), debug_struct_type.as_type());
         self.struct_types_by_id.insert(id, fields.to_vec());
+        debug_struct_type.as_type()
+    }
+
+    /// Creates a struct debug type representing a sierra enum.
+    /// The first field of the struct type should be its index
+    pub fn create_enum_struct(
+        &mut self,
+        id: u64,
+        name: &str,
+        struct_type: &StructType<'ctx>,
+        data_fields: &[DIType<'ctx>],
+    ) -> DIType<'ctx> {
+        let struct_align = struct_type.get_alignment();
+        let align_bits = struct_align.get_type().get_bit_width();
+
+        let index_field = struct_type
+            .get_field_type_at_index(0)
+            .expect("First field of llvm struct representation of an enum should be its index")
+            .into_int_type();
+        let index_debug_type = self
+            .debug_builder
+            .create_basic_type(&format!("{name}::index"), index_field.get_bit_width().into(), 5, DIFlags::ZERO)
+            .unwrap()
+            .as_type();
+        let data_fields_with_index =
+            iter::once(index_debug_type).chain(data_fields.iter().cloned()).collect::<Vec<_>>();
+
+        let mut bits = 0;
+        for arg in data_fields_with_index.iter() {
+            bits += arg.get_size_in_bits();
+        }
+
+        let debug_struct_type = self.debug_builder.create_struct_type(
+            self.compile_unit.as_debug_info_scope(),
+            name,
+            self.compile_unit.get_file(),
+            self.current_line,
+            bits,
+            align_bits,
+            inkwell::debug_info::DIFlags::PUBLIC,
+            None,
+            &data_fields_with_index,
+            0,
+            None,
+            name,
+        );
+
+        self.types_by_id.insert(id, debug_struct_type.as_type());
+        self.types_by_name.insert(name.to_string(), debug_struct_type.as_type());
+        self.struct_types_by_id.insert(id, data_fields_with_index);
         debug_struct_type.as_type()
     }
 

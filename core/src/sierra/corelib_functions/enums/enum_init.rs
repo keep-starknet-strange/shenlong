@@ -45,20 +45,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             .expect("Enum data packing locations should have been registered before processing of enum_init")
             [enum_index_parameter];
 
-        // TODO fix debug handling of enum types, shouldn't be indexing into the struct. 0 used here so it
-        // doesn't break for now
-        let debug_arg_type = self.debug.struct_types_by_id.get(full_enum_type_id).unwrap()[0];
-        let debug_return_type = *self.debug.types_by_id.get(full_enum_type_id).unwrap();
-
         let input_type = return_type.get_field_type_at_index(data_offset as u32).unwrap();
+        let debug_arg_type = self.debug.struct_types_by_id.get(full_enum_type_id).unwrap()[data_offset];
+        let debug_return_type = *self.debug.types_by_id.get(full_enum_type_id).unwrap();
 
         // fn enum_init<T, i>(T[i]) -> T
         // which is to say that to construct an enum we only need input for the value that's actually stored
         let func = self.module.add_function(func_name, return_type.fn_type(&[input_type.into()], false), None);
 
-        // TODO finish implementing debug func
-        let _debug_func =
-            self.debug.create_function(func_name, &func, Some(debug_return_type), &[debug_arg_type], None);
+        let debug_func = self.debug.create_function(func_name, &func, Some(debug_return_type), &[debug_arg_type], None);
 
         self.builder.position_at_end(self.context.append_basic_block(func, "entry"));
         // Allocate memory for the enum on the stack.
@@ -77,26 +72,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Could potentially return the pointer here, likely won't make much difference though
         self.builder.build_return(Some(&self.builder.build_load(return_type, enum_ptr, "res")));
 
-        // // Store each field in the struct.
-        // for (i, param) in func.get_params().iter().enumerate() {
-        //     let tuple_ptr = self
-        //         .builder
-        //         .build_struct_gep(return_type, struct_ptr, i as u32,
-        // format!("field_{i}_ptr").as_str())         .unwrap();
-        //     self.builder.build_store(tuple_ptr, *param);
-        // }
-        // self.builder.build_return(Some(&self.builder.build_load(return_type, struct_ptr,
-        // "res")));
-
         // // Debug values
-        // for (i, (value, arg_ty)) in func.get_params().iter().zip([debug_arg_type]).enumerate() {
-        //     let debug_local_var = self.debug.create_local_variable(&i.to_string(),
-        // debug_func.scope, arg_ty, None);     self.debug.insert_dbg_value(
-        //         *value,
-        //         debug_local_var,
-        //         self.builder.get_current_debug_location().unwrap(),
-        //         func.get_first_basic_block().unwrap().get_first_instruction().unwrap(),
-        //     );
-        // }
+        for (i, (value, arg_ty)) in func.get_params().iter().zip([debug_arg_type]).enumerate() {
+            let debug_local_var = self.debug.create_local_variable(&i.to_string(), debug_func.scope, arg_ty, None);
+            self.debug.insert_dbg_value(
+                *value,
+                debug_local_var,
+                self.builder.get_current_debug_location().unwrap(),
+                func.get_first_basic_block().unwrap().get_first_instruction().unwrap(),
+            );
+        }
     }
 }
