@@ -20,6 +20,7 @@ use test_case::test_case;
 #[test_case("felt_negation")]
 #[test_case("fib_felt_is_zero")]
 #[test_case("enum_flow")]
+#[test_case("multiple_return")]
 #[test_case("void_func")]
 fn comparison_test(test_name: &str) {
     let sierra_code = fs::read_to_string(&format!("./tests/comparison/{test_name}.sierra")).unwrap();
