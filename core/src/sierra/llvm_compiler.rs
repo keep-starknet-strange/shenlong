@@ -50,13 +50,23 @@ use inkwell::values::{BasicValueEnum, FunctionValue};
 use tracing::{debug, error, info};
 
 use super::errors::CompilerResult;
+use super::process::dataflow::DataFlowGraph;
 use crate::sierra::errors::CompilerError;
 
 #[derive(Debug, Clone)]
 pub struct FunctionInfo<'ctx> {
     pub func: FunctionValue<'ctx>,
+    pub entry_point: usize,
     pub args: Vec<BasicTypeEnum<'ctx>>,
     pub debug: FunctionDebugInfo<'ctx>,
+}
+
+#[derive(Debug)]
+pub struct BasicBlockInfo<'ctx> {
+    pub block: BasicBlock<'ctx>,
+    pub preds: HashSet<usize>,
+    pub variables: HashMap<u64, BasicValueEnum<'ctx>>,
+    pub dropped_variables: HashSet<u64>,
 }
 
 /// Compiler is the main entry point for the LLVM backend.
@@ -70,8 +80,6 @@ pub struct Compiler<'a, 'ctx> {
     pub builder: &'a Builder<'ctx>,
     /// The LLVM module.
     pub module: Module<'ctx>,
-    /// The variables of the current function.
-    pub variables: HashMap<u64, BasicValueEnum<'ctx>>,
     /// User functions generated from libfunc func_call.
     pub user_functions: HashMap<String, FunctionInfo<'ctx>>,
     /// The LLVM IR output path.
@@ -79,14 +87,16 @@ pub struct Compiler<'a, 'ctx> {
     /// The current compilation state.
     pub state: CompilationState,
     /// The valid state transitions.
-    pub valid_state_transitions: HashMap<CompilationStateTransition, bool>,
+    pub valid_state_transitions: HashSet<CompilationStateTransition>,
     /// The types by sierra id.
     pub types_by_id: HashMap<u64, BasicTypeEnum<'ctx>>,
     /// The types by debug name
     pub types_by_name: HashMap<String, BasicTypeEnum<'ctx>>,
-    /// Calls in the main function.
-    pub basic_blocks: HashMap<usize, BasicBlock<'ctx>>,
-    pub jump_dests: HashSet<usize>,
+    /// Stores the index in the packed struct at which the payload of each subtype of enum is stored
+    pub enum_packing_index_by_name: HashMap<String, Vec<usize>>,
+    /// All basic blocks required by the statements.
+    // pub basic_blocks: BTreeMap<usize, BasicBlockInfo<'ctx>>,
+    pub dataflow_graph: DataFlowGraph<'ctx>,
     /// A struct holding all the debug info.
     pub debug: DebugCompiler<'a, 'ctx>,
 }
@@ -119,8 +129,8 @@ pub struct DebugCompiler<'a, 'ctx> {
     /// The debug info variables of the current function.
     pub variables: HashMap<u64, DIType<'ctx>>,
     pub functions: HashMap<String, FunctionDebugInfo<'ctx>>,
-    current_line: u32,
-    current_statement_line: u32,
+    /// Line of the sierra file being processed. 0 is the start of the types, not the statements
+    pub current_line: u32,
     pub context: &'ctx Context,
 }
 
@@ -141,25 +151,8 @@ impl<'a, 'ctx> DebugCompiler<'a, 'ctx> {
             functions: HashMap::new(),
             struct_types_by_id: HashMap::new(),
             current_line: 0,
-            current_statement_line: 0,
             context,
         }
-    }
-
-    /// Increases the current line by 1.
-    pub fn next_line(&mut self) {
-        self.current_line += 1;
-        self.current_statement_line = self.current_line;
-    }
-
-    /// Sets the current statement line from a statement id.
-    pub fn set_statement_line(&mut self, statement_id: usize) {
-        self.current_statement_line = self.current_line + statement_id as u32;
-    }
-
-    // Gets the current line.
-    pub fn get_line(&self) -> u32 {
-        self.current_statement_line
     }
 }
 
@@ -180,10 +173,13 @@ pub enum CompilationState {
     DebugSetup,
     /// The types have been processed.
     TypesProcessed,
-    /// The functions have been processed.
-    FunctionsProcessed,
     /// The core library functions have been processed.
     CoreLibFunctionsProcessed,
+    /// The functions have been processed.
+    FunctionsProcessed,
+    /// The control flow through each function has been processed.
+    /// Basic blocks to which data flow will be attached have been created.
+    ControlFlowProcessed,
     /// The statements have been processed.
     StatementsProcessed,
     /// The compilation has been finalized.
@@ -284,7 +280,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// let sierra_program_path = Path::new("../examples/program.sierra");
     /// let llvm_ir_path = Path::new("../examples/program.ll");
     ///
-    /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
     /// let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
     /// // Parse the program.
@@ -354,15 +349,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             context: &context,
             builder: &builder,
             module,
-            variables: HashMap::new(),
             user_functions: HashMap::new(),
             llvm_output_path: llvm_output_path.to_owned(),
             state: CompilationState::NotStarted,
             valid_state_transitions,
             types_by_id: HashMap::new(),
             types_by_name: HashMap::new(),
-            basic_blocks: HashMap::new(),
-            jump_dests: HashSet::new(),
+            enum_packing_index_by_name: HashMap::new(),
+            dataflow_graph: DataFlowGraph::new(),
             debug: DebugCompiler::new(dibuilder, &builder, compile_unit, &context),
         };
 
@@ -375,13 +369,14 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         // Process the core library functions in the Sierra program.
         compiler.process_core_lib_functions()?;
 
-        // Collect jumps.
-        compiler.collect_jumps();
-
         // Process the functions in the Sierra program.
         compiler.process_funcs()?;
+
+        // Build the basic block structure of each function.
+        compiler.process_dataflow()?;
+
         // Process the statements in the Sierra program.
-        // compiler.process_statements()?;
+        compiler.process_statements()?;
 
         // Finalize the compilation.
         compiler.finalize_compilation()
@@ -396,7 +391,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     fn finalize_compilation(&mut self) -> CompilerResult<()> {
         debug!("finalizing compilation");
         // Check that the current state is valid.
-        self.check_state(&CompilationState::FunctionsProcessed)?;
+        self.check_state(&CompilationState::StatementsProcessed)?;
 
         self.debug.debug_builder.finalize();
         // let parent =
@@ -468,14 +463,12 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     #[inline]
     fn is_valid_transition(
         transition: CompilationStateTransition,
-        valid_transitions: &HashMap<(CompilationState, CompilationState), bool>,
+        valid_transitions: &HashSet<(CompilationState, CompilationState)>,
     ) -> CompilerResult<()> {
-        match valid_transitions.get(&transition) {
-            Some(valid) => match valid {
-                true => Ok(()),
-                false => Err(Compiler::err_invalid_state_transition(transition)),
-            },
-            None => Err(Compiler::err_invalid_state_transition(transition)),
+        if valid_transitions.contains(&transition) {
+            Ok(())
+        } else {
+            Err(Compiler::err_invalid_state_transition(transition))
         }
     }
 
@@ -486,13 +479,15 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     }
 
     /// Initialize valid state transitions.
-    pub fn init_state_transitions() -> HashMap<(CompilationState, CompilationState), bool> {
-        HashMap::from([
-            ((CompilationState::NotStarted, CompilationState::DebugSetup), true),
-            ((CompilationState::DebugSetup, CompilationState::TypesProcessed), true),
-            ((CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed), true),
-            ((CompilationState::CoreLibFunctionsProcessed, CompilationState::FunctionsProcessed), true),
-            ((CompilationState::FunctionsProcessed, CompilationState::Finalized), true),
+    pub fn init_state_transitions() -> HashSet<(CompilationState, CompilationState)> {
+        HashSet::from([
+            (CompilationState::NotStarted, CompilationState::DebugSetup),
+            (CompilationState::DebugSetup, CompilationState::TypesProcessed),
+            (CompilationState::TypesProcessed, CompilationState::CoreLibFunctionsProcessed),
+            (CompilationState::CoreLibFunctionsProcessed, CompilationState::FunctionsProcessed),
+            (CompilationState::FunctionsProcessed, CompilationState::ControlFlowProcessed),
+            (CompilationState::ControlFlowProcessed, CompilationState::StatementsProcessed),
+            (CompilationState::StatementsProcessed, CompilationState::Finalized),
         ])
     }
 

@@ -41,10 +41,13 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
         self.printf_for_type(double_felt.into(), PRINT_DOUBLE_FELT_FUNC, "double_felt");
         self.modulo();
 
+        // Account for the whitespace between types block and libfunc block
+        // TODO: obtain actual line numbers for the sierra file to replace the whitespace assumptions being
+        // made here
+        self.debug.current_line += 1;
+
         // Iterate over the libfunc declarations in the Sierra program.
         for libfunc_declaration in self.program.libfunc_declarations.iter() {
-            self.debug.next_line();
-
             // Get the debug name of the function.
             let libfunc_name = libfunc_declaration.long_id.generic_id.0.as_str();
             debug!(libfunc_name, "processing");
@@ -58,6 +61,10 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // As everything has to be used exactly once, if we need to use twice the same value we need to
                 // duplicate it.
                 "dup" => self.dup(libfunc_declaration),
+                // Constructor for enums
+                "enum_init" => self.enum_init(libfunc_declaration),
+                // Destructor for enums, branches depending on which type of enum was given
+                "enum_match" => debug!(libfunc_name, "treated in the statements"),
                 // Addition for felt type. `felt + felt`
                 "felt_add" => self.felt_add(libfunc_declaration),
                 // Define a constant of type felt. `const one = 1;`
@@ -71,7 +78,7 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 // Division for the felt type. `felt / NonZero<felt>`
                 "felt_div" => self.felt_div(libfunc_declaration),
                 // Calls a user defined sierra function. `function_call<user@fib_caller::fib_caller::fib>`
-                "function_call" => self.function_call(libfunc_declaration),
+                "function_call" => debug!(libfunc_name, "treated in the statements"),
                 // Boxes a value of type T.
                 "into_box" => self.into_box(libfunc_declaration),
                 // Jumps to the specified sierra statement number.
@@ -90,9 +97,8 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
                 "unbox" => self.unbox(libfunc_declaration),
                 _ => debug!(libfunc_name, "not implemented"),
             }
+            self.debug.current_line += 1;
         }
-
-        self.debug.next_line();
 
         // Move to the next state.
         self.move_to(CompilationState::CoreLibFunctionsProcessed)

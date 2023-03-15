@@ -236,13 +236,31 @@ entry:
 }
 
 define i32 @main() !dbg !56 {
-entry:
+statement0:
   %0 = call i253 @"felt_const<1>"(), !dbg !58
+  br label %statement1, !dbg !58
+
+statement1:                                       ; preds = %statement0
   %1 = call i253 @"felt_const<2>"(), !dbg !59
+  br label %statement2, !dbg !59
+
+statement2:                                       ; preds = %statement1
   %2 = call i253 @"store_temp<felt>"(i253 %0), !dbg !60
+  br label %statement3, !dbg !60
+
+statement3:                                       ; preds = %statement2
   %3 = call i253 @felt_add(i253 %2, i253 %1), !dbg !61
+  br label %statement4, !dbg !61
+
+statement4:                                       ; preds = %statement3
   %4 = call i253 @"store_temp<felt>"(i253 %3), !dbg !62
+  br label %statement5, !dbg !62
+
+statement5:                                       ; preds = %statement4
   %5 = call i253 @"rename<felt>"(i253 %4), !dbg !63
+  br label %statement6, !dbg !63
+
+statement6:                                       ; preds = %statement5
   %ret_struct_ptr = alloca { i253 }, align 8, !dbg !64
   %field_0_ptr = getelementptr inbounds { i253 }, ptr %ret_struct_ptr, i32 0, i32 0, !dbg !64
   store i253 %5, ptr %field_0_ptr, align 4, !dbg !64
@@ -313,16 +331,16 @@ attributes #0 = { nocallback nofree nosync nounwind speculatable willreturn memo
 !49 = !DILocalVariable(name: "0", arg: 1, scope: !47, file: !2, line: 7, type: !6)
 !50 = !DILocalVariable(name: "rename<felt>", scope: !47, file: !2, line: 7, type: !6)
 !51 = !DILocation(line: 7, scope: !47)
-!52 = distinct !DISubprogram(name: "print_return", linkageName: "print_return", scope: null, file: !2, line: 8, type: !4, scopeLine: 8, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !53)
+!52 = distinct !DISubprogram(name: "print_return", linkageName: "print_return", scope: null, file: !2, line: 17, type: !4, scopeLine: 17, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !53)
 !53 = !{!54}
-!54 = !DILocalVariable(name: "0", arg: 1, scope: !52, file: !2, line: 8, type: !6)
-!55 = !DILocation(line: 8, scope: !52)
-!56 = distinct !DISubprogram(name: "main", linkageName: "add::add::main", scope: null, file: !2, line: 8, type: !24, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !57)
+!54 = !DILocalVariable(name: "0", arg: 1, scope: !52, file: !2, line: 17, type: !6)
+!55 = !DILocation(line: 17, scope: !52)
+!56 = distinct !DISubprogram(name: "main", linkageName: "add::add::main", scope: null, file: !2, line: 17, type: !24, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition, unit: !1, retainedNodes: !57)
 !57 = !{}
-!58 = !DILocation(line: 8, scope: !56)
-!59 = !DILocation(line: 9, scope: !56)
-!60 = !DILocation(line: 10, scope: !56)
-!61 = !DILocation(line: 11, scope: !56)
-!62 = !DILocation(line: 12, scope: !56)
-!63 = !DILocation(line: 13, scope: !56)
-!64 = !DILocation(line: 14, scope: !56)
+!58 = !DILocation(line: 9, scope: !56)
+!59 = !DILocation(line: 10, scope: !56)
+!60 = !DILocation(line: 11, scope: !56)
+!61 = !DILocation(line: 12, scope: !56)
+!62 = !DILocation(line: 13, scope: !56)
+!63 = !DILocation(line: 14, scope: !56)
+!64 = !DILocation(line: 15, scope: !56)
