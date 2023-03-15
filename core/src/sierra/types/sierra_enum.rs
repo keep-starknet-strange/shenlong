@@ -53,8 +53,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
             })
             .collect();
 
-        println!("Got packing indices: {:?}", enum_packing_indices);
-
         self.types_by_id.insert(type_declaration.id.id, struct_type.as_basic_type_enum());
         self.types_by_name.insert(type_name.clone(), struct_type.as_basic_type_enum());
         self.debug.create_struct(type_declaration.id.id, &type_name, &struct_type, &debug_args);

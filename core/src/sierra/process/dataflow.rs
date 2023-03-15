@@ -312,7 +312,6 @@ impl<'ctx> DataFlowGraph<'ctx> {
         // Each entry now corresponds to one phi, so we check their validity then create the phi
         let mut values_to_insert = HashMap::new();
         for (var_id, value_map) in phi_inputs_by_var {
-            println!("{:?}", value_map);
             // Assert that every predecessor returned the same usable variable ids
             assert_eq!(
                 value_map.len(),
