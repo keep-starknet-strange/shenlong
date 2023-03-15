@@ -280,7 +280,6 @@ impl<'a, 'ctx> Compiler<'a, 'ctx> {
     /// let sierra_program_path = Path::new("../examples/program.sierra");
     /// let llvm_ir_path = Path::new("../examples/program.ll");
     ///
-    /// // TODO: Find a way to make doc tests pass.
     /// // Read the program from the file.
     /// let sierra_code = fs::read_to_string(sierra_program_path).unwrap();
     /// // Parse the program.
