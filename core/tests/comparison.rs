@@ -98,31 +98,32 @@ fn run_sierra_via_llvm(test_name: &str, sierra_code: &str) -> Vec<BigUint> {
 
 // Parses the human-readable output from running the llir code into a raw list of outputs
 fn parse_llvm_result(res: &str) -> Vec<BigUint> {
-    if res.starts_with("Return value: ") {
-        let val_string = &res["Return value: ".len()..];
-        return vec![BigUint::from_str_radix(val_string, 16).unwrap()];
-    } else if res.starts_with("Return field") {
-        return res
-            .split('\n')
-            .map(|line| &line[line.find("value: ").unwrap() + "value: ".len()..])
-            // .map(|line| {
-            //     println!("{line}");
-            //     line
-            // })
-            .map(|val: &str| {
-                // The output from the llvm ir can include values in the range (-PRIME, 0), which need to be wrapped around
-                // Because the number of bits is rounded up to 256, positive numbers start with 0 and negatives start with 1
-                if val.starts_with('1') {
-                    let prime = DEFAULT_PRIME.parse::<BigUint>().unwrap();
-                    let pos = BigUint::from_str_radix(val.strip_prefix('1').unwrap(), 16).unwrap();
-                    let neg = BigUint::from_u32(2).unwrap().pow((4*(val.chars().count()-1)).try_into().unwrap());
-                    prime - (neg - pos)
-                } else {
-                    BigUint::from_str_radix(val, 16).unwrap()
-                }
-            })
-            .collect();
-    } else {
-        panic!("Unexpected output from running via llvm:\n{res}");
-    }
+    res.split('\n').map(|val_string| BigUint::from_str_radix(val_string, 16).unwrap()).collect::<Vec<_>>()
+    // if res.starts_with("Return value: ") {
+    //     let val_string = &res["Return value: ".len()..];
+    //     return vec![BigUint::from_str_radix(val_string, 16).unwrap()];
+    // } else if res.starts_with("Return field") {
+    //     return res
+    //         .split('\n')
+    //         .map(|line| &line[line.find("value: ").unwrap() + "value: ".len()..])
+    //         // .map(|line| {
+    //         //     println!("{line}");
+    //         //     line
+    //         // })
+    //         .map(|val: &str| {
+    //             // The output from the llvm ir can include values in the range (-PRIME, 0), which need to be wrapped around
+    //             // Because the number of bits is rounded up to 256, positive numbers start with 0 and negatives start with 1
+    //             if val.starts_with('1') {
+    //                 let prime = DEFAULT_PRIME.parse::<BigUint>().unwrap();
+    //                 let pos = BigUint::from_str_radix(val.strip_prefix('1').unwrap(), 16).unwrap();
+    //                 let neg = BigUint::from_u32(2).unwrap().pow((4*(val.chars().count()-1)).try_into().unwrap());
+    //                 prime - (neg - pos)
+    //             } else {
+    //                 BigUint::from_str_radix(val, 16).unwrap()
+    //             }
+    //         })
+    //         .collect();
+    // } else {
+    //     panic!("Unexpected output from running via llvm:\n{res}");
+    // }
 }
