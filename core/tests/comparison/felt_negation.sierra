@@ -1,0 +1,36 @@
+type felt = felt;
+type Tuple<felt, felt, felt> = Struct<ut@Tuple, felt, felt, felt>;
+
+libfunc felt_const<0> = felt_const<0>;
+libfunc felt_const<-1> = felt_const<-1>;
+libfunc store_temp<felt> = store_temp<felt>;
+libfunc felt_mul = felt_mul;
+libfunc felt_const<1> = felt_const<1>;
+libfunc struct_construct<Tuple<felt, felt, felt>> = struct_construct<Tuple<felt, felt, felt>>;
+libfunc store_temp<Tuple<felt, felt, felt>> = store_temp<Tuple<felt, felt, felt>>;
+
+felt_const<0>() -> ([0]);
+felt_const<-1>() -> ([1]);
+store_temp<felt>([0]) -> ([0]);
+felt_mul([0], [1]) -> ([2]);
+felt_const<1>() -> ([3]);
+felt_const<-1>() -> ([4]);
+store_temp<felt>([3]) -> ([3]);
+felt_mul([3], [4]) -> ([5]);
+felt_const<1>() -> ([6]);
+felt_const<-1>() -> ([7]);
+store_temp<felt>([6]) -> ([6]);
+felt_mul([6], [7]) -> ([8]);
+felt_const<-1>() -> ([9]);
+store_temp<felt>([8]) -> ([8]);
+felt_mul([8], [9]) -> ([10]);
+struct_construct<Tuple<felt, felt, felt>>([2], [5], [10]) -> ([11]);
+store_temp<Tuple<felt, felt, felt>>([11]) -> ([12]);
+return([12]);
+felt_const<-1>() -> ([1]);
+felt_mul([0], [1]) -> ([2]);
+store_temp<felt>([2]) -> ([3]);
+return([3]);
+
+felt_negation::felt_negation::main@0() -> (Tuple<felt, felt, felt>);
+felt_negation::felt_negation::neg@18([0]: felt) -> (felt);
